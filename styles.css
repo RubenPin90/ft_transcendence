@@ -5,6 +5,12 @@
     padding: 0;
 }
 
+:root {
+    --background-color: #121212; /* or some default */
+    --paddle-color: #ffffff;
+    --ball-color: #ffffff;
+}
+
 /* Body styles */
 body {
     font-family: Arial, sans-serif;
@@ -12,15 +18,19 @@ body {
     color: #ffffff;
 }
 
-/* Dark and Light Mode classes */
-.dark-mode {
-    --background-color: #121212;
-    color: #ffffff;
+body.dark-mode {
+    --background-color: #121212; /* Dark background */
+    --paddle-color: #ffffff;    /* White paddle */
+    --ball-color: #ffffff;      /* White ball */
+    color: #ffffff;             /* Text color */
+  }
+  
+.paddle {
+  fill: var(--paddle-color);
 }
 
-.light-mode {
-    --background-color: #ffffff;
-    color: #000000;
+.ball {
+  fill: var(--ball-color);
 }
 
 /* Center container styles */
@@ -36,7 +46,7 @@ body {
 
 /* Canvas with border */
 canvas {
-    border: 2px solid #ffffff;
+    border: 2px solid var(--paddle-color); /* Match border color to paddle */
 }
 
 /* Dark Mode toggle button */

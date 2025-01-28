@@ -3,18 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Pong Game</title>
-  <!-- Link to external CSS -->
-  <link rel="stylesheet" href="styles.css" />
+  <title>Multi-Paddle Pong</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
-<body class="dark-mode">
+<body>
   <div id="game-container">
-    <canvas id="pongCanvas" width="800" height="400"></canvas>
-    <button class="dark-mode-toggle" id="darkModeToggle">Toggle Dark Mode</button>
+    <canvas id="pongCanvas" width="800" height="600"></canvas>
   </div>
-
-  <!-- JavaScript files -->
-  <script src="toggle.js"></script>
-  <script src="pong.js"></script>
+  
+  <!-- Script -->
+  <script src="multiplayerPong.js"></script>
 </body>
 </html>
