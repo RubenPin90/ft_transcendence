@@ -2,7 +2,7 @@ const views = require('./views')
 
 async function urlpattern(request, response) {
 	if (request.url === '/' || request.url.includes('?code=')) {
-		let  html = await views.home(request, response);
+		let html = await views.home(request, response);
 		return html;
 	}
 	if (request.url === '/login') {

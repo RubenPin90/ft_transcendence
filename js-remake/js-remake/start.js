@@ -5,12 +5,7 @@ const db = require('./database/db_user_functions');
 const server = http.createServer(async function (req, res) {
 	try {
 		const data = await urls.urlpattern(req, res);
-		if (data === null) {
-			res.writeHead(302, {
-				'Location': '/login'
-			});
-			res.end();
-		} else {
+		if (data !== null) {
 			res.writeHead(200, {'Content-Type': 'text/html'});
 			res.write(data);
 			res.end();

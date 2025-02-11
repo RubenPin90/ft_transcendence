@@ -47,7 +47,7 @@ async function create_user(email, username, password, pfp, google, github) {
 			WHERE username = ?
 			`, [username]
 		);
-		if (check)
+		if (check && username !== '')
 			return 2;
 		check = await db.get(
 			`SELECT * FROM users
@@ -61,20 +61,20 @@ async function create_user(email, username, password, pfp, google, github) {
 			WHERE google = ?
 			`, [google]
 		);
-		if (check)
+		if (check && google !== 0)
 			return 4;
 		check = await db.get(
 			`SELECT * FROM users
 			WHERE github = ?
 			`, [github]
 		);
-		if (check)
+		if (check && github !== 0)
 			return 5;
 		const result = await db.run(
 			`INSERT INTO users (username, password, pfp, email, google, github) VALUES (?, ?, ?, ?, ?, ?)`,
 			[username, password, pfp, email, google, github]
 		);
-		console.log(`Neuer Datensatz mit ID: ${result.lastID}`);
+		console.log(`New user created with ID: ${result.lastID}`);
 	} catch (err) {
 		console.error('Error at inserting:', err.message);
 	} finally {

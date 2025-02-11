@@ -36,9 +36,7 @@ async function encrypt_google(request, response) {
 		const user_id = decoded_id_token.sub;
 		const email = decoded_id_token.email;
 		const pfp = decoded_id_token.picture;
-		const ret_val = await db.create_user(email, '', '', pfp, user_id, 0);
-		console.log(ret_val);
-		// db.show_user();
+		await db.create_user(email, '', '', pfp, user_id, 0);
 		return user_id;
 	} catch (error) {
 		console.error("Error during Google OAuth:", error);
@@ -49,7 +47,7 @@ async function encrypt_google(request, response) {
 
 
 async function decodeJWT(idToken) {
-	const base64Payload = idToken.split('.')[1];
+	const base64Payload = idToken?.split('.')[1];
 	const payloadBuffer = Buffer.from(base64Payload, 'base64');
 	return JSON.parse(payloadBuffer.toString('utf-8'));
 }

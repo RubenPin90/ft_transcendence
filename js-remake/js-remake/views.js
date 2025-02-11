@@ -3,16 +3,30 @@ const modules = require('./modules');
 const utils = require('./utils');
 
 async function home(request, response) {
-	let [keys, values] = await modules.get_cookies(request.headers.cookie);
-	if (request.url === '/' && !keys.includes("token")) {
+	var [keys, values] = await modules.get_cookies(request.headers.cookie);
+	if (request.url === '/' && !keys?.includes("token")) {
+		response.writeHead(302, {
+			'Location': '/login'
+		});
+		response.end();
 		return null;
-	} else if (request.url !== '/') {
+	}
+	if (request.url !== '/') {
 		const data = await utils.encrypt_google(request, response);
 		response.setHeader('Set-Cookie', `token=${data}`);
+		response.writeHead(302, {
+			'Location': '/'
+		});
+		response.end();
+		return null;
 	}
-	var data = await fs.readFile('./templates/home.html', 'utf-8');
-	data = data.replace("{{user_id}}", values[keys.indexOf("token")]);
-	return data;
+	var html_data = await fs.readFile('./templates/home.html', 'utf-8');
+	const tokenIndex = keys?.find((key) => key === 'token');
+	const replace_data = values?.at(tokenIndex);
+	if (!replace_data)
+		return null;
+	html_data = html_data.replace("{{user_id}}", replace_data);
+	return html_data;
 }
 
 async function login(request, response) {
