@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Transcendence</title>
+</head>
+<body>
+    <h1>Welcome home user {{user_id}}</h1>
+    <button onclick="logout()">Logout</button>
+    <script>
+        function logout() {
+            delete_cookie("token");
+            location.reload();
+        }
+
+        function delete_cookie(name) {
+            document.cookie = name  + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        }
+    </script>
+</body>
+</html>
