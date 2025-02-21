@@ -1,12 +1,23 @@
 var http = require('http');
 var urls = require('./urls');
 const db = require('./database/db_user_functions');
+const PORT = 8080;
+
+// const server = http.createServer(async function (req, res) {
+// 	try {
+// 		await urls.urlpattern(req, res);
+// 	} catch (exception) {
+// 		console.log(exception);
+// 		res.writeHead(500, {'Content-Type': 'text/plain'});
+// 		res.end('internal server error');
+// 	}
+// });
 
 const server = http.createServer(async function (req, res) {
 	try {
-		const data = await urls.urlpattern(req, res);
+		const {content, data} = await urls.urlpattern(req, res);
 		if (data !== null) {
-			res.writeHead(200, {'Content-Type': 'text/html'});
+			res.writeHead(200, {'Content-Type': content});
 			res.write(data);
 			res.end();
 		}
@@ -17,6 +28,21 @@ const server = http.createServer(async function (req, res) {
 	}
 });
 
-server.listen(8080, '127.0.0.1', () => {
-	console.log("Server listening now on http://127.0.0.1:8000");
+server.listen(PORT, '127.0.0.1', () => {
+	console.log(`Server listening now on http://127.0.0.1:${PORT}`);
 })
+
+// const server = http.createServer(async function (req, res) {
+// 	try {
+// 		const data = await urls.urlpattern(req, res);
+// 		if (data !== null) {
+// 			res.writeHead(200, {'Content-Type': 'text/html'});
+// 			res.write(data);
+// 			res.end();
+// 		}
+// 	} catch (exception) {
+// 		console.log(exception);
+// 		res.writeHead(500, {'Content-Type': 'text/plain'});
+// 		res.end('internal server error');
+// 	}
+// });

@@ -1,0 +1,10 @@
+const db = require('../../database/db_user_functions');
+
+async function logout() {
+    delete_cookie("token");
+    location.reload();
+}
+
+async function delete_cookie(name) {
+    document.cookie = name  + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+}
