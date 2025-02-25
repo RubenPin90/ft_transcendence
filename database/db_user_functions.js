@@ -79,8 +79,8 @@ async function create_user(email, username, password, pfp, google, github, self)
 		if (check && self !== 0)
 			return 6;
 		const result = await db.run(
-			`INSERT INTO users (username, password, pfp, email, google, github) VALUES (?, ?, ?, ?, ?, ?)`,
-			[username, password, pfp, email, google, github]
+			`INSERT INTO users (username, password, pfp, email, google, github, self) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			[username, password, pfp, email, google, github, self]
 		);
 		console.log(`New user created with ID: ${result.lastID}`);
 	} catch (err) {
@@ -109,7 +109,7 @@ async function show_user() {
 	}
 }
 
-async function get_user_name(id) {
+async function get_username(id) {
 	const db = await sqlite.open({
 		filename: 'users.sqlite',
 		driver: sqlite3.Database
@@ -118,7 +118,7 @@ async function get_user_name(id) {
 	try {
 		const row = await db.get(`
             SELECT 
-                username,  -- Hier wird zusätzlich der Name geholt
+                username,
                 CASE 
                     WHEN google = ? THEN 1
                     WHEN github = ? THEN 2
@@ -138,9 +138,74 @@ async function get_user_name(id) {
 	}
 }
 
+async function get_password(email) {
+	const db = await sqlite.open({
+		filename: 'users.sqlite',
+		driver: sqlite3.Database
+	});
+
+	try {
+		const row = await db.get(`
+            SELECT * FROM users
+			WHERE email = ?`
+			,[email]);
+        return row;
+	} catch (err) {
+		console.error('Error at getting:', err.message);
+	} finally {
+		await db.close();
+		console.log('Db successfully disconected');
+	}
+}
+
+
+async function is_email(email) {
+	const db = await sqlite.open({
+		filename: 'users.sqlite',
+		driver: sqlite3.Database
+	});
+
+	try {
+		const row = await db.get(`
+            SELECT * FROM users
+			WHERE email = ?`
+			,[email]);
+		return row;
+	} catch (err) {
+		console.error('Error at getting:', err.message);
+	} finally {
+		await db.close();
+		console.log('Db successfully disconected');
+	}
+}
+
+
+async function get_id_email(email) {
+	const db = await sqlite.open({
+		filename: 'users.sqlite',
+		driver: sqlite3.Database
+	});
+
+	try {
+		const row = await db.get(`
+            SELECT * FROM users
+			WHERE self = ?`
+			,[email]);
+		return row;
+	} catch (err) {
+		console.error('Error at getting:', err.message);
+	} finally {
+		await db.close();
+		console.log('Db successfully disconected');
+	}
+}
+
 module.exports = {
 	create_user_db,
 	create_user,
 	show_user,
-	get_user_name
+	get_username,
+	get_password,
+	is_email,
+	get_id_email,
 }

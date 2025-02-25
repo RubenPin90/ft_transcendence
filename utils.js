@@ -46,7 +46,8 @@ async function encrypt_google(request, response) {
 		const email = decoded_id_token.email;
 		const pfp = decoded_id_token.picture;
 		const username = await create_username(email);
-		await db.create_user(email, username, '', pfp, user_id, 0, 0);
+		await db.create_user(email, username, 'test', pfp, user_id, 0, user_id);
+		await db.show_user();
 		return user_id;
 	} catch (error) {
 		console.error("Error during Google OAuth:", error);

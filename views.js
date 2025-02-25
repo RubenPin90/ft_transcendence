@@ -34,17 +34,46 @@ async function home(request, response) {
 		console.log(err);
 		return "empty";
 	}
-	const replace_data = await db.get_user_name(decoded.userid);
+	const replace_data = await db.get_username(decoded.userid);
 	if (!replace_data)
 		return "empty";
 	html_data = html_data.replace("{{user_id}}", replace_data.username);
 	return html_data;
 }
 
+
 async function login(request, response) {
 	const check_login = await modules.check_login(request, response);
 	if (check_login === null || check_login === "empty")
 		return check_login;
+	let body = '';
+	request.on('data', async (chunk) => {
+		body += chunk.toString();
+	});
+	request.on('end', async () => {
+		body = body.slice(body.indexOf(":") + 2);
+		body = body.slice(0, body.indexOf("\""));
+		const email = await db.is_email(body);
+		if (!email)
+			console.log("Email not found");
+		else {
+			const temp = await db.get_password(body);
+			if (!temp)
+				console.log("No password found");
+			else {
+				console.log("Logged in");
+				const parsed = String(temp.self);
+				const token = await modules.create_jwt(parsed, '1h');
+
+				await modules.set_cookie(response, 'token', token, true, true, 'strict');
+				response.writeHead(302, {
+					'Location': '/'
+				});
+				response.end();
+				return null;
+			}
+		}
+	});
 	var data = await fs.readFile('./templates/login.html', 'utf-8');
 	const link = await utils.google_input_handler();
 	data = data.replace("{{google_login}}", link);
