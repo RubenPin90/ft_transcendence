@@ -2,6 +2,7 @@ require('dotenv').config()
 const { Buffer } = require('buffer');
 const db = require('./database/db_user_functions');
 const https = require('https');
+const modules = require('./modules')
 
 async function create_username(email) {
 	const pos = email.indexOf('@');
@@ -100,7 +101,39 @@ async function postRequest(url, data) {
 }
 
 
+
+async function process_login(request, response) {
+	let body = '';
+	request.on('data', async (chunk) => {
+		body += chunk.toString();
+	});
+	request.on('end', async () => {
+		body = JSON.parse(body).email;
+		const email = await db.is_email(body);
+		if (!email)
+			console.log("Email not found");
+		else {
+			const temp = await db.get_password(body);
+			if (!temp)
+				console.log("No password found");
+			else {
+				const parsed = String(temp.self);
+				const token = await modules.create_jwt(parsed, '1h');
+				
+				await modules.set_cookie(response, 'token', token, true, true, 'strict');
+				response.writeHead(302, {
+					'Location': '/'
+				});
+				response.end();
+				return null;
+			}
+		}
+	});
+	return null;
+}
+
 module.exports = {
 	google_input_handler,
-	encrypt_google
+	encrypt_google,
+	process_login
 }

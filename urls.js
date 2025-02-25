@@ -1,5 +1,6 @@
 const views = require('./views');
 const mimes = require('./mimes');
+const utils = require('./utils');
 
 async function urlpattern(request, response) {
 	if (request.url === '/' || request.url.includes('?code=')) {
@@ -7,7 +8,14 @@ async function urlpattern(request, response) {
 		return { content: "text/html", data: html };
 	}
 	if (request.url === '/login') {
-		const html = await views.login(request, response);
+		var html;
+		if (request.method === "POST") {
+			console.log(request.method);
+			html = await utils.process_login(request, response);
+		} else {
+			console.log(request.method);
+			html = await views.login(request, response);
+		}
 		return { content: "text/html", data: html };
 	} else if (request.url === '/register') {
 		const html = await views.register(request, response);

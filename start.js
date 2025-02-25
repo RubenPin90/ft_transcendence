@@ -7,6 +7,7 @@ const PORT = 8080;
 const server = http.createServer(async function (req, res) {
 	try {
 		const {content, data} = await urls.urlpattern(req, res);
+		console.log(data);
 		if (data !== null) {
 			res.writeHead(200, {'Content-Type': content});
 			res.write(data);
