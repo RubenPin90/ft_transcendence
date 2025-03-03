@@ -6,17 +6,9 @@ const PORT = 8080;
 
 const server = http.createServer(async function (req, res) {
 	try {
-		const {content, data} = await urls.urlpattern(req, res);
-		console.log(data);
-		if (data !== null) {
-			res.writeHead(200, {'Content-Type': content});
-			res.write(data);
-			res.end();
-		}
+		await urls.urlpattern(req, res);
 	} catch (exception) {
 		console.log(exception);
-		res.writeHead(500, {'Content-Type': 'text/plain'});
-		res.end('internal server error');
 	}
 });
 

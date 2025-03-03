@@ -1,31 +1,23 @@
 const views = require('./views');
 const mimes = require('./mimes');
 const utils = require('./utils');
+const send = require('./responses');
 
 async function urlpattern(request, response) {
-	if (request.url === '/' || request.url.includes('?code=')) {
-		let html = await views.home(request, response);
-		return { content: "text/html", data: html };
-	}
-	if (request.url === '/login') {
-		var html;
-		if (request.method === "POST") {
-			console.log(request.method);
-			html = await utils.process_login(request, response);
-		} else {
-			console.log(request.method);
-			html = await views.login(request, response);
-		}
-		return { content: "text/html", data: html };
-	} else if (request.url === '/register') {
-		const html = await views.register(request, response);
-		return { content: "text/html", data: html };
-	}
-	if (request.url.includes(".js")) {
-		const mime = await mimes.get_js(request.url);
-		return { content: "application/javascript", data: mime};
-	}
-	return  { content: "text/html", data: '<h1>404 - Seite nicht gefunden</h1>'};
+    switch (true) {
+        case request.url === '/':
+            return await views.home(request, response);
+        case request.url.includes('?code='):
+            return await views.home(request, response);
+        case request.url === '/login':
+            return await views.login(request, response);
+        case request.url === '/register':
+            return await views.register(request, response);
+        case request.url.includes(".js"):
+            return await mimes.get_js(request.url, response);
+        default:
+            return false
+    }
 }
 
 module.exports = {

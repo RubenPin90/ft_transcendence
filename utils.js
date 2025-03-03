@@ -2,7 +2,8 @@ require('dotenv').config()
 const { Buffer } = require('buffer');
 const db = require('./database/db_user_functions');
 const https = require('https');
-const modules = require('./modules')
+const modules = require('./modules');
+const { callbackify } = require('util');
 
 async function create_username(email) {
 	const pos = email.indexOf('@');
@@ -103,33 +104,35 @@ async function postRequest(url, data) {
 
 
 async function process_login(request, response) {
-	let body = '';
-	request.on('data', async (chunk) => {
-		body += chunk.toString();
-	});
-	request.on('end', async () => {
-		body = JSON.parse(body).email;
-		const email = await db.is_email(body);
-		if (!email)
-			console.log("Email not found");
-		else {
-			const temp = await db.get_password(body);
-			if (!temp)
-				console.log("No password found");
-			else {
-				const parsed = String(temp.self);
-				const token = await modules.create_jwt(parsed, '1h');
-				
-				await modules.set_cookie(response, 'token', token, true, true, 'strict');
-				response.writeHead(302, {
-					'Location': '/'
-				});
-				response.end();
-				return null;
-			}
-		}
-	});
-	return null;
+    let body = '';
+    
+    return new Promise((resolve) => {
+        request.on('data', chunk => {
+            body += chunk.toString();
+        });
+        
+        request.on('end', async () => {
+            try {
+                const data = JSON.parse(body);
+                const email = await db.is_email(data.email);
+                
+                if (!email) {
+                    resolve(null);  // null wenn Email nicht gefunden
+                    return;
+                }
+                
+                const password = await db.get_password(data.email);
+                if (!password) {
+                    resolve(null);  // null wenn Passwort nicht gefunden
+                    return;
+                }
+                
+                resolve(String(password.self));  // String wenn alles erfolgreich
+            } catch (error) {
+                resolve(null);  // null bei Fehlern
+            }
+        });
+    });
 }
 
 module.exports = {
