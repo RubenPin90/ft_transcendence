@@ -56,6 +56,10 @@ async function verify_code() {
     let data;
     try {
         data = await response.json();
+        if (data.Response !== "Success")
+            alert("Error: 2FA code invalid");
+        // else
+        //     clear window and replace with nice UI Box. Client success
     } catch (jsonError) {
         throw new Error('Fehler beim Parsen der JSON-Antwort');
     }

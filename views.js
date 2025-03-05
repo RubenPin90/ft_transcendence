@@ -71,7 +71,6 @@ async function home(request, response) {
     return true;
 }
 
-
 async function settings(request, response) {
     var [keys, values] = await modules.get_cookies(request.headers.cookie);
     if (request.url === '/' && !keys?.includes('token')) {
@@ -87,34 +86,47 @@ async function settings(request, response) {
         // }
         console.log(replace_data);
         if (replace_data.Function === 'create_otc') {
-            const secret = process.env.OTP_SECRET;
-            const otpauth_url = speakeasy.otpauthURL({
-                secret: secret, // Das Base32-encoded Secret aus der .env-Datei
-                label: 'Mein Testprojekt', // Name der Anwendung oder des Benutzers
-                encoding: 'base32' // Encoding des Secrets
-            });
-            const output = await qrcode.toDataURL(otpauth_url);
+            const secret = {
+                base32: process.env.OTP_SECRET,
+                otpauth_url: speakeasy.otpauthURL({
+                    secret: process.env.OTP_SECRET,
+                    label: 'Mein Testprojekt',
+                    encoding: 'base32'
+                })
+            };
+            if (!secret)
+                return false;
             response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-            response.end(JSON.stringify(output));
+            qrcode.toDataURL(secret.otpauth_url, (err, url) => {
+                if (err) {
+                  response.end('Fehler beim Generieren des QR-Codes');
+                  return;
+                }
+                response.end(JSON.stringify(url));
+            });
             return true;
         } else if (replace_data.Function == 'verify') {
-            console.log(process.env.OTP_SECRET);
-            const secret = process.env.OTP_SECRET;
-            const full_token = new URLSearchParams(replace_data);
-            const code = full_token.get('Code');
-            if (!code)
+            const secret = {
+                base32: process.env.OTP_SECRET,
+                otpauth_url: speakeasy.otpauthURL({
+                    secret: process.env.OTP_SECRET,
+                    label: 'Mein Testprojekt',
+                    encoding: 'base32'
+                })
+            };
+            const token = new URLSearchParams(replace_data).get('Code');
+            if (!token || !secret)
                 return false;
-            console.log(code);
+            console.log(token);
             const verified = speakeasy.totp.verify({
-                secret: secret,
+                secret: secret.base32,
                 encoding: 'base32',
-                code,
-                window: 1
-            });
-            console.log(verified);
+                token
+              });
             response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-            if (verified)
+            if (verified) {
                 response.end(JSON.stringify({"Response": "Success"}));
+            }
             else
                 response.end(JSON.stringify({"Response": "Failed"}));
             return true;
