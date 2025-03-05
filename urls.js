@@ -13,10 +13,12 @@ async function urlpattern(request, response) {
             return await views.login(request, response);
         case request.url === '/register':
             return await views.register(request, response);
+        case request.url === '/settings':
+            return await views.settings(request, response);
         case request.url.includes(".js"):
             return await mimes.get_js(request.url, response);
         default:
-            return false
+            return await send.send_error_page("404.html", response, 404);
     }
 }
 

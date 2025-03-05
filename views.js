@@ -2,7 +2,9 @@ const modules = require('./modules');
 const utils = require('./utils');
 const send = require('./responses');
 const db = require('./database/db_user_functions');
-
+const speakeasy = require('speakeasy');
+const qrcode = require('qrcode');
+const fs = require("fs").promises
 
 async function login(request, response) {
     const check_login = await modules.check_login(request, response);
@@ -69,8 +71,72 @@ async function home(request, response) {
     return true;
 }
 
+
+async function settings(request, response) {
+    var [keys, values] = await modules.get_cookies(request.headers.cookie);
+    if (request.url === '/' && !keys?.includes('token')) {
+        await send.redirect(response, '/login', 302);
+        return true;
+    }
+    var code_registered = false;
+    var show_code = false;
+    if (request.method === "POST") {
+        var replace_data = await utils.get_settings_content(request);
+        // if (!replace_data) {
+        //     return false;
+        // }
+        console.log(replace_data);
+        if (replace_data.Function === 'create_otc') {
+            const secret = process.env.OTP_SECRET;
+            const otpauth_url = speakeasy.otpauthURL({
+                secret: secret, // Das Base32-encoded Secret aus der .env-Datei
+                label: 'Mein Testprojekt', // Name der Anwendung oder des Benutzers
+                encoding: 'base32' // Encoding des Secrets
+            });
+            const output = await qrcode.toDataURL(otpauth_url);
+            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            response.end(JSON.stringify(output));
+            return true;
+        } else if (replace_data.Function == 'verify') {
+            console.log(process.env.OTP_SECRET);
+            const secret = process.env.OTP_SECRET;
+            const full_token = new URLSearchParams(replace_data);
+            const code = full_token.get('Code');
+            if (!code)
+                return false;
+            console.log(code);
+            const verified = speakeasy.totp.verify({
+                secret: secret,
+                encoding: 'base32',
+                code,
+                window: 1
+            });
+            console.log(verified);
+            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            if (verified)
+                response.end(JSON.stringify({"Response": "Success"}));
+            else
+                response.end(JSON.stringify({"Response": "Failed"}));
+            return true;
+        }
+    }
+    const status = await send.send_html('settings.html', response, 200, async (data) => {
+        // if (code_registered)
+        //     return data.replace("{{button}}", '<button onclick="regenerate_otc()">Code allready registered. Recreate?</button>');
+        // if (!show_code)
+        return data.replace("{{button}}", '<button onclick="create_otc()">Create OTP</button>');
+        // else {
+        //     return data.replace("{{button}}", `<img src=${output} alt="QR Code">`);
+        // }
+    });
+    if (!status)
+        return false;
+    return true;
+}
+
 module.exports = {
     login,
     register,
+    settings,
     home
 }

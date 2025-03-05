@@ -135,8 +135,28 @@ async function process_login(request, response) {
     });
 }
 
+async function get_settings_content(request) {
+	let body = '';
+    
+    return new Promise((resolve) => {
+        request.on('data', chunk => {
+            body += chunk.toString();
+        });
+        
+        request.on('end', async () => {
+            try {
+                const data = JSON.parse(body);
+                resolve(data);  // String wenn alles erfolgreich
+            } catch (error) {
+                resolve(null);  // null bei Fehlern
+            }
+        });
+    });
+}
+
 module.exports = {
 	google_input_handler,
 	encrypt_google,
-	process_login
+	process_login,
+	get_settings_content
 }
