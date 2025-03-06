@@ -12,7 +12,6 @@ async function create_otc() {
             throw new Error(`HTTP Fehler! Status: ${response.status}`);
         }
 
-        // Versuche die Antwort als JSON zu parsen
         let data;
         try {
             data = await response.json();
@@ -29,7 +28,6 @@ async function create_otc() {
 
     } catch (error) {
         console.error('Fehler bei create_otc:', error.message);
-        // Hier kannst du auch eine Benachrichtigung anzeigen
         throw error;
     }
 }
@@ -52,7 +50,6 @@ async function verify_code() {
         throw new Error(`HTTP Fehler! Status: ${response.status}`);
     }
 
-    // Versuche die Antwort als JSON zu parsen
     let data;
     try {
         data = await response.json();

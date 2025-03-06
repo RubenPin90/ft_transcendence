@@ -8,18 +8,20 @@ const fs = require("fs").promises
 
 async function login(request, response) {
     const check_login = await modules.check_login(request, response);
+    console.log(check_login);
     if (request.method === "POST") {
-		const parsed = await utils.process_login(request, response);
+        const parsed = await utils.process_login(request, response);
         console.log(parsed);
         if (parsed) {
             const token = await modules.create_jwt(parsed, '1h');
-				
+            
 			await modules.set_cookie(response, 'token', token, true, true, 'strict');
-            const test = await send.redirect(response, '/', 302);
+            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            response.end(JSON.stringify({"Response": 'reload'}));
             return true;
         }
     }
-    if (check_login === null)
+    if (check_login !== undefined)
         return false;
     const check = await send.send_html('login.html', response, 200, async (data) => {
         const link = await utils.google_input_handler();
