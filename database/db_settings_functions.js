@@ -36,23 +36,25 @@ async function get_settings_mfa_value(search_value, value) {
     try {
         const row = await db.get(`
             SELECT 
-            settings.id AS settings_id,
-            settings.password,
-            settings.2FA,
-            settings.email AS settings_email,
-            settings.google,
-            settings.github,
-            settings.self,
-            mfa.id AS mfa_id,
-            mfa.email AS mfa_email,
-            mfa.otc,
-            mfa.custom
-        FROM settings
-        LEFT JOIN mfa ON settings.self = mfa.self
-        WHERE settings.${search_value} = ?`, [value]);
+                settings.id AS settings_id,
+                settings.password,
+                settings.2FA,
+                settings.email AS settings_email,
+                settings.google,
+                settings.github,
+                settings.self AS settings_self,
+                mfa.id AS mfa_id,
+                mfa.email AS mfa_email,
+                mfa.otc,
+                mfa.custom,
+                mfa.self AS mfa_self
+            FROM mfa
+            LEFT JOIN settings ON mfa.self = settings.self
+            WHERE mfa.${search_value} = ?`, [value]);
+
         return row;
     } catch (err) {
-        console.log(`Error in get_settings_mfa_value: ${err}`);
+        console.log(`Error in get_mfa_with_settings: ${err}`);
     } finally {
         await db.close();
     }
