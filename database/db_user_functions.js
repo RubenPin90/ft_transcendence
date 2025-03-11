@@ -1,79 +1,6 @@
 const sqlite = require('sqlite');
 const sqlite3 = require('sqlite3');
 
-async function create_database() {
-	const db = await sqlite.open({
-		filename: 'db.sqlite',
-		driver: sqlite3.Database
-	});
-
-	try {
-		await db.run(`
-		  CREATE TABLE IF NOT EXISTS users (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			score INTEGER
-			self INTEGER
-		  )
-		`);
-		console.log('Table "users" successfully created.');
-	} catch (err) {
-		console.error('Error creating table:', err.message);
-	} finally {
-		await db.close();
-		console.log('DB disconnected successfully.');
-	}
-}
-
-async function create_score_db() {
-	const db = await sqlite.open({
-		filename: 'users.sqlite',
-		driver: sqlite3.Database
-	});
-	
-	try {
-		await db.run(`
-		  CREATE TABLE IF NOT EXISTS users (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			score INTEGER
-			self INTEGER
-		  )
-		`);
-		console.log('Table "users" successfully created.');
-	} catch (err) {
-		console.error('Error creating table:', err.message);
-	} finally {
-		await db.close();
-		console.log('DB disconnected successfully.');
-	}
-}
-
-async function create_user_db() {
-	const db = await sqlite.open({
-		filename: 'users.sqlite',
-		driver: sqlite3.Database
-	});
-	
-	try {
-		await db.run(`
-		  CREATE TABLE IF NOT EXISTS users (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			username TEXT,
-			password TEXT,
-			pfp TEXT,
-			email TEXT UNIQUE,
-			google INTEGER,
-			github INTEGER,
-			self INTEGER
-		  )
-		`);
-		console.log('Table "users" successfully created.');
-	} catch (err) {
-		console.error('Error creating table:', err.message);
-	} finally {
-		await db.close();
-		console.log('DB disconnected successfully.');
-	}
-}
 
 async function create_user(email, username, password, pfp, google, github, self) {
 	const db = await sqlite.open({
@@ -247,7 +174,6 @@ async function get_id_email(email) {
 }
 
 module.exports = {
-	create_user_db,
 	create_user,
 	show_user,
 	get_username,

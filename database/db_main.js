@@ -77,6 +77,7 @@ async function create_db() {
         CREATE TABLE IF NOT EXISTS globalchat (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             message TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             self TEXT UNIQUE NOT NULL,
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
         );`)
@@ -91,6 +92,7 @@ async function create_db() {
         console.log(`Error creating db: ${err}`);
         return -1;
     } finally {
+        console.log('Database created successfully');
         db.close();
         return 0;
     }
