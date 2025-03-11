@@ -1,6 +1,52 @@
 const sqlite = require('sqlite');
 const sqlite3 = require('sqlite3');
 
+async function create_database() {
+	const db = await sqlite.open({
+		filename: 'db.sqlite',
+		driver: sqlite3.Database
+	});
+
+	try {
+		await db.run(`
+		  CREATE TABLE IF NOT EXISTS users (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			score INTEGER
+			self INTEGER
+		  )
+		`);
+		console.log('Table "users" successfully created.');
+	} catch (err) {
+		console.error('Error creating table:', err.message);
+	} finally {
+		await db.close();
+		console.log('DB disconnected successfully.');
+	}
+}
+
+async function create_score_db() {
+	const db = await sqlite.open({
+		filename: 'users.sqlite',
+		driver: sqlite3.Database
+	});
+	
+	try {
+		await db.run(`
+		  CREATE TABLE IF NOT EXISTS users (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			score INTEGER
+			self INTEGER
+		  )
+		`);
+		console.log('Table "users" successfully created.');
+	} catch (err) {
+		console.error('Error creating table:', err.message);
+	} finally {
+		await db.close();
+		console.log('DB disconnected successfully.');
+	}
+}
+
 async function create_user_db() {
 	const db = await sqlite.open({
 		filename: 'users.sqlite',

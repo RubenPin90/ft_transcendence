@@ -75,7 +75,7 @@ async function home(request, response) {
 
 async function settings(request, response) {
     var [keys, values] = await modules.get_cookies(request.headers.cookie);
-    if (request.url === '/' && !keys?.includes('token')) {
+    if (!keys?.includes('token')) {
         await send.redirect(response, '/login', 302);
         return true;
     }
