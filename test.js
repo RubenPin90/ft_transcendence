@@ -1,27 +1,27 @@
-const nodemailer = require('nodemailer');
+import * as settings_db from './database/db_settings_functions.js';
+import * as main_db from './database/db_main.js';
+import * as mfa_db from './database/db_mfa_functions.js'
+import * as joined_db from './database/db_joined_functions.js'
 
-// Erstelle einen Transporter mit Gmail SMTP
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: '42fttranscendence.project@gmail.com', // Deine Gmail-Adresse
-        pass: 'dfoi ltpe ihay kfiy'     // Das App-Passwort, das du generiert hast
-    }
-});
+// await main_db.create_db();
+// await settings_db.create_settings_value('aaa', "fsdfhsdhf", 0, 0, 757348957938475, 8348579834759879);
+// await settings_db.get_settings();
+// await main_db.show_full_db();
+// const value = await mfa_db.get_mfa_value('self', '47858745', '47858745');
 
-// E-Mail-Optionen
-const mailOptions = {
-    from: '42fttranscendence.project@gmail.com',    // Absenderadresse
-    to: 'yannis@gmx.at', // Empfängeradresse
-    subject: 'Test-E-Mail von Node.js', // Betreff
-    text: 'Hallo, dies ist eine Test-E-Mail, die von Node.js gesendet wurde!' // E-Mail-Text
-};
+// let value = await mfa_db.create_mfa_value('', 0, 0, '47858745');
+// console.log(value);
+// value = await main_db.show_full_db();
+// console.log(value);
+// value = await mfa_db.delete_mfa_value('47858745');
+// console.log(value);
+// value = await main_db.show_full_db();
+// console.log(value);
 
-// E-Mail versenden
-transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-        console.log('Fehler beim Senden der E-Mail:', error);
-    } else {
-        console.log('E-Mail erfolgreich gesendet:', info.response);
-    }
-});
+
+let value = await mfa_db.get_mfa_value('self', '47858745');
+console.log(value);
+value = await mfa_db.update_mfa_value('custom', 555555, '47858745');
+console.log(value);
+value = await mfa_db.get_mfa_value('self', '47858745');
+console.log(value);
