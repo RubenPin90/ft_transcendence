@@ -1,14 +1,14 @@
 const modules = require('./modules');
 const utils = require('./utils');
 const send = require('./responses');
-const db = require('./database/db_user_functions');
+const settings_db = require('./database/db_settings_functions');
+const users_db = require('./database/db_users_functions');
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
 const fs = require("fs").promises
 
 async function login(request, response) {
     const check_login = await modules.check_login(request, response);
-    console.log(check_login);
     if (request.method === "POST") {
         const parsed = await utils.process_login(request, response);
         console.log(parsed);
@@ -21,7 +21,7 @@ async function login(request, response) {
             return true;
         }
     }
-    if (check_login !== undefined)
+    if (check_login !== 0)
         return false;
     const check = await send.send_html('login.html', response, 200, async (data) => {
         const link = await utils.google_input_handler();
@@ -32,7 +32,7 @@ async function login(request, response) {
 
 async function register(request, response) {
     const check_login = await modules.check_login(request, response);
-    if (check_login === null)
+    if (check_login !== 0)
         return false;
     const check = await send.send_html('register.html', response, 200, async (data) => {
         const link = await utils.google_input_handler();
@@ -49,7 +49,10 @@ async function home(request, response) {
     }
     if (request.url !== '/') {
         const data = await utils.encrypt_google(request, response);
-		const token = await modules.create_jwt(data, '1h');
+        console.log(data);
+        if (data < 0)
+            return false;
+        const token = await modules.create_jwt(data, '1h');
 
         await modules.set_cookie(response, 'token', token, true, true, 'strict');
 		await send.redirect(response, '/', 302);
@@ -62,14 +65,14 @@ async function home(request, response) {
             var decoded = await modules.get_jwt(token);
         } catch (err) {
             console.log(err);
-            return null;
+            return false;
         }
-        const replace_data = await db.get_username(decoded.userid);
+        const replace_data = await users_db.get_users_value('self', decoded.userid); // const replace_data = await db.get_username(decoded.userid); Check if exists
+        console.log(replace_data);
         if (!replace_data)
-            return null;
+            return false;
         return data.replace("{{user_id}}", replace_data.username);
     });
-    console.log(check);
     return true;
 }
 

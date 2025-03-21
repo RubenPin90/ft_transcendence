@@ -52,12 +52,12 @@ async function create_mfa_value(mfa_email, otc, custom, self) {
     try {
         const check = await db.get(`
             SELECT * FROM settings
-            WHERE self = ${self}`);
+            WHERE self = '${self}'`);
         if (!check)
             return null;
         const check_self = await db.get(`
             SELECT * FROM mfa
-            WHERE self = ${self}`)
+            WHERE self = '${self}'`)
         if (check_self)
             return null;
         var row = await db.run(`
@@ -84,14 +84,14 @@ async function update_mfa_value(search_value, value, self) {
     try {
         const check = await db.get(`
             SELECT * FROM settings
-            WHERE self = ${self}
+            WHERE self = '${self}'
         `);
         if (!check)
             return null;
         var row = await db.run(`
             UPDATE mfa
             SET ${search_value} = '${value}'
-            WHERE self = ${self}`);
+            WHERE self = '${self}'`);
     } catch (err) {
         console.log(`Error in update_settings_value: ${err}`);
         return null;
@@ -111,12 +111,12 @@ async function delete_mfa_value(self) {
     try {
         const check = await db.get(`
             SELECT * FROM settings
-            WHERE self = ${self}`);
+            WHERE self = '${self}'`);
         if (!check)
             return null;
         var row = await db.run(`
             DELETE FROM mfa
-            WHERE mfa.self = ${self}`);
+            WHERE mfa.self = '${self}'`);
     } catch (err) {
         console.log(`Error in delete_mfa_value: ${err}`);
         return null;

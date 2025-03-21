@@ -32,7 +32,7 @@ async function get_users_value(search_value, value) {
     try {
         var row = await db.get(`
             SELECT * FROM users
-            WHERE ${search_value} = ${value}`);
+            WHERE ${search_value} = '${value}'`);
     } catch (err) {
         console.log(`Error in get_users_value: ${err}`);
         return null;
@@ -47,24 +47,24 @@ async function create_users_value(role_id, username, self) {
     const db = await sqlite.open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
-    })
+    });
 
     try {
         const check = await db.get(`
             SELECT * FROM settings
-            WHERE self = ${self}`);
+            WHERE self = '${self}'`);
         if (!check)
-            return null;
+            return -1;
 		const check_username = await db.get(`
 			SELECT * FROM users
-			WHERE username = ${username}`)
+			WHERE username = '${username}'`)
 		if (check_username)
-			return null;
+			return -2;
         const check_self = await db.get(`
             SELECT * FROM users
-            WHERE self = ${self}`)
+            WHERE self = '${self}'`)
         if (check_self)
-            return null;
+            return -3;
         var row = await db.run(`
             INSERT INTO users (role_id, username, self)
             VALUES (?, ?, ?)`, [role_id, username, self]);
@@ -90,14 +90,14 @@ async function update_users_value(search_value, value) {
     try {
         const check = await db.get(`
             SELECT * FROM settings
-            WHERE self = ${self}
+            WHERE self = '${self}'
         `);
         if (!check)
             return null;
         var row = await db.run(`
             UPDATE users
             SET ${search_value} = '${value}'
-            WHERE self = ${self}`);
+            WHERE self = '${self}'`);
     } catch (err) {
         console.log(`Error in update_settings_value: ${err}`);
         return null;
@@ -117,12 +117,12 @@ async function delete_users_value(self) {
     try {
         const check = await db.get(`
             SELECT * FROM settings
-            WHERE self = ${self}`);
+            WHERE self = '${self}'`);
         if (!check)
             return null;
         var row = await db.run(`
             DELETE FROM users
-            WHERE users.self = ${self}`);
+            WHERE users.self = '${self}'`);
     } catch (err) {
         console.log(`Error in delete_users_value: ${err}`);
         return null;

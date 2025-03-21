@@ -1,14 +1,24 @@
 require('dotenv').config()
 const { Buffer } = require('buffer');
-const db = require('./database/db_user_functions');
+const settings_db = require('./database/db_settings_functions');
+const users_db = require('./database/db_users_functions');
 const https = require('https');
 const modules = require('./modules');
 const { callbackify } = require('util');
 
+const max_loop_size = 10000000000;
+
+
 async function create_username(email) {
 	const pos = email.indexOf('@');
-	var sliced = email.slice(0, pos);
-	sliced = sliced.replace('.', '-');
+	if (pos === -1)
+		return -1;
+	const pre_sliced = email.slice(0, pos);
+	if (pre_sliced.length === 0)
+		return -2;
+	const modified_sliced = pre_sliced.replace(/\./g, '-');
+	if (pre_sliced === modified_sliced)
+		return -3;
 	return sliced;
 }
 
@@ -41,20 +51,31 @@ async function encrypt_google(request, response) {
 
 	try {
 		const token_data = await postRequest(token_url, data);
-		
+		if (!token_data)
+			return -1;
+
 		const id_token = token_data.id_token;
 		const decoded_id_token = await decodeJWT(id_token);
 		const user_id = decoded_id_token.sub;
 		const email = decoded_id_token.email;
 		const pfp = decoded_id_token.picture;
 		const username = await create_username(email);
-		await db.create_user(email, username, 'test', pfp, user_id, 0, user_id);
-		await db.show_user();
+		if (username < 0)
+			return -2;
+		const db_return = await settings_db.create_settings_value('', pfp, 0, 0, user_id, 0);
+		if (!db_return)
+			return -3;
+		const check_setting = await settings_db.get_settings_value(user_id);
+		if (!check_setting)
+			return -4;
+		const check_username = await users_db.create_users_value(0, username, user_id);
+		if (check_username < 0)
+			return -5;
 		return user_id;
 	} catch (error) {
 		console.error("Error during Google OAuth:", error);
+		return -6;
 	}
-	return 0;
 }
 
 
@@ -158,5 +179,6 @@ module.exports = {
 	google_input_handler,
 	encrypt_google,
 	process_login,
-	get_settings_content
+	get_settings_content,
+	max_loop_size
 }

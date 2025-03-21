@@ -1,5 +1,6 @@
 const sqlite = require('sqlite');
 const sqlite3 = require('sqlite3');
+const { max_loop_size } = require('../utils');
 
 // Tested: All working
 async function get_settings_value(value) {
@@ -11,9 +12,10 @@ async function get_settings_value(value) {
     try {
         var row = await db.get(`
         SELECT * FROM settings
-        WHERE self = ${value}`);
+        WHERE self = '${value}'`);
     } catch (err) {
         console.log(`Error in get_settings_value: ${err}`);
+        return null;
     } finally {
         await db.close();
         return row;
@@ -29,7 +31,7 @@ async function get_settings() {
 
     try {
         var row = await db.all(`
-            SELECT * FROM settings`);
+        SELECT * FROM settings`);
     } catch (err) {
         console.log(`Error in get_settings: ${err}`);
     } finally {
@@ -52,60 +54,56 @@ async function create_settings_value(password, pfp, mfa, email, google, github) 
             `, [password]
 		);
 		if (check)
-			return 1;
+			return -1;
         check = await db.get(
             `SELECT * FROM settings
-            WHERE pfp = ?
-            `, [pfp]
-        );
-        if (check)
-            return 2;
-        check = await db.get(
-            `SELECT * FROM settings
-            WHERE mfa = ?
-            `, [mfa]
-        );
-        if (check)
-            return 3;
-        check = await db.get(
-            `SELECT * FROM settings
-            WHERE email = ?
-            `, [email]
-		);
-		if (check)
-			return 4;
-		check = await db.get(
-			`SELECT * FROM settings
 			WHERE google = ?
 			`, [google]
 		);
-		if (check && google !== 0)
-			return 5;
-		check = await db.get(
-			`SELECT * FROM settings
+		if (check)
+			return -2;
+        check = await db.get(
+            `SELECT * FROM settings
 			WHERE github = ?
 			`, [github]
 		);
-		if (check && github !== 0)
-			return 6;
-        const self = 47858745;
-		check = await db.get(
-			`SELECT * FROM settings
-			WHERE self = ?
-			`, [self]
-		);
-		if (check && self !== 0)
-			return 7;
-		var row = await db.run(
+		if (check)
+			return -3;
+        var self;
+        if (google !== 0)
+            self = google;
+        else if (github !== 0)
+            self = github;
+        else {
+            console.log(max_loop_size);
+            var random_self = Math.floor(Math.random() * 1000000000);
+            var it = 0
+            while (it < max_loop_size) {
+                check = await db.get(`
+                    SELECT * from settings
+                    WHERE self = ${random_self}`);
+                if (!check)
+                    break;
+                it++;
+                random_self = Math.floor(Math.random() * 1000000000);
+            }
+            if (it == max_loop_size) {
+                console.log(`Error in create_settings_value: ${err}`);
+                return null;
+            }
+            self = random_self;
+        }
+        var row = await db.run(
 			`INSERT INTO settings (password, pfp, mfa, email, google, github, self) VALUES (?, ?, ?, ?, ?, ?, ?)`,
 			[password, pfp, mfa, email, google, github, self]
 		);
-		console.log(`New user created with ID: ${result.lastID}`);
+		console.log(`New user created with ID: ${row.lastID}`);
     } catch (err) {
         console.log(`Error in create_settings_value: ${err}`);
+        return null;
     } finally {
         await db.close();
-        return row;
+        return {"return": row, "self": self};
     }
 }
 
@@ -122,14 +120,14 @@ async function update_settings_value(search_value, value, self) {
     try {
         const check = await db.get(`
             SELECT * FROM settings
-            WHERE self = ${self}
+            WHERE self = '${self}'
         `);
         if (!check)
             return null;
         var row = await db.run(`
-            UPDATE settings
-            SET ${search_value} = '${value}'
-            WHERE self = ${self}`);
+        UPDATE settings
+        SET ${search_value} = '${value}'
+        WHERE self = '${self}'`);
     } catch (err) {
         console.log(`Error in update_settings_value: ${err}`);
         return null;
@@ -147,13 +145,13 @@ async function delete_settings_value(self) {
 
     try {
         const check = await db.get(`
-            SELECT * FROM settings
-            WHERE self = ${self}`);
+        SELECT * FROM settings
+        WHERE self = '${self}'`);
         if (!check)
             return null;
         var row = await db.run(`
-            DELETE FROM settings
-            WHERE mfa.self = ${self}`);
+        DELETE FROM settings
+        WHERE mfa.self = '${self}'`);
     } catch (err) {
         console.log(`Error in delete_mfa_value: ${err}`);
         return null;

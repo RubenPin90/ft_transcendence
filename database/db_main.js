@@ -29,8 +29,8 @@ async function create_db() {
             pfp text,
             MFA INTEGER,
             email INTEGER,
-            google INTEGER,
-            github INTEGER,
+            google TEXT,
+            github TEXT,
             self TEXT UNIQUE NOT NULL
         );`);
 
@@ -78,15 +78,6 @@ async function create_db() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             max INTEGER,
             rank INTEGER,
-            self TEXT UNIQUE NOT NULL,
-            FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
-        );`);
-
-        await db.run(`
-        CREATE TABLE IF NOT EXISTS globalchat (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            message TEXT,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             self TEXT UNIQUE NOT NULL,
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
         );`);
@@ -154,10 +145,6 @@ async function show_full_db() {
             messages.user_id,
             messages.message,
             messages.timestamp,
-            globalchat.id AS globalchat_id,
-            globalchat.message,
-            globalchat.timestamp,
-            globalchat.self AS globalchat_self,
             scores.id AS scores_id,
             scores.points,
             scores.self AS scores_self
@@ -168,7 +155,6 @@ async function show_full_db() {
         LEFT JOIN scoreboard ON scoreboard.self = settings.self
         LEFT JOIN chatrooms ON chatrooms.self = settings.self
         LEFT JOIN messages ON messages.user_id = users.id
-        LEFT JOIN globalchat ON globalchat.self = settings.self
         LEFT JOIN scores ON scores.self = settings.self
         `);
         return row;

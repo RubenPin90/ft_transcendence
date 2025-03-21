@@ -1,6 +1,5 @@
-const utils = require('./utils');
 const fs = require('fs').promises;
-const db = require('./database/db_user_functions');
+const db = require('./database/db_users_functions');
 
 function send(response, content, data, code) {
     response.writeHead(code, {'Content-Type': content});

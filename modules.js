@@ -1,5 +1,6 @@
 require('dotenv').config()
 const jwt = require('jsonwebtoken');
+const send = require('./responses');
 
 async function get_cookies(request) {
 	const values = request?.split('; ');
@@ -36,19 +37,15 @@ async function check_login(request, response) {
 		if (token) {
 			try {
 				var decoded = await get_jwt(token);
-				if (decoded) {
-					response.writeHead(302, {
-						'Location': '/'
-					});
-					response.end();
-					return null;
-				}
+				if (decoded)
+					return await send.redirect(response, '/', 302);
 			} catch (err) {
 				console.log(err);
-				return "empty";
+				return 1;
 			}
 		}
 	}
+	return 0;
 }
 
 module.exports = {
