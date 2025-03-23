@@ -2,9 +2,12 @@ require('dotenv').config()
 const { Buffer } = require('buffer');
 const settings_db = require('./database/db_settings_functions');
 const users_db = require('./database/db_users_functions');
+const mfa_db = require('./database/db_mfa_functions');
 const https = require('https');
 const modules = require('./modules');
+const speakeasy = require('speakeasy');
 const { callbackify } = require('util');
+const { checkPrime } = require('crypto');
 
 const max_loop_size = 10000000000;
 
@@ -19,7 +22,7 @@ async function create_username(email) {
 	const modified_sliced = pre_sliced.replace(/\./g, '-');
 	if (pre_sliced === modified_sliced)
 		return -3;
-	return sliced;
+	return modified_sliced;
 }
 
 
@@ -63,7 +66,9 @@ async function encrypt_google(request, response) {
 		if (username < 0)
 			return -2;
 		const db_return = await settings_db.create_settings_value('', pfp, 0, 0, user_id, 0);
-		if (!db_return)
+		if (db_return.self === undefined || db_return.return === undefined)
+			return user_id;
+		if (db_return < 0)
 			return -3;
 		const check_setting = await settings_db.get_settings_value(user_id);
 		if (!check_setting)
@@ -175,10 +180,68 @@ async function get_settings_content(request) {
     });
 }
 
+async function get_cookie(search, request) {	
+	var [keys, values] = await modules.get_cookies(request.headers.cookie);
+	const tokenIndex = keys?.find((key) => key === search);
+	if (!(keys && tokenIndex))
+		return {'keys': null, 'values': null, 'token': null};
+	const token = values?.at(tokenIndex);
+	if (!token)
+		return {'keys': null, 'values': null, 'token': null};
+	return {keys, values, token};
+}
+
+async function check_login(request, response) {
+	const {keys, values, token} = await get_cookie('token', request);
+	if (keys === null && values === null && token === null)
+		return 0;
+	try {
+		var decoded = await modules.get_jwt(token);
+		if (decoded)
+			return await send.redirect(response, '/', 302);
+	} catch (err) {
+		console.log(err);
+		return -2;
+	}
+}
+
+async function otc_secret(request) {
+	const {keys, values, token} = await get_cookie('token', request);
+	if (keys === null && values === null && token === null)
+		return -1;
+	const self_decoded = await modules.get_jwt(token);
+	const self_decoded_id = self_decoded.userid;
+	const check_mfa = await mfa_db.get_mfa_value('self', self_decoded_id);
+	var base32_secret;
+	if (check_mfa === undefined) {
+		const secret = speakeasy.generateSecret({ length: 20 });
+		await mfa_db.create_mfa_value('', secret.base32, 0, self_decoded_id);
+		base32_secret = secret.base32;
+	} else if (check_mfa.otc.length == 0) {
+		const secret = speakeasy.generateSecret({ length: 20 });
+		await mfa_db.update_mfa_value('otc', secret.base32, self_decoded_id);
+		base32_secret = secret.base32;
+	} else {
+		base32_secret = check_mfa.otc;
+	}
+	const secret = {
+		base32: base32_secret, // custom secret to every user. 1: look in db if secret exists. 2: If no, create one and return it. If yes, return it.
+		otpauth_url: speakeasy.otpauthURL({
+			secret: base32_secret,
+			label: 'Mein Testprojekt',
+			encoding: 'base32'
+		})
+	};
+	return secret;
+}
+
 module.exports = {
 	google_input_handler,
 	encrypt_google,
 	process_login,
 	get_settings_content,
-	max_loop_size
+	max_loop_size,
+	otc_secret,
+	check_login,
+	get_cookie
 }

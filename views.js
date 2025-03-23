@@ -8,10 +8,10 @@ const qrcode = require('qrcode');
 const fs = require("fs").promises
 
 async function login(request, response) {
-    const check_login = await modules.check_login(request, response);
+    const check_login = await utils.check_login(request, response);
+    console.log(check_login);
     if (request.method === "POST") {
         const parsed = await utils.process_login(request, response);
-        console.log(parsed);
         if (parsed) {
             const token = await modules.create_jwt(parsed, '1h');
             
@@ -31,7 +31,7 @@ async function login(request, response) {
 }
 
 async function register(request, response) {
-    const check_login = await modules.check_login(request, response);
+    const check_login = await utils.check_login(request, response);
     if (check_login !== 0)
         return false;
     const check = await send.send_html('register.html', response, 200, async (data) => {
@@ -49,7 +49,6 @@ async function home(request, response) {
     }
     if (request.url !== '/') {
         const data = await utils.encrypt_google(request, response);
-        console.log(data);
         if (data < 0)
             return false;
         const token = await modules.create_jwt(data, '1h');
@@ -67,8 +66,7 @@ async function home(request, response) {
             console.log(err);
             return false;
         }
-        const replace_data = await users_db.get_users_value('self', decoded.userid); // const replace_data = await db.get_username(decoded.userid); Check if exists
-        console.log(replace_data);
+        const replace_data = await users_db.get_users_value('self', decoded.userid);
         if (!replace_data)
             return false;
         return data.replace("{{user_id}}", replace_data.username);
@@ -91,34 +89,20 @@ async function settings(request, response) {
         // }
         console.log(replace_data);
         if (replace_data.Function === 'create_otc') {
-            const secret = {
-                base32: process.env.OTP_SECRET,
-                otpauth_url: speakeasy.otpauthURL({
-                    secret: process.env.OTP_SECRET,
-                    label: 'Mein Testprojekt',
-                    encoding: 'base32'
-                })
-            };
+            const secret = await utils.otc_secret(request);
             if (!secret)
                 return false;
             response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
             qrcode.toDataURL(secret.otpauth_url, (err, url) => {
                 if (err) {
-                  response.end('Fehler beim Generieren des QR-Codes');
-                  return;
+                    response.end('Fehler beim Generieren des QR-Codes');
+                    return;
                 }
                 response.end(JSON.stringify(url));
             });
             return true;
         } else if (replace_data.Function == 'verify') {
-            const secret = {
-                base32: process.env.OTP_SECRET,
-                otpauth_url: speakeasy.otpauthURL({
-                    secret: process.env.OTP_SECRET,
-                    label: 'Mein Testprojekt',
-                    encoding: 'base32'
-                })
-            };
+            const secret = await utils.otc_secret(request);
             const token = new URLSearchParams(replace_data).get('Code');
             if (!token || !secret)
                 return false;

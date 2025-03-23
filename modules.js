@@ -1,6 +1,7 @@
 require('dotenv').config()
 const jwt = require('jsonwebtoken');
 const send = require('./responses');
+const bcrypt = require('bcryptjs');
 
 async function get_cookies(request) {
 	const values = request?.split('; ');
@@ -29,23 +30,14 @@ async function set_cookie(response, key, value, HttpOnly, Secure, SameSite) {
 	response.setHeader('Set-Cookie', `${key}=${value}`, { httpOnly: HttpOnly, secure: Secure, sameSite: SameSite });
 }
 
-async function check_login(request, response) {
-	var [keys, values] = await get_cookies(request.headers.cookie);
-	const tokenIndex = keys?.find((key) => key === 'token');
-	if (keys && tokenIndex) {
-		const token = values?.at(tokenIndex);
-		if (token) {
-			try {
-				var decoded = await get_jwt(token);
-				if (decoded)
-					return await send.redirect(response, '/', 302);
-			} catch (err) {
-				console.log(err);
-				return 1;
-			}
-		}
-	}
-	return 0;
+async function create_encrypted_password(password) {
+    const hashed_password = await bcrypt.hash(password, 10);
+    return hashed_password;
+}
+
+async function check_encrypted_password(password, hashed) {
+    const compared_password = bcrypt.compare(password, hashed);
+    return compared_password;
 }
 
 module.exports = {
@@ -53,5 +45,6 @@ module.exports = {
 	set_cookie,
 	create_jwt,
 	get_jwt,
-	check_login
+	create_encrypted_password,
+	check_encrypted_password
 }

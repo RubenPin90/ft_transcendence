@@ -48,7 +48,7 @@ async function create_db() {
         CREATE TABLE IF NOT EXISTS mfa (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             email TEXT,
-            otc INTEGER,
+            otc TEXT,
             custom INTEGER,
             self TEXT UNIQUE NOT NULL,
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE

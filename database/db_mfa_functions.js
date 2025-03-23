@@ -32,7 +32,7 @@ async function get_mfa_value(search_value, value) {
     try {
         var row = await db.get(`
             SELECT * FROM mfa
-            WHERE ${search_value} = ${value}`);
+            WHERE ${search_value} = ?`, [value]);
     } catch (err) {
         console.log(`Error in get_mfa_value: ${err}`);
         return null;

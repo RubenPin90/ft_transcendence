@@ -81,7 +81,7 @@ async function create_settings_value(password, pfp, mfa, email, google, github) 
             while (it < max_loop_size) {
                 check = await db.get(`
                     SELECT * from settings
-                    WHERE self = ${random_self}`);
+                    WHERE self = '${random_self}'`);
                 if (!check)
                     break;
                 it++;
