@@ -48,27 +48,20 @@ async function create_settings_value(password, pfp, mfa, email, google, github) 
     });
 
     try {
-        let check = await db.get(
-            `SELECT * FROM settings
-            WHERE password = ?
-            `, [password]
-		);
-		if (check)
-			return -1;
         check = await db.get(
             `SELECT * FROM settings
 			WHERE google = ?
 			`, [google]
 		);
-		if (check)
-			return -2;
+		if (check && google !== 0)
+			return -1;
         check = await db.get(
             `SELECT * FROM settings
 			WHERE github = ?
 			`, [github]
 		);
-		if (check)
-			return -3;
+		if (check && github !== 0)
+			return -2;
         var self;
         if (google !== 0)
             self = google;
@@ -81,7 +74,7 @@ async function create_settings_value(password, pfp, mfa, email, google, github) 
             while (it < max_loop_size) {
                 check = await db.get(`
                     SELECT * from settings
-                    WHERE self = '${random_self}'`);
+                    WHERE self = ${random_self}`);
                 if (!check)
                     break;
                 it++;
