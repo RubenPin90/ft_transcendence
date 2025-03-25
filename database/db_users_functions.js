@@ -1,5 +1,5 @@
-const sqlite = require('sqlite')
-const sqlite3 = require('sqlite3')
+import * as sqlite from 'sqlite';
+import * as sqlite3 from 'sqlite3';
 
 // Tested: all working//
 async function get_users() {
@@ -132,7 +132,7 @@ async function delete_users_value(self) {
     }
 }
 
-module.exports = {
+export {
     get_users,
     get_users_value,
     create_users_value,

@@ -1,5 +1,5 @@
-const sqlite = require('sqlite');
-const sqlite3 = require('sqlite3');
+import * as sqlite from 'sqlite';
+import * as sqlite3 from 'sqlite3';
 
 // In testing: need values to work
 async function get_settings_mfa_value(search_value, value) {
@@ -41,6 +41,6 @@ async function get_settings_mfa_value(search_value, value) {
     }
 }
 
-module.exports = {
+export {
     get_settings_mfa_value
 }

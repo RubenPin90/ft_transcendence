@@ -1,11 +1,12 @@
-const modules = require('./modules');
-const utils = require('./utils');
-const send = require('./responses');
-const settings_db = require('./database/db_settings_functions');
-const users_db = require('./database/db_users_functions');
-const speakeasy = require('speakeasy');
-const qrcode = require('qrcode');
-const fs = require("fs").promises
+import * as modules from './modules.js';
+import * as utils from './utils.js';
+import * as send from './responses.js';
+import * as settings_db from './database/db_settings_functions.js';
+import * as users_db from './database/db_users_functions.js';
+import * as mfa_db from './database/db_mfa_functions.js';
+import speakeasy from 'speakeasy';
+import qrcode from 'qrcode';
+import { promises as fs } from 'fs';
 
 async function login(request, response) {
     const check_login = await utils.check_login(request, response);
@@ -89,7 +90,11 @@ async function settings(request, response) {
         // }
         console.log(replace_data);
         if (replace_data.Function === 'create_otc') {
-            const secret = await utils.otc_secret(request);
+            const userid = await utils.get_decrypted_userid(request);
+            if (userid === -1)
+                return false;
+            const base32_secret = await utils.get_otc_secret(userid);
+            const secret = await utils.otc_secret(base32_secret);
             if (!secret)
                 return false;
             response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
@@ -102,40 +107,26 @@ async function settings(request, response) {
             });
             return true;
         } else if (replace_data.Function == 'verify') {
-            const secret = await utils.otc_secret(request);
-            const token = new URLSearchParams(replace_data).get('Code');
-            if (!token || !secret)
-                return false;
-            console.log(token);
-            const verified = speakeasy.totp.verify({
-                secret: secret.base32,
-                encoding: 'base32',
-                token
-              });
-            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-            if (verified) {
-                response.end(JSON.stringify({"Response": "Success"}));
-            }
-            else
-                response.end(JSON.stringify({"Response": "Failed"}));
-            return true;
+            return await utils.verify_otc(request, response, replace_data);
         }
     }
+    
     const status = await send.send_html('settings.html', response, 200, async (data) => {
-        // if (code_registered)
-        //     return data.replace("{{button}}", '<button onclick="regenerate_otc()">Code allready registered. Recreate?</button>');
-        // if (!show_code)
+        const userid = await utils.get_decrypted_userid(request);
+        if (userid === -1)
+            await send.redirect(response, '/login', 302);
+        const check_mfa = await mfa_db.update_mfa_value('self', userid);
+        console.log(check_mfa);
+        // if (check_mfa.otc.length !== 0 && !check_mfa.otc.endsWith('_temp'))
+        //     return data.replace("{{button}}", '<button onclick="recreate_otc()"Regenerate OTC</button>');
         return data.replace("{{button}}", '<button onclick="create_otc()">Create OTP</button>');
-        // else {
-        //     return data.replace("{{button}}", `<img src=${output} alt="QR Code">`);
-        // }
     });
     if (!status)
         return false;
     return true;
 }
 
-module.exports = {
+export {
     login,
     register,
     settings,

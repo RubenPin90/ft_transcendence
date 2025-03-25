@@ -1,7 +1,10 @@
-require('dotenv').config()
-const jwt = require('jsonwebtoken');
-const send = require('./responses');
-const bcrypt = require('bcryptjs');
+import dotenv from 'dotenv';
+import jwt from 'jsonwebtoken';
+import * as send from './responses.js';
+import bcrypt from 'bcryptjs';
+import * as mfa_db from './database/db_mfa_functions.js';
+
+dotenv.config();
 
 async function get_cookies(request) {
 	const values = request?.split('; ');
@@ -40,11 +43,11 @@ async function check_encrypted_password(password, hashed) {
     return compared_password;
 }
 
-module.exports = {
+export {
 	get_cookies,
 	set_cookie,
 	create_jwt,
 	get_jwt,
 	create_encrypted_password,
-	check_encrypted_password
+	check_encrypted_password,
 }

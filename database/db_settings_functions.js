@@ -1,6 +1,7 @@
-const sqlite = require('sqlite');
-const sqlite3 = require('sqlite3');
-const { max_loop_size } = require('../utils');
+import * as sqlite from 'sqlite';
+import * as sqlite3 from 'sqlite3';
+
+const max_loop_size = 1000000000;
 
 // Tested: All working
 async function get_settings_value(value) {
@@ -154,7 +155,7 @@ async function delete_settings_value(self) {
     }
 }
 
-module.exports = {
+export {
     get_settings,
     get_settings_value,
     create_settings_value,

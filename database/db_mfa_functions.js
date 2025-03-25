@@ -1,5 +1,5 @@
-const sqlite = require('sqlite')
-const sqlite3 = require('sqlite3')
+import * as sqlite from 'sqlite';
+import * as sqlite3 from 'sqlite3';
 
 async function get_mfa() {
     const db = await sqlite.open({
@@ -126,7 +126,7 @@ async function delete_mfa_value(self) {
     }
 }
 
-module.exports = {
+export {
     get_mfa,
     get_mfa_value,
     create_mfa_value,

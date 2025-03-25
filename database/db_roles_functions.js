@@ -1,5 +1,5 @@
-const sqlite = require('sqlite')
-const sqlite3 = require('sqlite3')
+import * as sqlite from 'sqlite';
+import * as sqlite3 from 'sqlite3';
 
 // Not tested
 async function get_roles() {
@@ -106,7 +106,7 @@ async function delete_roles_value(id) {
     }
 }
 
-module.exports = {
+export {
     get_roles,
     get_roles_value,
     create_roles_value,

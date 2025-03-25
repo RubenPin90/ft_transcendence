@@ -1,7 +1,5 @@
-var http = require('http');
-var urls = require('./urls');
-const db = require('./database/db_users_functions');
-const db2 = require('./database/db_main');
+import http from 'http';
+import * as urls from './urls.js';
 const PORT = 8080;
 
 

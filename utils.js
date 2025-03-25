@@ -1,16 +1,15 @@
-require('dotenv').config()
-const { Buffer } = require('buffer');
-const settings_db = require('./database/db_settings_functions');
-const users_db = require('./database/db_users_functions');
-const mfa_db = require('./database/db_mfa_functions');
-const https = require('https');
-const modules = require('./modules');
-const speakeasy = require('speakeasy');
-const { callbackify } = require('util');
-const { checkPrime } = require('crypto');
+import dotenv from 'dotenv';
+import { Buffer } from 'buffer';
+import * as settings_db from './database/db_settings_functions.js';
+import * as users_db from './database/db_users_functions.js';
+import * as mfa_db from './database/db_mfa_functions.js';
+import https from 'https';
+import * as modules from './modules.js';
+import speakeasy from 'speakeasy';
+import { callbackify } from 'util';
+import { checkPrime } from 'crypto';
 
-const max_loop_size = 10000000000;
-
+dotenv.config
 
 async function create_username(email) {
 	const pos = email.indexOf('@');
@@ -205,25 +204,29 @@ async function check_login(request, response) {
 	}
 }
 
-async function otc_secret(request) {
+async function get_decrypted_userid(request) {
 	const {keys, values, token} = await get_cookie('token', request);
 	if (keys === null && values === null && token === null)
 		return -1;
 	const self_decoded = await modules.get_jwt(token);
 	const self_decoded_id = self_decoded.userid;
-	const check_mfa = await mfa_db.get_mfa_value('self', self_decoded_id);
+	return self_decoded_id;
+}
+
+async function get_otc_secret(userid) {
+	const check_mfa = await mfa_db.get_mfa_value('self', userid);
 	var base32_secret;
-	if (check_mfa === undefined) {
+	if (check_mfa === undefined || check_mfa.otc.length == 0) {
 		const secret = speakeasy.generateSecret({ length: 20 });
-		await mfa_db.create_mfa_value('', secret.base32, 0, self_decoded_id);
-		base32_secret = secret.base32;
-	} else if (check_mfa.otc.length == 0) {
-		const secret = speakeasy.generateSecret({ length: 20 });
-		await mfa_db.update_mfa_value('otc', secret.base32, self_decoded_id);
+		await mfa_db.create_mfa_value('', `${secret.base32}_temp`, 0, userid);
 		base32_secret = secret.base32;
 	} else {
 		base32_secret = check_mfa.otc;
 	}
+	return base32_secret;
+}
+
+async function otc_secret(base32_secret) {
 	const secret = {
 		base32: base32_secret, // custom secret to every user. 1: look in db if secret exists. 2: If no, create one and return it. If yes, return it.
 		otpauth_url: speakeasy.otpauthURL({
@@ -235,13 +238,53 @@ async function otc_secret(request) {
 	return secret;
 }
 
-module.exports = {
+async function verify_otc(request, response, replace_data) {
+	const userid = await get_decrypted_userid(request);
+	if (userid === -1)
+		return false;
+	const check_mfa = await mfa_db.get_mfa_value('self', userid);
+	var secret;
+	if (check_mfa.otc.endsWith('_temp')) {
+		const base32_secret = check_mfa.otc.slice(0, -5);
+		secret = await otc_secret(base32_secret);
+		if (!secret)
+			return false;
+	} else {
+		secret = await otc_secret(check_mfa.otc);
+		if (!secret)
+			return false;
+	}
+	const token = replace_data.Code;
+	if (!token)
+		return false;
+	console.log(token);
+	const verified = speakeasy.totp.verify({
+		secret: secret.base32,
+		encoding: 'base32',
+		token
+	});
+	response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+	if (verified) {
+		var new_otc_str = check_mfa.otc;
+		if (new_otc_str.endsWith('_temp'))
+			new_otc_str = new_otc_str.slice(0, -5);
+		await mfa_db.update_mfa_value('otc', new_otc_str, userid);
+		response.end(JSON.stringify({"Response": "Success"}));
+	}
+	else
+		response.end(JSON.stringify({"Response": "Failed"}));
+	return true;
+}
+
+export {
 	google_input_handler,
 	encrypt_google,
 	process_login,
 	get_settings_content,
-	max_loop_size,
 	otc_secret,
 	check_login,
-	get_cookie
+	get_cookie,
+	get_decrypted_userid,
+	get_otc_secret,
+	verify_otc
 }

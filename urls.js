@@ -1,7 +1,7 @@
-const views = require('./views');
-const mimes = require('./mimes');
-const utils = require('./utils');
-const send = require('./responses');
+import * as views from './views.js';
+import * as mimes from './mimes.js';
+import * as utils from './utils.js';
+import * as send from './responses.js';
 
 async function urlpattern(request, response) {
     switch (true) {
@@ -22,6 +22,6 @@ async function urlpattern(request, response) {
     }
 }
 
-module.exports = {
+export {
 	urlpattern
 }

@@ -1,5 +1,5 @@
-const sqlite = require('sqlite');
-const sqlite3 = require('sqlite3');
+import * as sqlite from 'sqlite';
+import * as sqlite3 from 'sqlite3';
 
 async function create_db() {
     const db = await sqlite.open({
@@ -166,7 +166,7 @@ async function show_full_db() {
     }
 }
 
-module.exports = {
+export {
     create_db,
     show_full_db
 }

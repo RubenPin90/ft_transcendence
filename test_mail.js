@@ -1,4 +1,4 @@
-const nodemailer = require('nodemailer');
+import nodemailer from 'nodemailer';
 
 // Erstelle einen Transporter mit Gmail SMTP
 const transporter = nodemailer.createTransport({

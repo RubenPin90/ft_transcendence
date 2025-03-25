@@ -1,5 +1,7 @@
-const fs = require('fs').promises;
-const db = require('./database/db_users_functions');
+import { promises as fs } from 'fs';
+import * as utils from './utils.js';
+import * as user_db from './database/db_users_functions.js';
+import * as mfa_db from './database/db_mfa_functions.js';
 
 function send(response, content, data, code) {
     response.writeHead(code, {'Content-Type': content});
@@ -43,7 +45,7 @@ async function redirect(response, location, code) {
     return true;
 }
 
-module.exports = {
+export {
     send,
     send_html,
     send_error_page,

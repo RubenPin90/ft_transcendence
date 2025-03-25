@@ -1,4 +1,4 @@
-const db = require('../../database/db_user_functions');
+const db = await import('../../database/db_user_functions');
 
 async function logout() {
     delete_cookie("token");

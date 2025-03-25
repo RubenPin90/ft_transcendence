@@ -62,3 +62,7 @@ async function verify_code() {
     }
     console.log(data);
 }
+
+async function recreate_otc() {
+    console.log('Regenerate code');
+}

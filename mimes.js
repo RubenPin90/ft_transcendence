@@ -1,5 +1,5 @@
-const fs = require('fs').promises;
-const send = require('./responses');
+import { promises as fs } from 'fs';
+import * as send from './responses.js'
 
 async function get_js(filename, response) {
     const modified = filename.slice(1);
@@ -16,7 +16,7 @@ async function get_ts(filename) {
     return await get_js(filename);
 }
 
-module.exports = {
+export {
     get_js,
     get_ts
 }
