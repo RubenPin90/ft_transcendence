@@ -3,11 +3,11 @@ import { Buffer } from 'buffer';
 import * as settings_db from './database/db_settings_functions.js';
 import * as users_db from './database/db_users_functions.js';
 import * as mfa_db from './database/db_mfa_functions.js';
+import * as send from './responses.js';
 import https from 'https';
 import * as modules from './modules.js';
 import speakeasy from 'speakeasy';
-import { callbackify } from 'util';
-import { checkPrime } from 'crypto';
+import qrcode from 'qrcode';
 
 dotenv.config
 
@@ -64,7 +64,7 @@ async function encrypt_google(request, response) {
 		const username = await create_username(email);
 		if (username < 0)
 			return -2;
-		const db_return = await settings_db.create_settings_value('', pfp, 0, 0, user_id, 0);
+		const db_return = await settings_db.create_settings_value('test', pfp, 0, email, user_id, 0);
 		if (db_return.self === undefined || db_return.return === undefined)
 			return user_id;
 		if (db_return < 0)
@@ -139,20 +139,25 @@ async function process_login(request, response) {
         request.on('end', async () => {
             try {
                 const data = JSON.parse(body);
-                const email = await db.is_email(data.email);
-                
+                const email = data.email;
                 if (!email) {
-                    resolve(null);  // null wenn Email nicht gefunden
+					resolve(null);
                     return;
                 }
                 
-                const password = await db.get_password(data.email);
-                if (!password) {
-                    resolve(null);  // null wenn Passwort nicht gefunden
-                    return;
-                }
-                
-                resolve(String(password.self));  // String wenn alles erfolgreich
+				const check_settings = await settings_db.get_settings_value('email', email);				
+				if (!check_settings || data.password !== check_settings.password) {
+					console.log("Password incorrect");
+					resolve(null);
+					return;
+				}
+
+                const mfa = await mfa_db.get_mfa_value('self', check_settings.self);
+				if (mfa === undefined || (mfa.otc && mfa.otc.endsWith('_temp'))) {
+					resolve({"settings": check_settings, "mfa": null});
+					return;
+				}
+				resolve({"settings": check_settings, "mfa": mfa});
             } catch (error) {
                 resolve(null);  // null bei Fehlern
             }
@@ -160,7 +165,7 @@ async function process_login(request, response) {
     });
 }
 
-async function get_settings_content(request) {
+async function get_frontend_content(request) {
 	let body = '';
     
     return new Promise((resolve) => {
@@ -171,9 +176,9 @@ async function get_settings_content(request) {
         request.on('end', async () => {
             try {
                 const data = JSON.parse(body);
-                resolve(data);  // String wenn alles erfolgreich
+                resolve(data);
             } catch (error) {
-                resolve(null);  // null bei Fehlern
+                resolve(null);
             }
         });
     });
@@ -214,15 +219,13 @@ async function get_decrypted_userid(request) {
 }
 
 async function get_otc_secret(userid) {
+	const secret = speakeasy.generateSecret({ length: 20 });
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
-	var base32_secret;
-	if (check_mfa === undefined || check_mfa.otc.length == 0) {
-		const secret = speakeasy.generateSecret({ length: 20 });
-		await mfa_db.create_mfa_value('', `${secret.base32}_temp`, 0, userid);
-		base32_secret = secret.base32;
-	} else {
-		base32_secret = check_mfa.otc;
-	}
+	if (check_mfa !== undefined && check_mfa.otc)
+		await mfa_db.update_mfa_value('otc', `${secret.base32}_temp`, userid);
+	else
+		await mfa_db.create_mfa_value(0, `${secret.base32}_temp`, 0, userid);
+	const base32_secret = secret.base32;
 	return base32_secret;
 }
 
@@ -238,10 +241,14 @@ async function otc_secret(base32_secret) {
 	return secret;
 }
 
-async function verify_otc(request, response, replace_data) {
-	const userid = await get_decrypted_userid(request);
+// replace_data: {'Function': 'verify', 'Code': ${code}}
+async function verify_otc(request, response, replace_data, userid) {
+	if (!userid)
+		userid = await get_decrypted_userid(request);
+	console.log("A");
 	if (userid === -1)
 		return false;
+	console.log("B");
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
 	var secret;
 	if (check_mfa.otc.endsWith('_temp')) {
@@ -254,25 +261,35 @@ async function verify_otc(request, response, replace_data) {
 		if (!secret)
 			return false;
 	}
+	console.log("C");
 	const token = replace_data.Code;
 	if (!token)
 		return false;
+	console.log("D");
 	console.log(token);
 	const verified = speakeasy.totp.verify({
 		secret: secret.base32,
 		encoding: 'base32',
 		token
 	});
+	return verified;
+}
+
+async function create_otc(userid, response) {
+	if (userid === -1)
+		return false;
+	const base32_secret = await get_otc_secret(userid);
+	const secret = await otc_secret(base32_secret);
+	if (!secret)
+		return false;
 	response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-	if (verified) {
-		var new_otc_str = check_mfa.otc;
-		if (new_otc_str.endsWith('_temp'))
-			new_otc_str = new_otc_str.slice(0, -5);
-		await mfa_db.update_mfa_value('otc', new_otc_str, userid);
-		response.end(JSON.stringify({"Response": "Success"}));
-	}
-	else
-		response.end(JSON.stringify({"Response": "Failed"}));
+	qrcode.toDataURL(secret.otpauth_url, (err, url) => {
+		if (err) {
+			response.end('Fehler beim Generieren des QR-Codes');
+			return;
+		}
+		response.end(JSON.stringify(url));
+	});
 	return true;
 }
 
@@ -280,11 +297,12 @@ export {
 	google_input_handler,
 	encrypt_google,
 	process_login,
-	get_settings_content,
+	get_frontend_content,
 	otc_secret,
 	check_login,
 	get_cookie,
 	get_decrypted_userid,
 	get_otc_secret,
-	verify_otc
+	verify_otc,
+	create_otc
 }

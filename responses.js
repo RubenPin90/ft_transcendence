@@ -1,7 +1,4 @@
 import { promises as fs } from 'fs';
-import * as utils from './utils.js';
-import * as user_db from './database/db_users_functions.js';
-import * as mfa_db from './database/db_mfa_functions.js';
 
 function send(response, content, data, code) {
     response.writeHead(code, {'Content-Type': content});

@@ -1,9 +1,9 @@
-import * as sqlite from 'sqlite';
-import * as sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
+import sqlite3 from 'sqlite3';
 
 // Not tested
 async function get_roles() {
-    const db = await sqlite.open({
+    const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
     });
@@ -24,7 +24,7 @@ async function get_roles_value(search_value, value) {
     const valid_values = ['name', 'mute', 'ban', 'change_score'];
     if (!valid_values.includes(search_value))
         return null;
-    const db = await sqlite.open({
+    const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
     });
@@ -44,7 +44,7 @@ async function get_roles_value(search_value, value) {
 
 // Not tested
 async function create_roles_value(name, mute, ban, change_score) {
-    const db = await sqlite.open({
+    const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
     })
@@ -67,7 +67,7 @@ async function update_roles_value(search_value, value, id) {
     const valid_values = ['id', 'name', 'mute', 'ban', 'change_score'];
     if (!valid_values.includes(search_value))
         return null;
-    const db = await sqlite.open({
+    const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
     });
@@ -88,7 +88,7 @@ async function update_roles_value(search_value, value, id) {
 
 // Not tested
 async function delete_roles_value(id) {
-    const db = await sqlite.open({
+    const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
     });

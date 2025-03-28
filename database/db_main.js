@@ -1,8 +1,8 @@
-import * as sqlite from 'sqlite';
-import * as sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
+import sqlite3 from 'sqlite3';
 
 async function create_db() {
-    const db = await sqlite.open({
+    const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
     });
@@ -28,7 +28,7 @@ async function create_db() {
             password TEXT,
             pfp text,
             MFA INTEGER,
-            email INTEGER,
+            email TEXT,
             google TEXT,
             github TEXT,
             self TEXT UNIQUE NOT NULL
@@ -47,7 +47,7 @@ async function create_db() {
         await db.run(`
         CREATE TABLE IF NOT EXISTS mfa (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT,
+            email INTEGER,
             otc TEXT,
             custom INTEGER,
             self TEXT UNIQUE NOT NULL,
@@ -103,7 +103,7 @@ async function create_db() {
 
 
 async function show_full_db() {
-    const db = await sqlite.open({
+    const db = await open({
         filename: "db.sqlite",
         driver: sqlite3.Database
     });

@@ -1,8 +1,8 @@
-import * as sqlite from 'sqlite';
-import * as sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
+import sqlite3 from 'sqlite3';
 
 async function get_chatrooms() {
-    const db = await sqlite.open({
+    const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
     });
@@ -24,7 +24,7 @@ async function get_chatrooms_value(search_value, value) {
     if (!valid_values.includes(search_value))
         return null;
 
-    const db = await sqlite.open({
+    const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
     });
@@ -44,7 +44,7 @@ async function get_chatrooms_value(search_value, value) {
 
 // Not tested
 async function create_chatrooms_value(name, self) {
-    const db = await sqlite.open({
+    const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
     })
@@ -77,7 +77,7 @@ async function update_chatrooms_value(search_value, value, self) {
     const valid_values = ['name'];
     if (!valid_values.includes(search_value))
         return null;
-    const db = await sqlite.open({
+    const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
     });
@@ -104,7 +104,7 @@ async function update_chatrooms_value(search_value, value, self) {
 
 // Tested: all working
 async function delete_chatrooms_value(self) {
-    const db = await sqlite.open({
+    const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
     });

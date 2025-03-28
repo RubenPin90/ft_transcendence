@@ -1,5 +1,5 @@
-import * as sqlite from 'sqlite';
-import * as sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
+import sqlite3 from 'sqlite3';
 
 // In testing: need values to work
 async function get_settings_mfa_value(search_value, value) {
@@ -7,7 +7,7 @@ async function get_settings_mfa_value(search_value, value) {
     if (!valid_values.includes(search_value))
         return null;
 
-    const db = await sqlite.open({
+    const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
     });

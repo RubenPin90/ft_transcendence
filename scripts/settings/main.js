@@ -1,3 +1,18 @@
+async function goto(location) {
+    try {
+        // Prüfe ob die Location absolut ist
+        if (!location.startsWith('http')) {
+            // Füge die Basis-URL hinzu
+            location = `http://localhost:8080/${location}`;
+        }
+        // Navigation durchführen
+        window.location.href = location;
+    } catch (error) {
+        console.error('Navigation fehlgeschlagen:', error);
+        throw error;
+    }
+}
+
 async function create_otc() {
     try {
         const response = await fetch('/settings', {
@@ -23,7 +38,7 @@ async function create_otc() {
         const qrcodeButtonDiv = document.getElementById('qrcode-button');
         if (qrcodeDiv && qrcodeButtonDiv) {
             qrcodeDiv.innerHTML = `<img src=${data}></p>`;
-            qrcodeButtonDiv.innerHTML = '<input id="Code" name="Code" placeholder="Code"></label><button onclick="verify_code()">Verify</button>';
+            qrcodeButtonDiv.innerHTML = '<input id="Code" name="Code" placeholder="Code"></label> <button onclick="verify_code()">Verify</button> <button onclick="goto(\"localhost:8080/settings\")">Back</button>';
         }
 
     } catch (error) {
@@ -63,6 +78,11 @@ async function verify_code() {
     console.log(data);
 }
 
-async function recreate_otc() {
-    console.log('Regenerate code');
+async function logout() {
+    delete_cookie("token");
+    location.reload();
+}
+
+async function delete_cookie(name) {
+    document.cookie = name  + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
 }

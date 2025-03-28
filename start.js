@@ -5,7 +5,7 @@ const PORT = 8080;
 
 const server = http.createServer(async function (req, res) {
 	try {
-		await urls.urlpattern(req, res);
+		await urls.url_pattern(req, res);
 	} catch (exception) {
 		console.log(exception);
 	}

@@ -1,11 +1,15 @@
-import * as sqlite from 'sqlite';
-import * as sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
+import sqlite3 from 'sqlite3';
 
 const max_loop_size = 1000000000;
 
 // Tested: All working
-async function get_settings_value(value) {
-    const db = await sqlite.open({
+async function get_settings_value(search_value, value) {
+    const valid_values = ['password', 'pfp', 'MFA', 'email', 'google', 'github', 'self'];
+    if (!valid_values.includes(search_value))
+        return -1;
+
+    const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
     });
@@ -13,7 +17,7 @@ async function get_settings_value(value) {
     try {
         var row = await db.get(`
         SELECT * FROM settings
-        WHERE self = '${value}'`);
+        WHERE ${search_value} = ?`, [value]);
     } catch (err) {
         console.log(`Error in get_settings_value: ${err}`);
         return null;
@@ -25,7 +29,7 @@ async function get_settings_value(value) {
 
 // Tested: all working
 async function get_settings() {
-    const db = await sqlite.open({
+    const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
     });
@@ -43,13 +47,13 @@ async function get_settings() {
 
 // Not tested: But working propperly so far
 async function create_settings_value(password, pfp, mfa, email, google, github) {
-    const db = await sqlite.open({
+    const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
     });
 
     try {
-        check = await db.get(
+        let check = await db.get(
             `SELECT * FROM settings
 			WHERE google = ?
 			`, [google]
@@ -106,7 +110,7 @@ async function update_settings_value(search_value, value, self) {
     const valid_values = ['pfp', 'password', 'mfa', 'email', 'google', 'github'];
     if (!valid_values.includes(search_value))
         return null;
-    const db = await sqlite.open({
+    const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
     });
@@ -132,7 +136,7 @@ async function update_settings_value(search_value, value, self) {
 }
 
 async function delete_settings_value(self) {
-    const db = await sqlite.open({
+    const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
     });
