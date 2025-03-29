@@ -49,7 +49,7 @@ async function create_db() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             email INTEGER,
             otc TEXT,
-            custom INTEGER,
+            custom TEXT,
             self TEXT UNIQUE NOT NULL,
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
         );`);

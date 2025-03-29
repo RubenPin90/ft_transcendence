@@ -1,18 +1,3 @@
-async function goto(location) {
-    try {
-        // Prüfe ob die Location absolut ist
-        if (!location.startsWith('http')) {
-            // Füge die Basis-URL hinzu
-            location = `http://localhost:8080/${location}`;
-        }
-        // Navigation durchführen
-        window.location.href = location;
-    } catch (error) {
-        console.error('Navigation fehlgeschlagen:', error);
-        throw error;
-    }
-}
-
 async function create_otc() {
     try {
         const response = await fetch('/settings', {
@@ -34,11 +19,11 @@ async function create_otc() {
             throw new Error('Fehler beim Parsen der JSON-Antwort');
         }
 
-        const qrcodeDiv = document.getElementById('qrcode');
-        const qrcodeButtonDiv = document.getElementById('qrcode-button');
+        const qrcodeDiv = document.getElementById('mfa');
+        const qrcodeButtonDiv = document.getElementById('mfa-button');
         if (qrcodeDiv && qrcodeButtonDiv) {
             qrcodeDiv.innerHTML = `<img src=${data}></p>`;
-            qrcodeButtonDiv.innerHTML = '<input id="Code" name="Code" placeholder="Code"></label> <button onclick="verify_code()">Verify</button> <button onclick="goto(\"localhost:8080/settings\")">Back</button>';
+            qrcodeButtonDiv.innerHTML = '<input id="Code" name="Code" placeholder="Code"></label> <button onclick="verify_code()">Verify</button> <button onclick="window.location.reload()">Back</button>';
         }
 
     } catch (error) {
@@ -76,6 +61,45 @@ async function verify_code() {
         throw new Error('Fehler beim Parsen der JSON-Antwort');
     }
     console.log(data);
+}
+
+async function verify_custom_code() {
+    console.log('hi');
+    const qrcodeButtonDiv = document.getElementById('mfa-button');
+    if (qrcodeButtonDiv) {
+        qrcodeButtonDiv.innerHTML = '<input id="Code" name="Code" placeholder="Code"><br>\
+        <button onclick="create_custom_code()">Next</button> <button onclick="window.location.reload()">Back</button>';
+    }
+}
+
+async function create_custom_code(variable) {
+    console.log(variable);
+    const qrcodeButtonDiv = document.getElementById('mfa-button');
+    if (qrcodeButtonDiv) {
+        qrcodeButtonDiv.innerHTML = '<input id="Code" name="Code" placeholder="Code"><br>\
+        <button onclick="create_custom_code(\"H\")">Next</button> <button onclick="window.location.reload()">Back</button>';
+    }
+    console.log("lol");
+    // const result = fetch('/settings', {
+    //     method: 'POST',
+    //         headers: {
+    //             'Content-Type': 'application/json',
+    //         },
+    //     body: JSON.stringify({"Function": "create_custom_code"}),
+    // });
+
+    // // if (!result.ok) {
+    // //     throw new Error(`HTTP Fehler! Status`); 
+    // // }
+
+    // let data;
+    // try {
+    //     data = await response.json();
+    //     if (data.Response !== "Success")
+    //         alert("Error: 2FA code invalid");
+    // } catch (jsonError) {
+    //     throw new Error('Fehler beim Parsen der JSON-Antwort');
+    // }
 }
 
 async function logout() {

@@ -83,15 +83,13 @@ async function settings(request, response) {
         await send.redirect(response, '/login', 302);
         return true;
     }
-    var code_registered = false;
-    var show_code = false;
     if (request.method === "POST") {
         var replace_data = await utils.get_frontend_content(request);
         if (!replace_data) {
             return false;
         }
         const userid = await utils.get_decrypted_userid(request);
-        if (replace_data.Function === 'create_otc') {
+        if (replace_data.Function == 'create_otc') {
             return await utils.create_otc(userid, response);
         } else if (replace_data.Function == 'verify') {
             var verified = await utils.verify_otc(request, response, replace_data, null);
@@ -108,6 +106,10 @@ async function settings(request, response) {
             else
                 response.end(JSON.stringify({"Response": "Failed"}));
             return true;
+        } else if (replace_data.Function == 'create_custom') {
+            return await utils.create_custom_code(userid, response, replace_data);
+        } else if (replace_data.Function == 'verify_function') {
+            return await utils.verify_custom_code(userid, response, replace_data);
         }
     }
     const status = await send.send_html('settings.html', response, 200, async (data) => {
@@ -116,9 +118,15 @@ async function settings(request, response) {
             await send.redirect(response, '/login', 302);
         const check_mfa = await mfa_db.get_mfa_value('self', userid);
         console.log(check_mfa);
-        if (check_mfa.otc.length !== 0 && !check_mfa.otc.endsWith('_temp'))
-            return data.replace("{{button}}", '<button onclick="create_otc()">Regenerate OTC</button> <button onclick="logout()">Logout</button>');
-        return data.replace("{{button}}", '<button onclick="create_otc()">Create OTP</button> <button onclick="logout()">Logout</button>');
+        if (check_mfa.otc.length !== 0 && !check_mfa.otc.endsWith('_temp')) {
+            return data.replace("{{mfa-button}}", '<button onclick="create_otc()">Regenerate OTC</button> \
+                <button onclick="window.location.href = \'http://localhost:8080\'">Back</button> \
+                <button onclick="logout()">Logout</button>');
+        }
+        return data.replace("{{mfa-button}}", '<button onclick="create_otc()">Create OTC</button> \
+            <button onclick="create_custom_code()">Create custom 6 diggit code</button>\
+            <button onclick="window.location.href = \'http://localhost:8080\'">Back</button> \
+            <button onclick="logout()">Logout</button>');
     });
     if (!status)
         return false;

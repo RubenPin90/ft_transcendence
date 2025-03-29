@@ -276,7 +276,7 @@ async function verify_otc(request, response, replace_data, userid) {
 }
 
 async function create_otc(userid, response) {
-	if (userid === -1)
+	if (userid === undefined || response === undefined || userid === -1)
 		return false;
 	const base32_secret = await get_otc_secret(userid);
 	const secret = await otc_secret(base32_secret);
@@ -293,6 +293,46 @@ async function create_otc(userid, response) {
 	return true;
 }
 
+async function custom_code_error_checker(params) {
+	if (userid === undefined || response === undefined || replace_data === undefined || userid === -1)
+		return false;
+	const check_settings = await settings_db.get_settings_value('self', userid);
+	if (check_settings === undefined)
+		return false;
+	return true;
+}
+
+async function create_custom_code(userid, response, replace_data) {
+    if (custom_code_error_checker(userid, response, replace_data) === false)
+		return false;
+	const check_mfa = await mfa_db.get_mfa_value('self', userid);
+	if (!check_mfa || check_mfa === undefined)
+		await mfa_db.create_mfa_value('', '', `${replace_data.Code}_temp`, userid);
+	await check_mfa.update_mfa_value('custom', `${replace_data.Code}_temp`, userid);
+	response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+	response.end(JSON.stringify({"Response": 'send_custom_verification', "Content": replace_data}));
+	return true;
+}
+
+async function verify_custom_code(userid, response, replace_data) {
+	if (custom_code_error_checker(userid, response, replace_data) === false)
+		return false;
+	const check_mfa = await mfa_db.get_mfa_value('self', userid);
+	if (!check_mfa || check_mfa === undefined || check_mfa.custom.length === 0)
+		return false;
+	let custom = check_mfa.custom;
+	if (custom.endsWith('_temp'))
+		custom = custom.slice(0, -5);
+	response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+	if (replace_data.Code !== custom) {
+		response.end(JSON.stringify({"Response": "Failed"}));
+		return false;
+	}
+	await check_mfa.update_mfa_value('custom', custom, userid);
+	response.end(JSON.stringify({"Response": "Success"}));
+	return true;
+}
+
 export {
 	google_input_handler,
 	encrypt_google,
@@ -304,5 +344,7 @@ export {
 	get_decrypted_userid,
 	get_otc_secret,
 	verify_otc,
-	create_otc
+	create_otc,
+	create_custom_code,
+	verify_custom_code
 }
