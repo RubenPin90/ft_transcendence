@@ -88,7 +88,7 @@ async function settings(request, response) {
         if (!replace_data) {
             return false;
         }
-        const userid = await utils.get_decrypted_userid(request);
+        const userid = await utils.get_decrypted_userid(request, response);
         if (replace_data.Function == 'create_otc') {
             return await utils.create_otc(userid, response);
         } else if (replace_data.Function == 'verify') {
@@ -113,20 +113,48 @@ async function settings(request, response) {
         }
     }
     const status = await send.send_html('settings.html', response, 200, async (data) => {
-        const userid = await utils.get_decrypted_userid(request);
+        const userid = await utils.get_decrypted_userid(request, response);
         if (userid === -1)
             await send.redirect(response, '/login', 302);
+        else if (userid === -2)
+            return true;
         const check_mfa = await mfa_db.get_mfa_value('self', userid);
         console.log(check_mfa);
-        if (check_mfa.otc.length !== 0 && !check_mfa.otc.endsWith('_temp')) {
-            return data.replace("{{mfa-button}}", '<button onclick="create_otc()">Regenerate OTC</button> \
+        if (check_mfa === undefined || check_mfa === null)
+            return data.replace("{{mfa-button}}", '<button onclick="create_otc()">Create OTC</button> \
+                <button onclick="create_custom_code()">Create custom 6 diggit code</button>\
                 <button onclick="window.location.href = \'http://localhost:8080\'">Back</button> \
                 <button onclick="logout()">Logout</button>');
+        var replace_string = "";
+        var select_number = 0;
+        var select_menu = "";
+        if (check_mfa.otc.length !== 0 && !check_mfa.otc.endsWith('_temp')) {
+            replace_string += '<button onclick="create_otc()">Regenerate OTC</button> ';
+            select_number++;
+            select_menu += '<option value="otc">Otc</option>';
         }
-        return data.replace("{{mfa-button}}", '<button onclick="create_otc()">Create OTC</button> \
-            <button onclick="create_custom_code()">Create custom 6 diggit code</button>\
-            <button onclick="window.location.href = \'http://localhost:8080\'">Back</button> \
-            <button onclick="logout()">Logout</button>');
+        else
+            replace_string += '<button onclick="create_otc()">Create OTC</button> ';
+        if (check_mfa.custom.length !== 0 && !check_mfa.custom.endsWith('_temp')) {
+            replace_string += '<button onclick="create_custom_code()">Recreate custom 6 diggit code</button> ';
+            select_number++;
+            select_menu += '<option value="custom">Custom</option>';
+        }
+        else
+            replace_string += '<button onclick="create_custom_code()">Create custom 6 diggit code</button> ';
+        if (select_number < 1)
+            return data.replace("{{mfa-button}}", `${replace_string} <button onclick="window.location.href = \'http://localhost:8080\'">Back</button> \
+                <button onclick="logout()">Logout</button>`);
+        select_menu = `<form action="/settings" method="POST">\
+            <select name="mfa" id="mfa">\
+                <option value="" selected disabled hidden>Choose a default authentication method</option>
+                ${select_menu}
+            </select>\
+            <br><br>\
+            <input type="submit" value="Submit">\
+            </form>`;
+        return data.replace("{{mfa-button}}", `${replace_string} ${select_menu} <button onclick="window.location.href = \'http://localhost:8080\'">Back</button> \
+            <button onclick="logout()">Logout</button>`);
     });
     if (!status)
         return false;

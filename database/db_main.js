@@ -50,6 +50,7 @@ async function create_db() {
             email INTEGER,
             otc TEXT,
             custom TEXT,
+            prefered INTEGER,
             self TEXT UNIQUE NOT NULL,
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
         );`);
@@ -123,6 +124,7 @@ async function show_full_db() {
             mfa.email AS mfa_email,
             mfa.otc,
             mfa.custom,
+            mfa.prefered,
             mfa.self AS mfa_self,
             users.id AS users_id,
             users.role_id,

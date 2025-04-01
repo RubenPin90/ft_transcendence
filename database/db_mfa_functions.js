@@ -20,7 +20,7 @@ async function get_mfa() {
 
 // Tested: all working
 async function get_mfa_value(search_value, value) {
-    const valid_values = ['email', 'otc', 'custom', 'self'];
+    const valid_values = ['email', 'otc', 'custom', 'prefered', 'self'];
     if (!valid_values.includes(search_value))
         return null;
 
@@ -43,7 +43,7 @@ async function get_mfa_value(search_value, value) {
 }
 
 // Not tested: But working propperly so far
-async function create_mfa_value(mfa_email, otc, custom, self) {
+async function create_mfa_value(mfa_email, otc, custom, prefered, self) {
     const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
@@ -61,8 +61,8 @@ async function create_mfa_value(mfa_email, otc, custom, self) {
         if (check_self)
             return null;
         var row = await db.run(`
-            INSERT INTO mfa (email, otc, custom, self)
-            VALUES (?, ?, ?, ?)`, [mfa_email, otc, custom, self]);
+            INSERT INTO mfa (email, otc, custom, prefered, self)
+            VALUES (?, ?, ?, ?, ?)`, [mfa_email, otc, custom, prefered, self]);
     } catch (err) {
         console.log(`Error in create_mfa_value: ${err}`);
         return null;
@@ -73,7 +73,7 @@ async function create_mfa_value(mfa_email, otc, custom, self) {
 }
 
 async function update_mfa_value(search_value, value, self) {
-    const valid_values = ['email', 'otc', 'custom'];
+    const valid_values = ['email', 'otc', 'prefered', 'custom'];
     if (!valid_values.includes(search_value))
         return null;
     const db = await open({

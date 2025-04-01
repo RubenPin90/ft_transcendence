@@ -8,6 +8,7 @@ import https from 'https';
 import * as modules from './modules.js';
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
+import { utimes } from 'fs';
 
 dotenv.config
 
@@ -209,11 +210,23 @@ async function check_login(request, response) {
 	}
 }
 
-async function get_decrypted_userid(request) {
+async function get_decrypted_userid(request, response) {
 	const {keys, values, token} = await get_cookie('token', request);
 	if (keys === null && values === null && token === null)
 		return -1;
-	const self_decoded = await modules.get_jwt(token);
+	try {
+		var self_decoded = await modules.get_jwt(token);
+	} catch (err) {
+		const err_string = String(err);
+		if (err_string.includes("jwt expired")) {
+			response.writeHead(302, {
+				'Set-Cookie': 'token=; HttpOnly; Secure; SameSite=Strict; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+				'Location': '/login'
+			});
+			response.end();
+			return -2;
+		}
+	}
 	const self_decoded_id = self_decoded.userid;
 	return self_decoded_id;
 }
@@ -224,7 +237,7 @@ async function get_otc_secret(userid) {
 	if (check_mfa !== undefined && check_mfa.otc)
 		await mfa_db.update_mfa_value('otc', `${secret.base32}_temp`, userid);
 	else
-		await mfa_db.create_mfa_value(0, `${secret.base32}_temp`, 0, userid);
+		await mfa_db.create_mfa_value('', `${secret.base32}_temp`, '', 0, userid);
 	const base32_secret = secret.base32;
 	return base32_secret;
 }
@@ -245,10 +258,8 @@ async function otc_secret(base32_secret) {
 async function verify_otc(request, response, replace_data, userid) {
 	if (!userid)
 		userid = await get_decrypted_userid(request);
-	console.log("A");
 	if (userid === -1)
 		return false;
-	console.log("B");
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
 	var secret;
 	if (check_mfa.otc.endsWith('_temp')) {
@@ -261,12 +272,9 @@ async function verify_otc(request, response, replace_data, userid) {
 		if (!secret)
 			return false;
 	}
-	console.log("C");
 	const token = replace_data.Code;
 	if (!token)
 		return false;
-	console.log("D");
-	console.log(token);
 	const verified = speakeasy.totp.verify({
 		secret: secret.base32,
 		encoding: 'base32',
@@ -293,7 +301,7 @@ async function create_otc(userid, response) {
 	return true;
 }
 
-async function custom_code_error_checker(params) {
+async function custom_code_error_checker(userid, response, replace_data) {
 	if (userid === undefined || response === undefined || replace_data === undefined || userid === -1)
 		return false;
 	const check_settings = await settings_db.get_settings_value('self', userid);
@@ -306,11 +314,20 @@ async function create_custom_code(userid, response, replace_data) {
     if (custom_code_error_checker(userid, response, replace_data) === false)
 		return false;
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
-	if (!check_mfa || check_mfa === undefined)
-		await mfa_db.create_mfa_value('', '', `${replace_data.Code}_temp`, userid);
-	await check_mfa.update_mfa_value('custom', `${replace_data.Code}_temp`, userid);
+	const check_code = replace_data.Code;
 	response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-	response.end(JSON.stringify({"Response": 'send_custom_verification', "Content": replace_data}));
+	if (check_code.length != 6) {
+		response.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
+		return false;
+	}
+	if (isNaN(Number(check_code))) {
+		response.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
+		return false;
+	}
+	if (!check_mfa || check_mfa === undefined)
+		await mfa_db.create_mfa_value('', '', `${check_code}_temp`, 0, userid);
+	await mfa_db.update_mfa_value('custom', `${check_code}_temp`, userid);
+	response.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Success"}));
 	return true;
 }
 
@@ -328,7 +345,7 @@ async function verify_custom_code(userid, response, replace_data) {
 		response.end(JSON.stringify({"Response": "Failed"}));
 		return false;
 	}
-	await check_mfa.update_mfa_value('custom', custom, userid);
+	await mfa_db.update_mfa_value('custom', custom, userid);
 	response.end(JSON.stringify({"Response": "Success"}));
 	return true;
 }
