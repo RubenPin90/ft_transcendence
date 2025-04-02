@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import nodemailer from 'nodemailer';
 
 dotenv.config();
 
@@ -41,6 +42,31 @@ async function check_encrypted_password(password, hashed) {
     return compared_password;
 }
 
+async function send_email(receiver, subject, text) {
+	console.log(receiver);
+	const transporter = nodemailer.createTransport({
+		service: 'gmail',
+		auth: {
+			user: process.env.SMTP_USER,
+			pass: process.env.SMTP_PASSWORD
+		}
+	});
+
+	const mailOptions = {
+		from: process.env.SMTP_USER,
+		to: receiver,
+		subject: subject,
+		text: text
+	};
+
+	transporter.sendMail(mailOptions, (err) => {
+		if (err)
+			console.log(`Error in sending: ${err}`);
+		else
+			console.log("Succesfully sent");
+	});
+}
+
 export {
 	get_cookies,
 	set_cookie,
@@ -48,4 +74,5 @@ export {
 	get_jwt,
 	create_encrypted_password,
 	check_encrypted_password,
+	send_email
 }

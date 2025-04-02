@@ -169,7 +169,28 @@ async function create_custom_code() {
     }
 }
 
+async function create_email() {
+    const response = await fetch("/settings", {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({"Function": "create_email"})
+    });
 
+    if (!response.ok)
+        throw new Error(`HTTP Fehler! Status: ${response.status}`);
+
+    let data;
+    try {
+        data = await response.json();
+        if (data.Response === "NoEmail")
+            ; // Here an alert that there is email set. then start a promt to let user input a mail
+        else if (data.Response === "Success")
+            console.log(data.Content);
+    } catch (jsonError) {
+        throw new Error('Fehler beim Parsen der JSON-Antwort');
+    }
+    console.log(data);
+}
 
 async function logout() {
     delete_cookie("token");

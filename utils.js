@@ -326,7 +326,8 @@ async function create_custom_code(userid, response, replace_data) {
 	}
 	if (!check_mfa || check_mfa === undefined)
 		await mfa_db.create_mfa_value('', '', `${check_code}_temp`, 0, userid);
-	await mfa_db.update_mfa_value('custom', `${check_code}_temp`, userid);
+	else
+		await mfa_db.update_mfa_value('custom', `${check_code}_temp`, userid);
 	response.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Success"}));
 	return true;
 }
@@ -350,6 +351,32 @@ async function verify_custom_code(userid, response, replace_data) {
 	return true;
 }
 
+async function create_email_code(userid, response, replace_data) {
+	if (custom_code_error_checker(userid, response, replace_data) === false)
+		return false;
+	const check_settings = await settings_db.get_settings_value('self', userid);
+	if (check_settings === undefined)
+		return false;
+	response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+	if (check_settings.email === undefined || !check_settings.email) {
+		response.end(JSON.stringify({"Response": "NoEmail"}));
+		return false;
+	}
+	var email_code = Math.floor(Math.random() * 1000000);
+	const email_code_len = 6 - (String(email_code).length);
+	for (var pos = 0; pos < email_code_len; pos++)
+		email_code = '0' + email_code;
+	await modules.send_email(check_settings.email, 'MFA code', `This is your 2FA code. Please do not share: ${email_code}`);
+	email_code = await modules.create_encrypted_password(String(email_code));
+	const check_mfa = await mfa_db.get_mfa_value('self', userid);
+	if (!check_mfa || check_mfa === undefined)
+		await mfa_db.create_mfa_value(`${email_code}_temp`, '', '', 0, userid);
+	else
+		await mfa_db.update_mfa_value('email', `${email_code}_temp`, userid);
+	response.end(JSON.stringify({"Response": "Success", "Content": email_code}));
+	return true;
+}
+
 export {
 	google_input_handler,
 	encrypt_google,
@@ -363,5 +390,6 @@ export {
 	verify_otc,
 	create_otc,
 	create_custom_code,
-	verify_custom_code
+	verify_custom_code,
+	create_email_code
 }

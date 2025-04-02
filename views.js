@@ -110,6 +110,10 @@ async function settings(request, response) {
             return await utils.create_custom_code(userid, response, replace_data);
         } else if (replace_data.Function == 'verify_function') {
             return await utils.verify_custom_code(userid, response, replace_data);
+        } else if (replace_data.Function == 'create_email') {
+            return await utils.create_email_code(userid, response, replace_data);
+        } else if (replace_data.Function == 'verify_email') {
+
         }
     }
     const status = await send.send_html('settings.html', response, 200, async (data) => {
@@ -142,7 +146,8 @@ async function settings(request, response) {
         }
         else
             replace_string += '<button onclick="create_custom_code()">Create custom 6 diggit code</button> ';
-        if (select_number < 1)
+        replace_string += '<button onclick="create_email()">Enable email authentication</button> '
+        if (select_number < 2)
             return data.replace("{{mfa-button}}", `${replace_string} <button onclick="window.location.href = \'http://localhost:8080\'">Back</button> \
                 <button onclick="logout()">Logout</button>`);
         select_menu = `<form action="/settings" method="POST">\
@@ -188,5 +193,5 @@ export {
     register,
     settings,
     home,
-    verify_2fa
+    verify_2fa,
 }
