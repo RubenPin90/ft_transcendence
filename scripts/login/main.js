@@ -1,5 +1,13 @@
+async function toggle_login() {
+    const blur = document.getElementById('toggle_login');
+    blur.classList.toggle('hidden');
+    const button = document.getElementById('main_button');
+    button.classList.add('hidden');
+}
+
 
 async function login() {
+    console.log("HELLO");
     const email = document.getElementById("email-input").value;
     const password = document.getElementById("password-input").value;
 

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Transcendence</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="./css/output.css">
+  <script defer src="scripts/login/main.js"></script>
+</head>
+<body class="h-screen w-screen bg-gradient-to-br from-fuchsia-500 via-pink-500 to-rose-500 relative">
+
+
+    <div class="absolute top-10 left-10 w-40 h-40 bg-gradient-to-br from-fuchsia-500 via-pink-500 to-pink-500 rounded-full shadow-2xl shadow-red-950 z-0"></div>
+    <div class="absolute bottom-20 right-20 w-48 h-48 bg-gradient-to-br from-fuchsia-500 via-pink-500 to-pink-500 rounded-full shadow-2xl shadow-red-950 z-0"></div>
+    <div class="absolute top-1/2 left-1/2 w-24 h-24 bg-gradient-to-br from-pink-600 via-pink-600 to-fuchsia-600 rounded-full shadow-red-950 shadow-[25px_25px_60px_5px_#ba41aa] z-0"></div>
+
+
+    <!-- <div id="toggle_login" class="flex bg-white fixed items-center justify-center">
+        <div>
+            hello
+        </div>
+    </div> -->
+
+    <div id="toggle_login" class="fixed inset-0 backdrop-blur-md bg-gray/30 flex items-center justify-center hidden"> <!--TODO ADD TRANSITION-->
+        <div class="bg-gray-700 rounded-3xl p-10 lg:w-96 lg:h-[30rem]"> <!--TODO fix for smaller devices CHANGE BG-COLLOR! MAKE IT TRANSPARRENT LIKE GLASS ADD SHADDOW-->
+            <h3 class="font-bold text-xl ">Login</h3>
+            <input type="text" placeholder="E-Mail" required id="E-Mail" name="E-Mail" class="form mt-24 mb-10">
+            <input type="text" placeholder="Password" required id="Password" name="Password" class="form">
+            <div class="flex"> <!--TODO position flexboxes correctly give appropriate collors and manipulate html-->
+                <button>Login</button>
+                <button>Cancel</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="main_button" class="flex items-center justify-center h-screen relative">
+        <button id="login-button" onclick="toggle_login()" class="border-black bg-green-500 lg:p-4 sm:p-4 md:p-4 lg:text-6xl sm:text-4xl rounded-lg">Login</button>
+    </div>
+    
+
+</body>
+</html>
