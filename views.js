@@ -52,8 +52,10 @@ async function home(request, response) {
     }
     if (request.url !== '/') {
         const data = await utils.encrypt_google(request, response);
-        if (data < 0)
+        if (data < 0) {
+            console.log(data);
             return false;
+        }
         const token = await modules.create_jwt(data, '1h');
 
         await modules.set_cookie(response, 'token', token, true, true, 'strict');
@@ -113,7 +115,7 @@ async function settings(request, response) {
         } else if (replace_data.Function == 'create_email') {
             return await utils.create_email_code(userid, response, replace_data);
         } else if (replace_data.Function == 'verify_email') {
-
+            return await utils.verify_email_code(userid, response, replace_data);
         }
     }
     const status = await send.send_html('settings.html', response, 200, async (data) => {
@@ -125,28 +127,38 @@ async function settings(request, response) {
         const check_mfa = await mfa_db.get_mfa_value('self', userid);
         console.log(check_mfa);
         if (check_mfa === undefined || check_mfa === null)
-            return data.replace("{{mfa-button}}", '<button onclick="create_otc()">Create OTC</button> \
-                <button onclick="create_custom_code()">Create custom 6 diggit code</button>\
-                <button onclick="window.location.href = \'http://localhost:8080\'">Back</button> \
+            return data.replace("{{mfa-button}}", '<button onclick="create_otc()">Create OTC</button> <br></br>\
+                <button onclick="create_custom_code()">Create custom 6 diggit code</button> <br></br>\
+                <button onclick="create_email()">Enable email authentication</button> <br></br>\
+                <button onclick="window.location.href = \'http://localhost:8080\'">Back</button>\
                 <button onclick="logout()">Logout</button>');
         var replace_string = "";
         var select_number = 0;
         var select_menu = "";
         if (check_mfa.otc.length !== 0 && !check_mfa.otc.endsWith('_temp')) {
             replace_string += '<button onclick="create_otc()">Regenerate OTC</button> ';
+            replace_string += '<button onclick="remove_otc()">Remove OTC</button> ';
             select_number++;
             select_menu += '<option value="otc">Otc</option>';
-        }
-        else
+        } else
             replace_string += '<button onclick="create_otc()">Create OTC</button> ';
+        replace_string += '<br></br>'
         if (check_mfa.custom.length !== 0 && !check_mfa.custom.endsWith('_temp')) {
             replace_string += '<button onclick="create_custom_code()">Recreate custom 6 diggit code</button> ';
+            replace_string += '<button onclick="remove_custom_code()">Remove custom 6 digit code</button> ';
             select_number++;
             select_menu += '<option value="custom">Custom</option>';
-        }
-        else
+        } else
             replace_string += '<button onclick="create_custom_code()">Create custom 6 diggit code</button> ';
-        replace_string += '<button onclick="create_email()">Enable email authentication</button> '
+        replace_string += '<br></br>'
+        if (check_mfa.email.length !== 0 && !check_mfa.email.endsWith('_temp')) {
+            console.log("WOW");
+            replace_string += '<button onclick="remove_email()">Disable email authentication</button> ';
+            select_number++;
+            select_menu += '<option value="email">Email</option>';
+        } else
+            replace_string += '<button onclick="create_email()">Enable email authentication</button> ';
+        replace_string += '<br></br>'
         if (select_number < 2)
             return data.replace("{{mfa-button}}", `${replace_string} <button onclick="window.location.href = \'http://localhost:8080\'">Back</button> \
                 <button onclick="logout()">Logout</button>`);

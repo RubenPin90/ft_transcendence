@@ -169,6 +169,35 @@ async function create_custom_code() {
     }
 }
 
+// Copied from a function that used chatgpt. Rebuild pls
+async function verifyEmail() {
+    const code = document.getElementById('email-code').value;
+    console.log("Verification code:", code);
+    
+    try {
+        const response = await fetch("/settings", {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ "Function": "verify_email", "Code": code })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP Fehler! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data.Response === "Success") {
+            alert("Email successfully verified!");
+            window.location.href = 'http://localhost:8080/settings';
+        } else {
+            alert("Verification failed. Wrong password");
+        }
+    } catch (error) {
+        console.error("Error during verification:", error);
+        alert("An error occurred during verification.");
+    }
+}
+
 async function create_email() {
     const response = await fetch("/settings", {
         method: 'POST',
@@ -184,8 +213,16 @@ async function create_email() {
         data = await response.json();
         if (data.Response === "NoEmail")
             ; // Here an alert that there is email set. then start a promt to let user input a mail
-        else if (data.Response === "Success")
-            console.log(data.Content);
+        else if (data.Response === "Success") {
+            const emailDiv = document.getElementById('mfa');
+            const emailInputDiv = document.getElementById('mfa-button');
+            emailDiv.innerHTML = '<h2>Verify your email code</h2>';
+            emailInputDiv.innerHTML = `
+                <input type="text" id="email-code" placeholder="Code"></input>
+                <br>
+                <button onclick="verifyEmail()">Verify</button>
+            `;
+        }
     } catch (jsonError) {
         throw new Error('Fehler beim Parsen der JSON-Antwort');
     }

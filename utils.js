@@ -19,6 +19,8 @@ async function create_username(email) {
 	const pre_sliced = email.slice(0, pos);
 	if (pre_sliced.length === 0)
 		return -2;
+	if (pre_sliced.indexOf('.') === -1)
+		return pre_sliced;
 	const modified_sliced = pre_sliced.replace(/\./g, '-');
 	if (pre_sliced === modified_sliced)
 		return -3;
@@ -234,7 +236,7 @@ async function get_decrypted_userid(request, response) {
 async function get_otc_secret(userid) {
 	const secret = speakeasy.generateSecret({ length: 20 });
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
-	if (check_mfa !== undefined && check_mfa.otc)
+	if (check_mfa !== undefined)
 		await mfa_db.update_mfa_value('otc', `${secret.base32}_temp`, userid);
 	else
 		await mfa_db.create_mfa_value('', `${secret.base32}_temp`, '', 0, userid);
@@ -352,7 +354,7 @@ async function verify_custom_code(userid, response, replace_data) {
 }
 
 async function create_email_code(userid, response, replace_data) {
-	if (custom_code_error_checker(userid, response, replace_data) === false)
+	if (await custom_code_error_checker(userid, response, replace_data) === false)
 		return false;
 	const check_settings = await settings_db.get_settings_value('self', userid);
 	if (check_settings === undefined)
@@ -377,6 +379,26 @@ async function create_email_code(userid, response, replace_data) {
 	return true;
 }
 
+async function verify_email_code(userid, response, replace_data) {
+	if (await custom_code_error_checker(userid, response, replace_data) === false)
+		return false;
+	const check_mfa = await mfa_db.get_mfa_value('self', userid);
+	if (check_mfa === undefined || check_mfa === null || check_mfa.email.length === 0)
+		return false;
+	var email_value = check_mfa.email;
+	if (email_value.endsWith('_temp'))
+		email_value = email_value.slice(0, -5);
+	const decrypted_email_value = await modules.check_encrypted_password(replace_data.Code, email_value);
+	response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+	if (decrypted_email_value === false) {
+		response.end(JSON.stringify({"Response": "Failed"}));
+		return false;
+	}
+	await mfa_db.update_mfa_value('email', email_value, userid);
+	response.end(JSON.stringify({"Response": "Success"}));
+	return true;
+}
+
 export {
 	google_input_handler,
 	encrypt_google,
@@ -391,5 +413,6 @@ export {
 	create_otc,
 	create_custom_code,
 	verify_custom_code,
-	create_email_code
+	create_email_code,
+	verify_email_code
 }
