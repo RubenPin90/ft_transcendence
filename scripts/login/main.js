@@ -9,6 +9,24 @@ async function toggle_login() {
     }
 }
 
+async function let_it_shake(){
+    const email = document.getElementById("email-input");
+    const password = document.getElementById("password-input");
+
+    if (!email.value){
+        email.classList.replace('form', 'error_input');
+        email.classList.remove('animate-wrong_input');
+        void email.offsetWidth;
+        email.classList.add('animate-wrong_input');
+    }
+    if(!password.value){
+        password.classList.replace('form', 'error_input');
+        password.classList.remove('animate-wrong_input');
+        void password.offsetWidth;
+        password.classList.add('animate-wrong_input');
+    }
+}
+
 
 async function login() {
     console.log("HELLO");
@@ -17,7 +35,8 @@ async function login() {
 
 
     if (!email || !password) {
-        alert("Bitte Email und Passwort eingeben!");
+        // alert("Bitte Email und Passwort eingeben!");
+        let_it_shake();
         return;
     }
 

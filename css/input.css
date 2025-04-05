@@ -3,6 +3,9 @@
 @tailwind utilities;
 
 .form{
-    @apply rounded-xl border border-violet-800 px-14 py-3 text-black text-center
+    @apply rounded-xl border-solid border-2 border-violet-800 px-14 py-3 text-black text-center
 }
 
+.error_input{
+    @apply rounded-xl border-solid border-2 border-red-900 px-14 py-3 text-black text-center
+}
