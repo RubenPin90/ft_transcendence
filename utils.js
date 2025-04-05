@@ -343,13 +343,9 @@ async function verify_custom_code(userid, response, replace_data) {
 	let custom = check_mfa.custom;
 	if (custom.endsWith('_temp'))
 		custom = custom.slice(0, -5);
-	response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-	if (replace_data.Code !== custom) {
-		response.end(JSON.stringify({"Response": "Failed"}));
+	if (replace_data.Code !== custom)
 		return false;
-	}
 	await mfa_db.update_mfa_value('custom', custom, userid);
-	response.end(JSON.stringify({"Response": "Success"}));
 	return true;
 }
 
@@ -399,6 +395,18 @@ async function verify_email_code(userid, response, replace_data) {
 	return true;
 }
 
+async function clear_settings_mfa(userid, search_value, response) {
+	response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+	const check_mfa = await mfa_db.get_mfa_value('self', userid);
+	if (check_mfa !== undefined) {
+		await mfa_db.update_mfa_value(`${search_value}`, '', userid);
+		response.end(JSON.stringify({"Response": "Success"}));
+		return true;
+	}
+	response.end(JSON.stringify({"Response": "Failed"}));
+	return false;
+}
+
 export {
 	google_input_handler,
 	encrypt_google,
@@ -414,5 +422,6 @@ export {
 	create_custom_code,
 	verify_custom_code,
 	create_email_code,
-	verify_email_code
+	verify_email_code,
+	clear_settings_mfa
 }

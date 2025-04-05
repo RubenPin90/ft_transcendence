@@ -55,7 +55,8 @@ async function verify_code() {
         data = await response.json();
         if (data.Response !== "Success")
             alert("Error: 2FA code invalid");
-        // else
+        else
+            window.location.href = 'http://localhost:8080/settings';
         //     clear window and replace with nice UI Box. Client success
     } catch (jsonError) {
         throw new Error('Fehler beim Parsen der JSON-Antwort');
@@ -224,9 +225,69 @@ async function create_email() {
             `;
         }
     } catch (jsonError) {
-        throw new Error('Fehler beim Parsen der JSON-Antwort');
+        console.error(`Fehler beim Parsen der JSON-Antwort`);
     }
     console.log(data);
+}
+
+async function remove_custom_code() {
+    const response = await fetch('/settings', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({"Function": "remove_custom_code"})
+    })
+    
+    if (!response.ok)
+        throw new Error(`HTTP Fehler! Status: ${response.status}`);
+
+    let data;
+    try {
+        data = await response.json();
+        if (data.Response === 'Success')
+            window.location.href = 'http://localhost:8080/settings';
+    } catch (err) {
+        console.log(`Error in removing custom code: ${err}`)
+    }
+}
+
+async function remove_otc() {
+    const response = await fetch('/settings', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({"Function": "remove_otc"})
+    })
+    
+    if (!response.ok)
+        throw new Error(`HTTP Fehler! Status: ${response.status}`);
+
+    let data;
+    try {
+        data = await response.json();
+        if (data.Response === 'Success')
+            window.location.href = 'http://localhost:8080/settings';
+    } catch (err) {
+        console.log(`Error in removing custom code: ${err}`)
+    }
+}
+
+async function remove_email() {
+    const response = await fetch('/settings', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({"Function": "remove_email"})
+    })
+    
+    if (!response.ok)
+        throw new Error(`HTTP Fehler! Status: ${response.status}`);
+
+    let data;
+    try {
+        data = await response.json();
+        if (data.Response === 'Success')
+            window.location.href = 'http://localhost:8080/settings';
+    } catch (err) {
+        console.log(`Error in removing custom code: ${err}`)
+    }
 }
 
 async function logout() {

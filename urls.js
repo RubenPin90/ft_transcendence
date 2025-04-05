@@ -16,6 +16,8 @@ async function url_pattern(request, response) {
             return await views.settings(request, response);
         case request.url === '/verify_2fa':
             return await views.verify_2fa(request, response);
+        case request.url === '/verify_custom':
+            return await views.verify_custom(request, response);
         case request.url.includes(".js"):
             return await mimes.get_js(request.url, response);
         default:
