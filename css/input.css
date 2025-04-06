@@ -7,5 +7,5 @@
 }
 
 .error_input{
-    @apply rounded-xl border-solid border-2 border-red-900 px-14 py-3 text-black text-center
+    @apply rounded-xl border-solid border-4 border-red-900 px-14 py-3 text-black text-center
 }

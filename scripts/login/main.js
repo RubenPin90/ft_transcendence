@@ -13,6 +13,10 @@ async function let_it_shake(){
     const email = document.getElementById("email-input");
     const password = document.getElementById("password-input");
 
+    email.classList.replace('error_input', 'form');
+    email.classList.replace('error_input', 'form');
+
+
     if (!email.value){
         email.classList.replace('form', 'error_input');
         email.classList.remove('animate-wrong_input');
