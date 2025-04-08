@@ -10,5 +10,27 @@
     "speakeasy": "^2.0.0",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7"
+  },
+  "name": "ft_transcendence",
+  "version": "1.0.0",
+  "main": "mimes.js",
+  "scripts": {
+    "build": "vite build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ARWChair/ft_transcendence.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ARWChair/ft_transcendence/issues"
+  },
+  "homepage": "https://github.com/ARWChair/ft_transcendence#readme",
+  "description": "",
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vite": "^6.2.5"
   }
 }
