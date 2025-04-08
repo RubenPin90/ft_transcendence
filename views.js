@@ -10,12 +10,13 @@ async function login(request, response) {
     if (request.method === "POST") {
         const parsed = await utils.process_login(request, response);
         console.log(parsed);
+        console.log(parsed.prefered)
         if (parsed) {
-            if (parsed.mfa && parsed.mfa.otc && !parsed.mfa.otc.endsWith('_temp')) {
+            if (parsed.mfa && parsed.mfa.otc && !parsed.mfa.otc.endsWith('_temp') && parsed.mfa.prefered === 1) {
                 response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
                 response.end(JSON.stringify({"Response": 'send_2FA_verification', "Content": parsed.settings.self}));
                 return true;
-            } else if (parsed.mfa && parsed.mfa.custom && !parsed.mfa.custom.endsWith('_temp')) {
+            } else if (parsed.mfa && parsed.mfa.custom && !parsed.mfa.custom.endsWith('_temp') && parsed.mfa.prefered === 3) {
                 response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
                 response.end(JSON.stringify({"Response": 'send_custom_verification', "Content": parsed.settings.self}));
                 return true;
@@ -213,9 +214,9 @@ async function settings_set_prefered_mfa(request, response) {
     const check_mfa = await mfa_db.get_mfa_value('self', userid);
     if (!check_mfa || check_mfa === undefined)
         return await send.redirect(response, '/settings', 302);
-    if (method === 'otc') {
+    if (method === 'email') {
         await mfa_db.update_mfa_value('prefered', 1, userid);
-    } else if (method === 'email') {
+    } else if (method === 'otc') {
         await mfa_db.update_mfa_value('prefered', 2, userid);
     } else if (method === 'custom') {
         await mfa_db.update_mfa_value('prefered', 3, userid);

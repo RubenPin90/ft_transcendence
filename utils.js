@@ -400,6 +400,16 @@ async function clear_settings_mfa(userid, search_value, response) {
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
 	if (check_mfa !== undefined) {
 		await mfa_db.update_mfa_value(`${search_value}`, '', userid);
+		var fallback_options = ['email', 'otc', 'custom'];
+		for (const option of fallback_options) {
+			if (search_value == option)
+				continue;
+            console.log(check_mfa[option]);
+            if (!check_mfa[option].endsWith('_temp') && check_mfa[option].length !== 0) {
+                await mfa_db.update_mfa_value('prefered', fallback_options.indexOf(option) + 1, userid);
+                break;
+            }
+        }
 		response.end(JSON.stringify({"Response": "Success"}));
 		return true;
 	}
