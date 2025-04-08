@@ -14,6 +14,8 @@ async function url_pattern(request, response) {
             return await views.register(request, response);
         case request.url === '/settings':
             return await views.settings(request, response);
+        case request.url.includes('/settings?'):
+            return await views.settings_set_prefered_mfa(request, response);
         case request.url === '/verify_2fa':
             return await views.verify_2fa(request, response);
         case request.url === '/verify_custom':

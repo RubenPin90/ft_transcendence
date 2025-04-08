@@ -91,6 +91,7 @@ async function settings(request, response) {
     }
         if (request.method === "POST") {
         var replace_data = await utils.get_frontend_content(request);
+        console.log(replace_data);
         if (!replace_data) {
             return false;
         }
@@ -177,20 +178,49 @@ async function settings(request, response) {
         if (select_number < 2)
             return data.replace("{{mfa-button}}", `${replace_string} <button onclick="window.location.href = \'http://localhost:8080\'">Back</button> \
                 <button onclick="logout()">Logout</button>`);
-        select_menu = `<form action="/settings" method="POST">\
-            <select name="mfa" id="mfa">\
+        select_menu = `
+        <form id="mfa_select_form">
+            <select name="mfa" id="mfa">
                 <option value="" selected disabled hidden>Choose a default authentication method</option>
-                ${select_menu}
-            </select>\
-            <br><br>\
-            <input type="submit" value="Submit">\
-            </form>`;
+                    ${select_menu}
+            </select>
+            <button type="submit">Submit</button>
+        </form>
+        <br>`;
         return data.replace("{{mfa-button}}", `${replace_string} ${select_menu} <button onclick="window.location.href = \'http://localhost:8080\'">Back</button> \
-            <button onclick="logout()">Logout</button>`);
+        <button onclick="logout()">Logout</button>`);
     });
     if (!status)
         return false;
     return true;
+}
+
+async function settings_set_prefered_mfa(request, response) {
+    if (request.url.length < 11)
+        return await send.redirect(response, '/settings', 302);
+    const location = request.url.slice(10);
+    if (!location.indexOf('='))
+        return await send.redirect(response, '/settings', 302);
+    const pos = location.indexOf('=') + 1;
+    if (location.length === pos)
+        return await send.redirect(response, '/settings', 302);
+    const method = location.slice(pos);
+    const {keys, values} = await utils.get_cookie('token', request);
+    if ((!keys && !values) || (keys === undefined && values === undefined))
+        return await send.redirect(response, '/settings', 302);
+    const decrypted_user = await modules.get_jwt(values[0]);
+    const userid = decrypted_user.userid;
+    const check_mfa = await mfa_db.get_mfa_value('self', userid);
+    if (!check_mfa || check_mfa === undefined)
+        return await send.redirect(response, '/settings', 302);
+    if (method === 'otc') {
+        await mfa_db.update_mfa_value('prefered', 1, userid);
+    } else if (method === 'email') {
+        await mfa_db.update_mfa_value('prefered', 2, userid);
+    } else if (method === 'custom') {
+        await mfa_db.update_mfa_value('prefered', 3, userid);
+    }
+    return await send.redirect(response, '/settings', 302);    
 }
 
 async function verify_2fa(request, response) {
@@ -242,5 +272,6 @@ export {
     settings,
     home,
     verify_2fa,
-    verify_custom
+    verify_custom,
+    settings_set_prefered_mfa
 }
