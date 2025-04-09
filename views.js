@@ -43,8 +43,10 @@ async function login(request, response) {
     if (check_login !== 0)
         return false;
     const check = await send.send_html('login.html', response, 200, async (data) => {
-        const link = await utils.google_input_handler();
-        return data.replace("{{google_login}}", link);
+        const google_link = await utils.google_input_handler();
+        data = data.replace("{{google_login}}", google_link);
+        const github_link = await utils.github_input_handler();
+        return data.replace("{{github_login}}", github_link);
     })
     return check;
 }
@@ -54,8 +56,10 @@ async function register(request, response) {
     if (check_login !== 0)
         return false;
     const check = await send.send_html('register.html', response, 200, async (data) => {
-        const link = await utils.google_input_handler();
-        return data.replace("{{google_login}}", link);
+        const google_link = await utils.google_input_handler();
+        data = data.replace("{{google_login}}", google_link);
+        const github_link = await utils.github_input_handler();
+        return data.replace("{{github_login}}", github_link);
     })
     return check;
 }
