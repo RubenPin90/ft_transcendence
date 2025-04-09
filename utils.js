@@ -61,24 +61,24 @@ async function encrypt_google(request, response) {
 
 		const id_token = token_data.id_token;
 		const decoded_id_token = await decodeJWT(id_token);
-		const user_id = decoded_id_token.sub;
+		const userid = decoded_id_token.sub;
 		const email = decoded_id_token.email;
 		const pfp = decoded_id_token.picture;
 		const username = await create_username(email);
 		if (username < 0)
 			return -2;
-		const db_return = await settings_db.create_settings_value('test', pfp, 0, email, user_id, 0);
+		const db_return = await settings_db.create_settings_value('test', pfp, 0, email, userid, 0);
 		if (db_return.self === undefined || db_return.return === undefined)
-			return user_id;
+			return userid;
 		if (db_return < 0)
 			return -3;
-		const check_setting = await settings_db.get_settings_value(user_id);
+		const check_setting = await settings_db.get_settings_value(userid);
 		if (!check_setting)
 			return -4;
-		const check_username = await users_db.create_users_value(0, username, user_id);
+		const check_username = await users_db.create_users_value(0, username, userid);
 		if (check_username < 0)
 			return -5;
-		return user_id;
+		return userid;
 	} catch (error) {
 		console.error("Error during Google OAuth:", error);
 		return -6;
@@ -346,6 +346,8 @@ async function verify_custom_code(userid, response, replace_data) {
 	if (replace_data.Code !== custom)
 		return false;
 	await mfa_db.update_mfa_value('custom', custom, userid);
+	if (check_mfa.prefered === 0)
+		await mfa_db.update_mfa_value('prefered', 3, userid);
 	return true;
 }
 
@@ -391,6 +393,8 @@ async function verify_email_code(userid, response, replace_data) {
 		return false;
 	}
 	await mfa_db.update_mfa_value('email', email_value, userid);
+	if (check_mfa.prefered === 0)
+		await mfa_db.update_mfa_value('prefered', 1, userid);
 	response.end(JSON.stringify({"Response": "Success"}));
 	return true;
 }
@@ -401,14 +405,18 @@ async function clear_settings_mfa(userid, search_value, response) {
 	if (check_mfa !== undefined) {
 		await mfa_db.update_mfa_value(`${search_value}`, '', userid);
 		var fallback_options = ['email', 'otc', 'custom'];
+		var found = false;
 		for (const option of fallback_options) {
 			if (search_value == option)
 				continue;
             console.log(check_mfa[option]);
             if (!check_mfa[option].endsWith('_temp') && check_mfa[option].length !== 0) {
                 await mfa_db.update_mfa_value('prefered', fallback_options.indexOf(option) + 1, userid);
+				found = true;
                 break;
             }
+			if (!found)
+				await mfa_db.update_mfa_value('prefered', 0, userid);
         }
 		response.end(JSON.stringify({"Response": "Success"}));
 		return true;

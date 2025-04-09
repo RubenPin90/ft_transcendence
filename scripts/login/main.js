@@ -20,9 +20,17 @@ async function login() {
         data = await response.json();
         if (data.Response === "reload")
             window.location.reload();
-        else if (data.Response === "send_2FA_verification") {
+        else if (data.Response == "send_email_verification") {
             document.getElementById("login-container").innerHTML = `
-                <h2>Input your 2FA code from your authenticator app</h2>
+                <h2>Input your Email code</h2>
+                <input type="text" id="email-input" placeholder="Code" required><br>
+                <button id="email-login-button" onclick="email_login('${data.Content}')">
+                    <h3>Verify</h3>
+                </button>
+            `;
+        } else if (data.Response === "send_2FA_verification") {
+            document.getElementById("login-container").innerHTML = `
+                <h2>Input your OTC code from your authenticator app</h2>
                 <input type="text" id="otc-input" placeholder="Code" required><br>
                 <button id="mfa-login-button" onclick="mfa_login('${data.Content}')">
                     <h3>Verify</h3>
@@ -30,7 +38,7 @@ async function login() {
             `;
         } else if (data.Response === 'send_custom_verification') {
             document.getElementById("login-container").innerHTML = `
-                <h2>Input your custom code</h2>
+                <h2>Input your Custom code</h2>
                 <input type="text" id="custom-input" placeholder="Code" required><br>
                 <button id="custom-login-button" onclick="custom_login('${data.Content}')">
                     <h3>Verify</h3>
@@ -42,18 +50,18 @@ async function login() {
     }
 }
 
-async function mfa_login(user_id) {
-    const code = document.getElementById("otc-input").value;
+async function email_login(userid) {
+    const code = document.getElementById("email-input").value;
     if (!code)
         return;
 
-    console.log(user_id);
-    const response = await fetch('/verify_2fa', {
+    console.log(userid);
+    const response = await fetch('/verify_email', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ user_id, code }),
+        body: JSON.stringify({ userid, code }),
     });
 
     let data;
@@ -70,18 +78,46 @@ async function mfa_login(user_id) {
     }
 }
 
-async function custom_login(user_id) {
+async function mfa_login(userid) {
+    const code = document.getElementById("otc-input").value;
+    if (!code)
+        return;
+
+    console.log(userid);
+    const response = await fetch('/verify_2fa', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userid, code }),
+    });
+
+    let data;
+    try {
+        data = await response.json();
+        console.log(data);
+        if (data.Response === "reload") {
+            window.location.reload();
+        } else {
+            alert("2FA failed. Please try again.");
+        }
+    } catch (jsonError) {
+        alert("Fehler beim Parsen der JSON-Antwort");
+    }
+}
+
+async function custom_login(userid) {
     const code = document.getElementById("custom-input").value;
     if (!code)
         return;
 
-    console.log(user_id);
+    console.log(userid);
     const response = await fetch('/verify_custom', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ user_id, code }),
+        body: JSON.stringify({ userid, code }),
     });
 
     let data;

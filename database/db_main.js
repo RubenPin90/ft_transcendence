@@ -67,11 +67,11 @@ async function create_db() {
         CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             room_id INTEGER,
-            user_id INTEGER,
+            userid INTEGER,
             message TEXT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (room_id) REFERENCES chatrooms(id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            FOREIGN KEY (userid) REFERENCES users(id) ON DELETE CASCADE
         );`);
 
         await db.run(`
@@ -144,7 +144,7 @@ async function show_full_db() {
             chatrooms.self AS chatrooms_self,
             messages.id AS messages_id,
             messages.room_id,
-            messages.user_id,
+            messages.userid,
             messages.message,
             messages.timestamp,
             scores.id AS scores_id,
@@ -156,7 +156,7 @@ async function show_full_db() {
         LEFT JOIN roles ON roles.id = users.role_id
         LEFT JOIN scoreboard ON scoreboard.self = settings.self
         LEFT JOIN chatrooms ON chatrooms.self = settings.self
-        LEFT JOIN messages ON messages.user_id = users.id
+        LEFT JOIN messages ON messages.userid = users.id
         LEFT JOIN scores ON scores.self = settings.self
         `);
         return row;
