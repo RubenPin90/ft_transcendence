@@ -3,6 +3,11 @@ export default {
    content: ["./scripts/login/*.js", "./templates/*.html", "*.html"],
    theme: {
      extend: {
+      colors: {
+        darkPurple: '#24152c',
+        darkRed: '#291515',
+        darkPink: '#22112c',
+      },
       keyframes: {
         shaking: {
           "0%": {
