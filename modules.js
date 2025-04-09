@@ -1,5 +1,9 @@
-require('dotenv').config()
-const jwt = require('jsonwebtoken');
+import dotenv from 'dotenv';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import nodemailer from 'nodemailer';
+
+dotenv.config();
 
 async function get_cookies(request) {
 	const values = request?.split('; ');
@@ -28,33 +32,47 @@ async function set_cookie(response, key, value, HttpOnly, Secure, SameSite) {
 	response.setHeader('Set-Cookie', `${key}=${value}`, { httpOnly: HttpOnly, secure: Secure, sameSite: SameSite });
 }
 
-async function check_login(request, response) {
-	var [keys, values] = await get_cookies(request.headers.cookie);
-	const tokenIndex = keys?.find((key) => key === 'token');
-	if (keys && tokenIndex) {
-		const token = values?.at(tokenIndex);
-		if (token) {
-			try {
-				var decoded = await get_jwt(token);
-				if (decoded) {
-					response.writeHead(302, {
-						'Location': '/'
-					});
-					response.end();
-					return null;
-				}
-			} catch (err) {
-				console.log(err);
-				return "empty";
-			}
-		}
-	}
+async function create_encrypted_password(password) {
+    const hashed_password = await bcrypt.hash(password, 10);
+    return hashed_password;
 }
 
-module.exports = {
+async function check_encrypted_password(password, hashed) {
+    const compared_password = bcrypt.compare(password, hashed);
+    return compared_password;
+}
+
+async function send_email(receiver, subject, text) {
+	console.log(receiver);
+	const transporter = nodemailer.createTransport({
+		service: 'gmail',
+		auth: {
+			user: process.env.SMTP_USER,
+			pass: process.env.SMTP_PASSWORD
+		}
+	});
+
+	const mailOptions = {
+		from: process.env.SMTP_USER,
+		to: receiver,
+		subject: subject,
+		text: text
+	};
+
+	transporter.sendMail(mailOptions, (err) => {
+		if (err)
+			console.log(`Error in sending: ${err}`);
+		else
+			console.log("Succesfully sent");
+	});
+}
+
+export {
 	get_cookies,
 	set_cookie,
 	create_jwt,
 	get_jwt,
-	check_login
+	create_encrypted_password,
+	check_encrypted_password,
+	send_email
 }

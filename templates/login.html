@@ -6,8 +6,8 @@
     <script defer src="login/main.js"></script>
 </head>
 <body>
-    <div>
-        <div id="login-container">
+    <div id="login-container">
+        <div>
             <input type="text" id="email-input" placeholder="Email" required><br>
             <input type="text" id="password-input" placeholder="Password" required><br>
             <button id="login-button" onclick="login()">
@@ -19,6 +19,11 @@
             <a href="{{google_login}}">
                 <button>
                     <h3>Sign in with Google</h3>
+                </button>
+            </a>
+            <a href="{{github_login}}">
+                <button>
+                    <h3>Sign in with Github</h3>
                 </button>
             </a>
         </div>

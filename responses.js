@@ -1,6 +1,4 @@
-const utils = require('./utils');
-const fs = require('fs').promises;
-const db = require('./database/db_user_functions');
+import { promises as fs } from 'fs';
 
 function send(response, content, data, code) {
     response.writeHead(code, {'Content-Type': content});
@@ -44,7 +42,7 @@ async function redirect(response, location, code) {
     return true;
 }
 
-module.exports = {
+export {
     send,
     send_html,
     send_error_page,
