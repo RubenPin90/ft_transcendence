@@ -1,4 +1,10 @@
 async function toggle_login() {
+    const email = document.getElementById("email-input");
+    const password = document.getElementById("password-input");
+
+    email.classList.replace('error_input', 'form');
+    password.classList.replace('error_input', 'form');
+
     const blur = document.getElementById('toggle_login');
     blur.classList.toggle('hidden');
     const big_button = document.getElementById('main_button');
@@ -14,7 +20,7 @@ async function let_it_shake(){
     const password = document.getElementById("password-input");
 
     email.classList.replace('error_input', 'form');
-    email.classList.replace('error_input', 'form');
+    password.classList.replace('error_input', 'form');
 
 
     if (!email.value){
@@ -33,7 +39,6 @@ async function let_it_shake(){
 
 
 async function login() {
-    console.log("HELLO");
     const email = document.getElementById("email-input").value;
     const password = document.getElementById("password-input").value;
 

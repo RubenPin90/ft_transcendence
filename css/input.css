@@ -9,3 +9,11 @@
 .error_input{
     @apply rounded-xl border-solid border-4 border-red-900 px-14 py-3 text-black text-center
 }
+
+.background{
+    @apply h-screen w-screen bg-gradient-to-br from-fuchsia-600 via-pink-600 to-rose-600 relative
+}
+
+.bubble{
+    @apply absolute bg-gradient-to-br shadow-2xl shadow-red-950 z-0 rounded-full
+}
