@@ -11,7 +11,7 @@
 }
 
 .background{
-    @apply h-screen w-screen bg-gradient-to-br from-fuchsia-600 via-pink-600 to-rose-600 relative
+    @apply h-screen w-screen bg-gradient-to-br from-fuchsia-800 via-pink-800 to-rose-800 relative
 }
 
 .bubble{
