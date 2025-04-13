@@ -12,7 +12,10 @@ export function router() {
 
   switch (path) {
     case '/':
-      app.innerHTML = renderHome();
+      // app.innerHTML = renderHome();
+      renderHome().then(html => {
+        document.getElementById('app')!.innerHTML = html;
+      });
       break;
     case '/about':
       app.innerHTML = renderAbout();
