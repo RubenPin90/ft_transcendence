@@ -70,8 +70,19 @@ async function home(request, response) {
         await send.redirect(response, '/login', 302);
         return true;
     }
-    if (request.url !== '/') {
+    if (request.url !== '/' && !request.url.includes('&state=')) {
         const data = await utils.encrypt_google(request, response);
+        if (data < 0) {
+            console.log(data);
+            return false;
+        }
+        const token = await modules.create_jwt(data, '1h');
+
+        await modules.set_cookie(response, 'token', token, true, true, 'strict');
+		await send.redirect(response, '/', 302);
+        return true;
+    } else if (request.url !== '/') {
+        const data = await utils.encrypt_github(request, response);
         if (data < 0) {
             console.log(data);
             return false;

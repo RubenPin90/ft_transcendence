@@ -8,9 +8,8 @@ import https from 'https';
 import * as modules from './modules.js';
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
-import { utimes } from 'fs';
 
-dotenv.config
+dotenv.config();
 
 async function create_username(email) {
 	const pos = email.indexOf('@');
@@ -27,8 +26,6 @@ async function create_username(email) {
 	return modified_sliced;
 }
 
-
-
 async function google_input_handler() {
 	const client_id = process.env.google_client_id;
 	const redirect_uri = "http://localhost:8080";
@@ -37,7 +34,76 @@ async function google_input_handler() {
 	return url;
 }
 
+async function github_input_handler() {
+	const client_id = process.env.github_client_id;
+	const redirect = "http://localhost:8080/";
+	const scope = "user email";
+	const state = process.env.github_state;
+	const github_string = `https://github.com/login/oauth/authorize?client_id=${client_id}&redirect_uri=${redirect}&scope=${scope}&state=${state}`
+	return github_string;
+}
 
+async function encrypt_github(request, response) {
+	try {
+		const client_id = process.env.github_client_id;
+		const client_secret = process.env.github_client_secret;
+		const redirect = "http://localhost:8080/";
+		var code = request.url;
+
+		code = code.slice(7);
+		const pos = code.indexOf('&');
+		code = code.slice(0, pos);
+		const fetch_response_bearer = await fetch('https://github.com/login/oauth/access_token', {
+			method: 'POST',
+			headers: {
+				"Accept": 'application/json',
+				"Content-Type": 'application/json'
+			},
+			body: JSON.stringify({
+				client_id,
+				client_secret,
+				code,
+				redirect_uri: redirect
+			})
+		});
+
+		if (!fetch_response_bearer.ok)
+			throw new Error(`HTTP error! status: ${fetch_response_bearer.status}`);
+
+		var data = await fetch_response_bearer.json();
+		const bearer_token = data.access_token;
+		const fetch_response_user = await fetch('https://api.github.com/user', {
+			headers: {
+				"Authorization": `Bearer ${bearer_token}`,
+				"Accept": 'application/json'
+			}
+		});
+
+		if (!fetch_response_user.ok)
+			throw new Error(`HTTP error! status: ${fetch_response_bearer.status}`);
+		
+		var user_data = await fetch_response_user.json();
+		const userid = user_data.id;
+		const pfp = user_data.avatar_url;
+		var username = user_data.login;
+		username = username.replace(/\./g, '-');
+		const db_return = await settings_db.create_settings_value('test', pfp, 0, '', userid, 0);
+		if (db_return.self === undefined || db_return.return === undefined)
+			return userid;
+		if (db_return < 0)
+			return -2;
+		const check_setting = await settings_db.get_settings_value(userid);
+		if (!check_setting)
+			return -3;
+		const check_username = await users_db.create_users_value(0, username, userid);
+		if (check_username < 0)
+			return -4;
+		return userid;
+	} catch (err) {
+		console.error("Error during Google OAuth:", error);
+		return -5;
+	}
+}
 
 async function encrypt_google(request, response) {
 	const client_secret = process.env.google_client_secret;
@@ -427,7 +493,9 @@ async function clear_settings_mfa(userid, search_value, response) {
 
 export {
 	google_input_handler,
+	github_input_handler,
 	encrypt_google,
+	encrypt_github,
 	process_login,
 	get_frontend_content,
 	otc_secret,
