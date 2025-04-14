@@ -37,7 +37,7 @@ async function google_input_handler() {
 async function github_input_handler() {
 	const client_id = process.env.github_client_id;
 	const redirect = "http://localhost:8080/";
-	const scope = "user email";
+	const scope = "user:email";
 	const state = process.env.github_state;
 	const github_string = `https://github.com/login/oauth/authorize?client_id=${client_id}&redirect_uri=${redirect}&scope=${scope}&state=${state}`
 	return github_string;
@@ -82,12 +82,24 @@ async function encrypt_github(request, response) {
 		if (!fetch_response_user.ok)
 			throw new Error(`HTTP error! status: ${fetch_response_bearer.status}`);
 		
+		const fetch_response_email = await fetch('https://api.github.com/user/emails', {
+			headers: {
+				"Authorization": `Bearer ${bearer_token}`,
+				"Accept": 'application/json'
+			}
+		});
+
+		if (!fetch_response_email.ok)
+			throw new Error(`HTTP error! status: ${fetch_response_bearer.status}`);
+
+		var user_email = await fetch_response_email.json();
 		var user_data = await fetch_response_user.json();
+		user_email = user_email[0].email;
 		const userid = user_data.id;
 		const pfp = user_data.avatar_url;
 		var username = user_data.login;
 		username = username.replace(/\./g, '-');
-		const db_return = await settings_db.create_settings_value('test', pfp, 0, '', userid, 0);
+		const db_return = await settings_db.create_settings_value('test', pfp, 0, user_email, userid, 0);
 		if (db_return.self === undefined || db_return.return === undefined)
 			return userid;
 		if (db_return < 0)
@@ -100,7 +112,7 @@ async function encrypt_github(request, response) {
 			return -4;
 		return userid;
 	} catch (err) {
-		console.error("Error during Google OAuth:", error);
+		console.error("Error during Github OAuth:", err);
 		return -5;
 	}
 }
