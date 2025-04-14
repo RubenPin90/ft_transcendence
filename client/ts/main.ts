@@ -1,39 +1,43 @@
-wss.on('connection', (ws) => {
-    console.log('🔌 New WebSocket connection');
+import { startGame } from './game';
+
+function navigate(path: string) {
+  history.pushState({}, '', path);
+  route();
+}
+
+function route() {
+  const path = window.location.pathname;
+  hideAllPages();
+
+  if (path.startsWith('/game')) {
+    const mode = path.split('/')[2] || 'default';
+    hideAllPages();
+    document.getElementById('game-container')!.style.display = 'block';
+    document.getElementById('game-mode-title')!.textContent = `Starting ${mode.toUpperCase()} Game...`;
   
-    ws.on('message', (rawMsg) => {
-      console.log('📨 Message received:', rawMsg.toString());
-  
-      // 1. Parse the JSON
-      const data = JSON.parse(rawMsg);
-  
-      // 2. Interpret by type
-      switch (data.type) {
-        case 'chat':
-          // handle chat
-          break;
-        case 'move':
-          // handle paddle movement
-          break;
-        case 'join':
-          // handle new player join
-          break;
-        case 'leave':
-          // handle player leave
-          break;
-        // etc.
-      }
-  
-      // 3. Optionally broadcast or forward the message to other connected clients
-      wss.clients.forEach((client) => {
-        if (client !== ws && client.readyState === ws.OPEN) {
-          client.send(rawMsg);
-        }
-      });
-    });
-  
-    ws.on('close', () => {
-      console.log('❌ WebSocket disconnected');
-    });
+    startGame(mode);
+    return;
+  }
+
+  switch (path) {
+    case '/profile':
+      document.getElementById('profile-page')!.style.display = 'block';
+      break;
+    case '/settings':
+      document.getElementById('settings-page')!.style.display = 'block';
+      break;
+    default:
+      document.getElementById('main-menu')!.style.display = 'block';
+  }
+}
+
+function hideAllPages() {
+  const pages = ['main-menu', 'profile-page', 'settings-page', 'game-container'];
+  pages.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
   });
-  
+}
+
+window.addEventListener('popstate', route);
+document.addEventListener('DOMContentLoaded', route);

@@ -1,0 +1,26 @@
+<body>
+  <div id="main-menu">
+    <h1>Welcome, <span id="username"></span>!</h1>
+    <button id="sp-vs-ai-btn">1vPV</button>
+    <button id="one-vs-one-btn">1v1 Matchmaking</button>
+    <button id="deathmatch-btn">Death Match</button>
+    <button id="settings-btn">Settings</button>
+    <button id="profile-btn">Profile</button>
+  </div>
+
+  <div id="profile-page" style="display: none;">
+    <!-- user profile info here -->
+  </div>
+
+  <div id="settings-page" style="display: none;">
+    <!-- settings form -->
+  </div>
+
+  <!-- 🎯 Добавлено здесь -->
+  <div id="game-container" style="display: none;">
+    <h2 id="game-mode-title"></h2>
+    <canvas id="game-canvas" width="800" height="600" style="border: 1px solid black;"></canvas>
+  </div>
+
+  <script src="/client/js/home.js"></script>
+</body>

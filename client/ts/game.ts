@@ -1,3 +1,18 @@
+declare const socket: WebSocket;
+
+export function startGame(mode: string) {
+  const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = 'black';
+  ctx.font = '30px Arial';
+  ctx.fillText(`AI MODE ACTIVE`, 250, 300);
+}
+
+
 socket.addEventListener('message', (event) => {
     const data = JSON.parse(event.data);
     if (data.type === 'state') {
