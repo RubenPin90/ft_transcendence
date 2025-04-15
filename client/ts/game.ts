@@ -1,45 +1,62 @@
-declare const socket: WebSocket;
+let socket: WebSocket;
 
 export function startGame(mode: string) {
   const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  socket = new WebSocket(`ws://${window.location.host}/ws/game`);
 
-  ctx.fillStyle = 'black';
-  ctx.font = '30px Arial';
-  ctx.fillText(`AI MODE ACTIVE`, 250, 300);
-}
+  socket.addEventListener('open', () => {
+    const userId = 'user_' + Math.floor(Math.random() * 10000); // временно
+    socket.send(JSON.stringify({
+      type: 'joinQueue',
+      payload: {
+        userId,
+        mode
+      }
+    }));
+  });
 
+  socket.addEventListener('message', (event) => {
+    const msg = JSON.parse(event.data);
 
-socket.addEventListener('message', (event) => {
-    const data = JSON.parse(event.data);
-    if (data.type === 'state') {
-      // Update game state and render
-      updateGame(data.state);
+    if (msg.type === 'matchFound') {
+      console.log('🟢 Match found:', msg.payload);
+      // можно отрисовать "Match starting..."
+    } else if (msg.type === 'state') {
+      updateGame(ctx, msg.state);
     }
   });
-  
-  function updateGame(state: any) {
-    // Implement the rendering logic to update the canvas based on the new game state
-    console.log("Game state received", state);
-  }
-  
-// Example: Detect when ArrowDown is pressed and send a move message
-document.addEventListener('keydown', (event) => {
-    if (event.key === 'ArrowDown') {
-      // Construct the JSON object
-      const msg = {
+
+  document.addEventListener('keydown', (event) => {
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+
+    if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+      socket.send(JSON.stringify({
         type: 'move',
         payload: {
-          playerId: 'user123',  // or however you track the current user
-          direction: 'down'
+          direction: event.key === 'ArrowUp' ? 'up' : 'down'
         }
-      };
-  
-      // Send over WebSocket
-      socket.send(JSON.stringify(msg));
+      }));
     }
   });
-  
+}
+
+function updateGame(ctx: CanvasRenderingContext2D, state: any) {
+  ctx.clearRect(0, 0, 800, 600);
+
+  // Draw ball
+  ctx.beginPath();
+  ctx.arc(state.ball.x, state.ball.y, 10, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Draw players
+  state.players.forEach((p: any) => {
+    ctx.fillRect(p.x, p.y, p.width, p.height);
+  });
+
+  // Draw score
+  ctx.font = '20px Arial';
+  ctx.fillText(`Score: ${state.score[0]} - ${state.score[1]}`, 330, 40);
+}

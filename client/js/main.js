@@ -1,8 +1,9 @@
-import { startGame } from './game';
-function navigate(path) {
+import { startGame } from './game.js';
+const navigate = (path) => {
     history.pushState({}, '', path);
+    console.log('Navigating to:', path);
     route();
-}
+};
 function route() {
     const path = window.location.pathname;
     hideAllPages();
@@ -33,5 +34,28 @@ function hideAllPages() {
             el.style.display = 'none';
     });
 }
+document.addEventListener('DOMContentLoaded', () => {
+    const showPage = (pageId) => {
+        const pages = ['profile-page', 'settings-page'];
+        pages.forEach(id => {
+            const el = document.getElementById(id);
+            if (el)
+                el.style.display = id === pageId ? 'block' : 'none';
+        });
+    };
+    console.log('DOM fully loaded and parsed');
+    const settingsBtn = document.getElementById('settings-btn');
+    const profileBtn = document.getElementById('profile-btn');
+    const aiBtn = document.getElementById('sp-vs-ai-btn');
+    const oneVsOneBtn = document.getElementById('one-vs-one-btn');
+    const deathmatchBtn = document.getElementById('deathmatch-btn');
+    settingsBtn === null || settingsBtn === void 0 ? void 0 : settingsBtn.addEventListener('click', () => showPage('settings-page'));
+    profileBtn === null || profileBtn === void 0 ? void 0 : profileBtn.addEventListener('click', () => showPage('profile-page'));
+    // Updated navigation for game modes
+    aiBtn === null || aiBtn === void 0 ? void 0 : aiBtn.addEventListener('click', () => navigate('/game/ai'));
+    oneVsOneBtn === null || oneVsOneBtn === void 0 ? void 0 : oneVsOneBtn.addEventListener('click', () => navigate('/game/1v1'));
+    deathmatchBtn === null || deathmatchBtn === void 0 ? void 0 : deathmatchBtn.addEventListener('click', () => navigate('/game/deathmatch'));
+    console.log('Game mode buttons initialized');
+});
 window.addEventListener('popstate', route);
 document.addEventListener('DOMContentLoaded', route);

@@ -26,42 +26,28 @@ fastify.get('/*', async (request, reply) => {
   return reply.sendFile('menu.html', path.join(__dirname, '../templates'))
 })
 
-// fastify.get('/game', async (request, reply) => {
-//   return reply.sendFile('game.html', path.join(__dirname, '../templates'))
-// })
-
-// fastify.get('/home', async (request, reply) => {
-//   return reply.sendFile('home.html', path.join(__dirname, '../templates'))
-// })
-
-// fastify.get('/profile', async (request, reply) => {
-//   return reply.sendFile('profile.html', path.join(__dirname, '../templates'))
-// })
-
-// fastify.get('/settings', async (request, reply) => {
-//   return reply.sendFile('settings.html', path.join(__dirname, '../templates'))
-// })
-
-// fastify.get('/menu', async (request, reply) => {
-//   return reply.sendFile('menu.html', path.join(__dirname, '../templates'))
-// })
-
-// fastify.setNotFoundHandler((req, reply) => {
-//   return reply.sendFile('menu.html', path.join(__dirname, '../templates'));
-// });
-
-
 // Start Fastify server
 const httpServer = await fastify.listen({ port: 3000 })
 const server = fastify.server
 
 // -- WebSocket Setup --
-const wss = new WebSocketServer({ server })
+const wss = new WebSocketServer({ noServer: true });
 
 /** 
  * Simple memory-based queues. 
  * For more advanced usage, you'd store waiting players in a DB or in a better data structure.
  */
+server.on('upgrade', (request, socket, head) => {
+  if (request.url.startsWith('/ws/game')) {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
+  } else {
+    socket.destroy(); // or handle other paths
+  }
+});
+
+
 const waiting1v1Players = []
 const waitingDeathmatchPlayers = []
 

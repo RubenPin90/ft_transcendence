@@ -1,6 +1,7 @@
 "use strict";
 const navigate = (path) => {
-    window.location.href = path;
+    history.pushState({}, '', path);
+    route(); // вызывай route() из main.ts
 };
 document.addEventListener('DOMContentLoaded', () => {
     const showPage = (pageId) => {
