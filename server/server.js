@@ -35,39 +35,44 @@ const wss = new WebSocketServer({ noServer: true });
 
 /** 
  * Simple memory-based queues. 
- * For more advanced usage, you'd store waiting players in a DB or in a better data structure.
+ * In production, store waiting players in a DB or more robust data structures.
  */
-server.on('upgrade', (request, socket, head) => {
-  if (request.url.startsWith('/ws/game')) {
-    wss.handleUpgrade(request, socket, head, (ws) => {
-      wss.emit('connection', ws, request);
-    });
-  } else {
-    socket.destroy(); // or handle other paths
-  }
-});
-
-
 const waiting1v1Players = []
 const waitingDeathmatchPlayers = []
 
-// Generate a simple random game ID
+// Utility: remove a userId from a given queue array
+function removeFromQueue(queue, userId) {
+  const idx = queue.findIndex((p) => p.userId === userId);
+  if (idx !== -1) {
+    queue.splice(idx, 1);
+  }
+}
+
+// Generate a random game ID
 function generateGameId() {
   return 'match_' + Math.random().toString(36).substr(2, 9)
 }
 
 /**
- * Matchmaking logic for 1v1:
+ * Matchmaking for 1v1:
  *  - If someone is already waiting, pair them with the new arrival.
- *  - Otherwise, push the new arrival into the waiting list.
+ *  - Otherwise, push the new arrival to waiting list.
  */
 function joinQueue1v1(userId, ws) {
   if (waiting1v1Players.length > 0) {
     // There's someone waiting, match them
-    const other = waiting1v1Players.shift()  // remove first
+    const other = waiting1v1Players.shift()  // remove the first in the queue
     const gameId = generateGameId()
 
-    // Notify both players that a match is found
+    // Mark both players as inGame
+    ws.inGame = true
+    other.ws.inGame = true
+
+    // For demonstration, store the same gameId if you want to track it:
+    ws.currentGameId = gameId
+    other.ws.currentGameId = gameId
+
+    // Notify both that a match is found
     ws.send(JSON.stringify({
       type: 'matchFound',
       payload: {
@@ -95,28 +100,31 @@ function joinQueue1v1(userId, ws) {
 }
 
 /**
- * Example logic for a "deathmatch" mode,
- * requiring e.g. 4 players (or 6, you decide) for a match to start.
+ * Example "deathmatch" mode:
+ *  - Let's say we need 4 players to start a match.
  */
 function joinQueueDeathmatch(userId, ws) {
   waitingDeathmatchPlayers.push({ userId, ws })
   console.log(`${userId} queued for deathmatch. Currently: ${waitingDeathmatchPlayers.length} waiting.`)
 
-  // For example, once we have 4 players, we start
   const REQUIRED_PLAYERS = 4
   if (waitingDeathmatchPlayers.length >= REQUIRED_PLAYERS) {
-    // Slice first 4
+    // Collect first 4
     const group = waitingDeathmatchPlayers.splice(0, REQUIRED_PLAYERS)
     const gameId = generateGameId()
 
-    // Notify them all
     group.forEach((p) => {
+      // Mark them as inGame
+      p.ws.inGame = true
+      p.ws.currentGameId = gameId
+
+      // Notify each that a match is found
       p.ws.send(JSON.stringify({
         type: 'matchFound',
         payload: {
           gameId,
           mode: 'deathmatch',
-          players: group.map(g => g.userId)  // an array of userIDs in the match
+          players: group.map(g => g.userId)
         }
       }))
     })
@@ -125,18 +133,31 @@ function joinQueueDeathmatch(userId, ws) {
   }
 }
 
+// Setup upgrade so we can handle /ws/game
+server.on('upgrade', (request, socket, head) => {
+  if (request.url.startsWith('/ws/game')) {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
+  } else {
+    socket.destroy(); // handle other paths
+  }
+});
+
+// ---- The main WebSocket connection handler ----
 wss.on('connection', (ws) => {
   console.log('🔌 New WebSocket connection')
 
   // In a real app, you'd confirm the user's identity 
-  // (e.g. from a token) or handle "login" messages here.
-  // For now, let's generate a random userId for demonstration:
+  // (e.g. from a token) or handle "login" messages
+  // For now, just a random userId:
   ws.userId = 'user_' + Math.floor(Math.random() * 10000)
+  // By default, not in a game
+  ws.inGame = false
+  ws.currentGameId = null
 
   ws.on('message', (rawMsg) => {
     console.log('📨 Message received:', rawMsg.toString())
-
-    // 1. Parse the incoming JSON safely
     let data
     try {
       data = JSON.parse(rawMsg)
@@ -145,23 +166,23 @@ wss.on('connection', (ws) => {
       return
     }
 
-    // 2. Switch on data.type
     switch (data.type) {
-      // 1) Basic broadcast example (already in your code)
-      case 'chat':
-        // You might forward this to others or store in DB, etc.
-        // For now, just broadcast the chat message
+      // Basic chat broadcast
+      case 'chat': {
         wss.clients.forEach((client) => {
           if (client !== ws && client.readyState === ws.OPEN) {
-            client.send(JSON.stringify({ type: 'chat', payload: data.payload }))
+            client.send(JSON.stringify({
+              type: 'chat',
+              payload: data.payload
+            }))
           }
         })
         break
+      }
 
-      // 2) Lobby / matchmaking
+      // Lobby / matchmaking
       case 'joinQueue': {
         const { mode } = data.payload
-        // We assume you pass userId from the client. If not, use ws.userId
         const userId = data.payload.userId || ws.userId
 
         if (mode === '1v1') {
@@ -172,21 +193,43 @@ wss.on('connection', (ws) => {
         break
       }
 
-      // If you had more specialized messages like "move" or "leave", handle them here
+      // Graceful "leave game" / "surrender"
+      case 'leaveGame': {
+        // Mark them as not in a game
+        ws.inGame = false
+        ws.currentGameId = null
+        // Possibly notify opponents or remove from the match
+        // ...
+        console.log(`${ws.userId} left the game (voluntary).`)
+        break
+      }
+
+      // If you have specialized messages like "movePaddle", handle them here
       default:
         console.log('Unknown message type:', data.type)
     }
   })
 
   ws.on('close', () => {
-    console.log('❌ WebSocket disconnected')
-    // If they were in a queue, remove them, or handle it if needed
-    // ...
+    console.log(`❌ WebSocket disconnected (userId = ${ws.userId})`)
+
+    // If they were in the 1v1 queue, remove them
+    removeFromQueue(waiting1v1Players, ws.userId)
+
+    // If they were in the deathmatch queue, remove them
+    removeFromQueue(waitingDeathmatchPlayers, ws.userId)
+
+    // If ws.inGame === true, treat it as a forfeit or lost connection
+    if (ws.inGame) {
+      console.log(`--> They were in a match. Marking as forfeit/disconnect.`)
+      // In a real app, you might notify the opponent(s).
+      ws.inGame = false
+      ws.currentGameId = null
+    }
   })
 })
 
-
-// -- Existing "state" broadcast logic + game loop --
+// -- Game State Broadcast & Loop --
 function createBroadcastState(wss) {
   return function broadcastState(state) {
     const msg = JSON.stringify({ type: 'state', state })
@@ -197,5 +240,6 @@ function createBroadcastState(wss) {
     })
   }
 }
+
 const broadcastState = createBroadcastState(wss)
 startGameLoop(broadcastState)
