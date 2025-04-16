@@ -7,10 +7,10 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "outDir": "../js",
-    "rootDirs": ["../ts", "../scripts/login"],
+    "outDir": "./js",
+    "rootDirs": ["./ts", "./scripts/login"],
     "removeComments": true,
   },
-  "include": ["../ts/**/*", "../scripts/**/*"],
-  "exclude": ["../js"]
+  "include": ["./ts/**/*", "./scripts/**/*"],
+  "exclude": ["./js"]
 }
