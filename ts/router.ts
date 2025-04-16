@@ -5,16 +5,17 @@ import { renderAbout } from './pages/about.js';
 
 export function router() {
   const path = window.location.pathname;
-  console.log("path is: ");
-  console.log(path);
   const app = document.getElementById('app');
   if (!app) return;
 
+  console.log(path);
   switch (path) {
     case '/':
       // app.innerHTML = renderHome();
-      renderHome().then(html => {
+        renderHome().then(html => {
         document.getElementById('app')!.innerHTML = html;
+        console.log("--------------------------------------------------------------");
+        console.log(html);
       });
       break;
     case '/about':

@@ -1,28 +1,20 @@
-// import { router } from './router';
-
 import { router } from "./router.js";
 
-console.log("here");
+function redirect( new_path : string ){
+  window.location.pathname = new_path;
+}
 
 window.addEventListener('DOMContentLoaded', () =>{
   router();
 
-  document.body.addEventListener("click", (event) =>{
-    const target = event as unknown as HTMLElement;
-    if (target.tagName === "A" && target.classList.contains("route-link")){
-      event.preventDefault();
-      const href = target.getAttribute("href");
-      if (href){
-        window.history.pushState({}, "", href);
-        router();
-      }
-    }
-  });
 });
 
 window.addEventListener("popstate", () => {
   router();
 });
+
+
+
 
 // window.addEventListener('DOMContentLoaded', () => {
 //   console.log("here");
