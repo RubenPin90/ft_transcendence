@@ -1,14 +1,11 @@
-var http = require('http');
-var urls = require('./urls');
-const db = require('./database/db_user_functions');
-const db2 = require('./database/db_main');
+import http from 'http';
+import * as urls from './urls.js';
 const PORT = 8080;
 
 
 const server = http.createServer(async function (req, res) {
-	await db2.create_db();
 	try {
-		await urls.urlpattern(req, res);
+		const returned = await urls.url_pattern(req, res);
 	} catch (exception) {
 		console.log(exception);
 	}
