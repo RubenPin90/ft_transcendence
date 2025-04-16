@@ -1,5 +1,7 @@
 import { startGame } from './game.js';
 
+
+
 const navigate = (path: string) => {
   history.pushState({}, '', path);
   console.log('Navigating to:', path);
@@ -53,17 +55,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const settingsBtn = document.getElementById('settings-btn');
   const profileBtn = document.getElementById('profile-btn');
-  const aiBtn = document.getElementById('sp-vs-ai-btn');
+  const aiBtn = document.getElementById('sp-vs-pve-btn');
   const oneVsOneBtn = document.getElementById('one-vs-one-btn');
-  const deathmatchBtn = document.getElementById('deathmatch-btn');
+  const CustomgameBtn = document.getElementById('Customgame-btn');
 
   settingsBtn?.addEventListener('click', () => showPage('settings-page'));
   profileBtn?.addEventListener('click', () => showPage('profile-page'));
 
   // Updated navigation for game modes
-  aiBtn?.addEventListener('click', () => navigate('/game/ai'));
+  aiBtn?.addEventListener('click', () => navigate('/game/pve'));
   oneVsOneBtn?.addEventListener('click', () => navigate('/game/1v1'));
-  deathmatchBtn?.addEventListener('click', () => navigate('/game/deathmatch'));
+  CustomgameBtn?.addEventListener('click', () => navigate('/game/Customgame'));
   console.log('Game mode buttons initialized');
 });
 

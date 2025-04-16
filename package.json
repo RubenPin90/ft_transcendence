@@ -13,8 +13,8 @@
     "speakeasy": "^2.0.0",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
-    "ws": "^8.18.1",
-    "wss": "^3.3.4"
+    "uuid": "^11.1.0",
+    "ws": "^8.18.1"
   },
   "name": "ft_transcendence",
   "version": "1.0.0",

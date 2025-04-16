@@ -46,15 +46,15 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM fully loaded and parsed');
     const settingsBtn = document.getElementById('settings-btn');
     const profileBtn = document.getElementById('profile-btn');
-    const aiBtn = document.getElementById('sp-vs-ai-btn');
+    const aiBtn = document.getElementById('sp-vs-pve-btn');
     const oneVsOneBtn = document.getElementById('one-vs-one-btn');
-    const deathmatchBtn = document.getElementById('deathmatch-btn');
+    const CustomgameBtn = document.getElementById('Customgame-btn');
     settingsBtn === null || settingsBtn === void 0 ? void 0 : settingsBtn.addEventListener('click', () => showPage('settings-page'));
     profileBtn === null || profileBtn === void 0 ? void 0 : profileBtn.addEventListener('click', () => showPage('profile-page'));
     // Updated navigation for game modes
-    aiBtn === null || aiBtn === void 0 ? void 0 : aiBtn.addEventListener('click', () => navigate('/game/ai'));
+    aiBtn === null || aiBtn === void 0 ? void 0 : aiBtn.addEventListener('click', () => navigate('/game/pve'));
     oneVsOneBtn === null || oneVsOneBtn === void 0 ? void 0 : oneVsOneBtn.addEventListener('click', () => navigate('/game/1v1'));
-    deathmatchBtn === null || deathmatchBtn === void 0 ? void 0 : deathmatchBtn.addEventListener('click', () => navigate('/game/deathmatch'));
+    CustomgameBtn === null || CustomgameBtn === void 0 ? void 0 : CustomgameBtn.addEventListener('click', () => navigate('/game/Customgame'));
     console.log('Game mode buttons initialized');
 });
 window.addEventListener('popstate', route);
