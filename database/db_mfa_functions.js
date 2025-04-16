@@ -22,7 +22,7 @@ async function get_mfa() {
 async function get_mfa_value(search_value, value) {
     const valid_values = ['email', 'otc', 'custom', 'prefered', 'self'];
     if (!valid_values.includes(search_value))
-        return null;
+        return -1;
 
     const db = await open({
         filename: 'db.sqlite',
@@ -75,7 +75,7 @@ async function create_mfa_value(mfa_email, otc, custom, prefered, self) {
 async function update_mfa_value(search_value, value, self) {
     const valid_values = ['email', 'otc', 'prefered', 'custom'];
     if (!valid_values.includes(search_value))
-        return null;
+        return -1;
     const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
@@ -87,14 +87,14 @@ async function update_mfa_value(search_value, value, self) {
             WHERE self = '${self}'
         `);
         if (!check)
-            return null;
+            return -2;
         var row = await db.run(`
             UPDATE mfa
             SET ${search_value} = '${value}'
             WHERE self = '${self}'`);
     } catch (err) {
         console.log(`Error in update_settings_value: ${err}`);
-        return null;
+        return -3;
     } finally {
         await db.close();
         return row;

@@ -34,7 +34,9 @@ async function send_error_page(filename, response, status, func) {
     return true;
 }
 
-async function redirect(response, location, code) {
+function redirect(response, location, code) {
+    if (!response || !location || !code || response === undefined || location === undefined || code === undefined)
+        return false;
     response.writeHead(code, {
         'Location': location,
     });
