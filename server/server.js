@@ -5,6 +5,7 @@ import { WebSocketServer } from 'ws'
 import fastifyStatic from '@fastify/static'
 import staticJs from '../plugins/static-js.js'
 import { startGameLoop } from './gameLogic.js'
+import { createGameAI } from './matchMaking.js'
 
 // --------- IMPORT YOUR MATCH MANAGER -----------
 import { MatchManager, GAME_MODES } from './MatchManager.js'
@@ -38,7 +39,7 @@ const server = fastify.server
 const wss = new WebSocketServer({ noServer: true })
 
 // ---- CREATE THE MATCH MANAGER INSTANCE ----
-const matchManager = new MatchManager()
+const matchManager = new MatchManager(wss)
 
 /**
  * For simple matchmaking, we’ll keep arrays of "waiting" users for 1v1 & custom modes.
@@ -56,33 +57,7 @@ function removeFromQueue(queue, userId) {
 }
 
 // PVE: Create a game against AI
-function createGameAI(userId, ws) {
-  // Create a new PVE room via matchManager
-  const room = matchManager.createRoom({
-    mode: GAME_MODES.PVE,
-    maxPlayers: 2,
-    creatorId: userId,
-  })
 
-  // Add the user to that room
-  matchManager.joinRoom(room.roomId, userId)
-
-  // Mark them in the server WebSocket as "inGame"
-  ws.inGame = true
-  ws.currentGameId = room.roomId
-
-  // Notify the user
-  ws.send(JSON.stringify({
-    type: 'matchFound',
-    payload: {
-      gameId: room.roomId,
-      mode: 'PVE',
-      opponentId: 'BOT', // We'll treat 'BOT' as the AI
-    },
-  }))
-
-  console.log(`PVE match created for ${userId} vs AI (roomId = ${room.roomId})`)
-}
 
 // 1v1 matchmaking: when a new user arrives, see if we already have someone in queue
 function joinQueue1v1(userId, ws) {
@@ -223,10 +198,10 @@ wss.on('connection', (ws) => {
         const userId = data.payload.userId || ws.userId
         console.log('Incoming joinQueue request - mode:', mode)
 
-        if (mode === 'ai') {
-          createGameAI(userId, ws)
+        if (mode === 'pve') {
+          createGameAI(matchManager, userId, ws)
         } else if (mode === '1v1') {
-          joinQueue1v1(userId, ws)
+          joinQueue1v1(matchManager, userId, ws)
         } else if (mode === 'Customgame') {
           joinQueueCustomgame(userId, ws)
         }
@@ -240,6 +215,19 @@ wss.on('connection', (ws) => {
         console.log(`${ws.userId} left the game voluntarily.`)
         // If you also want to remove them from a match in matchManager, you can call:
         // matchManager.leaveRoom(ws.currentGameId, ws.userId)
+        break
+      }
+      case 'movePaddle': {
+        const { dy } = data.payload          // -1..1 user input
+        const room   = matchManager.rooms.get(ws.currentGameId)
+        if (!room) break
+      
+        const player = room.players.find(p => p.playerId === ws.userId)
+        if (player) {
+          const speed = 1.0                  // units per second
+          player.paddleY = Math.max(0,
+                             Math.min(1, player.paddleY + dy * speed / room.FPS))
+        }
         break
       }
 
@@ -257,6 +245,7 @@ wss.on('connection', (ws) => {
 
     // If they were in the Custom queue, remove them
     removeFromQueue(waitingCustomgamePlayers, ws.userId)
+    matchManager.unregisterSocket(ws.userId)
 
     // If ws.inGame === true, treat it as a forfeit or lost connection
     if (ws.inGame) {
@@ -269,17 +258,3 @@ wss.on('connection', (ws) => {
   })
 })
 
-// -- Game State Broadcast & Loop --
-function createBroadcastState(wss) {
-  return function broadcastState(state) {
-    const msg = JSON.stringify({ type: 'state', state })
-    wss.clients.forEach((client) => {
-      if (client.readyState === client.OPEN) {
-        client.send(msg)
-      }
-    })
-  }
-}
-
-const broadcastState = createBroadcastState(wss)
-startGameLoop(broadcastState)

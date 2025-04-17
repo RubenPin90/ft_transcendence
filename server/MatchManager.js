@@ -7,10 +7,28 @@ export const GAME_MODES = {
 }
 
 export class MatchManager {
-  constructor() {
-    // Store all active rooms
-    this.rooms = new Map()
-  }
+    static GAME_MODES = GAME_MODES;
+    constructor(wss) {
+      this.wss = wss
+      this.rooms = new Map()
+      this.userSockets = new Map();        // NEW
+    }
+    
+    registerSocket(id, ws)  { this.userSockets.set(id, ws); }
+    unregisterSocket(id)    { this.userSockets.delete(id); }
+
+    _broadcastFor(roomId) {
+      return state => {
+        const room = this.rooms.get(roomId);
+        if (!room) return;
+        room.players.forEach(p => {
+          const ws = this.userSockets.get(p.playerId);
+          if (ws && ws.readyState === ws.OPEN) {
+            ws.send(JSON.stringify({ type: 'state', state }));
+          }
+        });
+      };
+    }
 
   createRoom(options) {
     const {
@@ -44,8 +62,19 @@ export class MatchManager {
 
     this.rooms.set(roomId, newRoom)
     console.log(`Created new room: ${roomId}, mode=${mode}, maxPlayers=${maxPlayers}`)
+    if (newRoom.players.length === newRoom.maxPlayers) {
+      // Optional: ensure you really want to auto‑start for this mode
+      if (mode !== GAME_MODES.CUSTOM) {      // or any condition you like
+        newRoom.status = 'running'
+        this.startRoomLoop(roomId)
+      } else {
+        newRoom.status = 'pre‑game'          // waiting for "Ready"
+      }
+    }
     return newRoom
   }
+
+  
 
   joinRoom(roomId, playerId) {
     const room = this.rooms.get(roomId)
@@ -95,16 +124,39 @@ export class MatchManager {
   startRoomLoop(roomId) {
     const room = this.rooms.get(roomId)
     if (!room) return
-
+  
     console.log(`Starting server loop for room ${roomId} in mode=${room.mode}`)
-
-    // Example: run game updates at ~60 fps
+  
+    /* ---------- one-time init ---------- */
+    room.ballState = { x: 0.5, y: 0.5, vx: 0.45, vy: 0.32 }   // unit coords (0..1)
+    room.players.forEach(p => (p.paddleY = 0.5))              // center paddles
+  
+    const broadcast = this._broadcastFor(roomId)
+    const FPS       = 60
+  
     room.updateInterval = setInterval(() => {
-      // Game logic here: move ball, check collisions, update scores, broadcast state to clients, etc.
-      // If mode = PVE, you can move the BOT paddle here as well.
-
-    }, 1000 / 60)
+      /* -------- update physics -------- */
+      const b = room.ballState
+      b.x += b.vx / FPS
+      b.y += b.vy / FPS
+  
+      // Reflect off top/bottom walls
+      if (b.y < 0 || b.y > 1) b.vy *= -1
+  
+      // Bounce back from left/right goals (placeholder logic)
+      if (b.x < 0 || b.x > 1) b.vx *= -1
+  
+      /* -------- broadcast snapshot -------- */
+      broadcast({
+        roomId,
+        players: room.players.map(p => ({ id: p.playerId, y: p.paddleY })),
+        ball:    { x: b.x, y: b.y },
+        scores:  room.scoreBoard,
+        status:  room.status,
+      })
+    }, 1000 / FPS)
   }
+  
 
   removeRoom(roomId) {
     const room = this.rooms.get(roomId)

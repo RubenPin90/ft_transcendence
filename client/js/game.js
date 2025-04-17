@@ -1,54 +1,47 @@
-let socket;
+// game.ts – place next to main.ts
+let ws = null;
+let ctx = null;
 export function startGame(mode) {
-    const canvas = document.getElementById('game-canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx)
-        return;
-    socket = new WebSocket(`ws://${window.location.host}/ws/game`);
-    socket.addEventListener('open', () => {
-        const userId = 'user_' + Math.floor(Math.random() * 10000); // временно
-        socket.send(JSON.stringify({
+    // Canvas & 2‑D context
+    const canvas = document.getElementById('gameCanvas');
+    ctx = canvas.getContext('2d');
+    console.log('startGame → opening WS, mode =', mode);
+    ws = new WebSocket(`ws://${location.host}/ws/game`);
+    ws.onopen = () => {
+        ws.send(JSON.stringify({
             type: 'joinQueue',
-            payload: {
-                userId,
-                mode
-            }
+            payload: { mode }
         }));
-    });
-    socket.addEventListener('message', (event) => {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'matchFound') {
-            console.log('🟢 Match found:', msg.payload);
-            // можно отрисовать "Match starting..."
+        console.log('WS open, joinQueue sent');
+    };
+    ws.onmessage = (evt) => {
+        const msg = JSON.parse(evt.data);
+        if (msg.type === 'game_state') {
+            drawFrame(msg.data);
         }
-        else if (msg.type === 'state') {
-            updateGame(ctx, msg.state);
-        }
-    });
-    document.addEventListener('keydown', (event) => {
-        if (!socket || socket.readyState !== WebSocket.OPEN)
-            return;
-        if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-            socket.send(JSON.stringify({
-                type: 'move',
-                payload: {
-                    direction: event.key === 'ArrowUp' ? 'up' : 'down'
-                }
-            }));
-        }
-    });
+    };
+    ws.onclose = () => console.log('WS closed');
 }
-function updateGame(ctx, state) {
-    ctx.clearRect(0, 0, 800, 600);
-    // Draw ball
-    ctx.beginPath();
-    ctx.arc(state.ball.x, state.ball.y, 10, 0, Math.PI * 2);
-    ctx.fill();
-    // Draw players
-    state.players.forEach((p) => {
-        ctx.fillRect(p.x, p.y, p.width, p.height);
+export function stopGame() {
+    if (ws && ws.readyState === WebSocket.OPEN)
+        ws.close();
+}
+function drawFrame(state) {
+    const context = ctx; // ← fresh alias that keeps the narrowed type
+    if (!context)
+        return; // exit if the canvas didn’t initialise
+    const { canvas } = context; // destructure once, nicer to read
+    const toX = (u) => u * canvas.width;
+    const toY = (u) => u * canvas.height;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    // ball
+    context.beginPath();
+    context.arc(toX(state.ball.x), toY(state.ball.y), 8, 0, 2 * Math.PI);
+    context.fillStyle = '#fff';
+    context.fill();
+    // paddles
+    state.players.forEach((p, idx) => {
+        const x = idx === 0 ? 10 : canvas.width - 25;
+        context.fillRect(x, toY(p.y) - 50, 15, 100);
     });
-    // Draw score
-    ctx.font = '20px Arial';
-    ctx.fillText(`Score: ${state.score[0]} - ${state.score[1]}`, 330, 40);
 }

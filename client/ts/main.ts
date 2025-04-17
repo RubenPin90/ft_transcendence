@@ -1,4 +1,4 @@
-import { startGame } from './game.js';
+import { startGame, stopGame } from './game.js';
 
 
 
@@ -13,13 +13,14 @@ function route() {
   hideAllPages();
 
   if (path.startsWith('/game')) {
-    const mode = path.split('/')[2] || 'default';
-    hideAllPages();
     document.getElementById('game-container')!.style.display = 'block';
-    document.getElementById('game-mode-title')!.textContent = `Starting ${mode.toUpperCase()} Game...`;
+    document.getElementById('game-mode-title')!.textContent = 'Mode: ' + (path.split('/')[2] || 'pve');
+    stopGame()
   
-    startGame(mode);
-    return;
+    const mode = path.split('/')[2] || 'pve'
+    // show the container etc.
+    startGame(mode)          // ← already launches the socket
+    return
   }
 
   switch (path) {
