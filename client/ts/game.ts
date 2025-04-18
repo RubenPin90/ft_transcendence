@@ -1,43 +1,54 @@
-// game.ts – place next to main.ts
-let ws: WebSocket | null = null;
+// client/game.ts
+let socket: WebSocket | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
 
+/* -------------------------------------------------- initialise canvas */
+export function initGameCanvas() {
+  const canvas = document.getElementById('game') as HTMLCanvasElement | null;
+  if (canvas && !ctx) {
+    ctx = canvas.getContext('2d');
+  }
+}
+
+/* -------------------------------------------------- start & stop  */
 export function startGame(mode: string) {
-  // Canvas & 2‑D context
-  const canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
-  ctx = canvas.getContext('2d');
+  if (socket && socket.readyState === WebSocket.OPEN) return;    // already running
 
-  console.log('startGame → opening WS, mode =', mode);
+  socket = new WebSocket(`ws://${location.host}/ws/game`);
 
-  ws = new WebSocket(`ws://${location.host}/ws/game`);
-
-  ws.onopen = () => {
-    ws!.send(JSON.stringify({
+  socket.addEventListener('open', () => {
+    socket!.send(JSON.stringify({
       type: 'joinQueue',
-      payload: { mode }
+      payload: { mode, userId: `cli_${Math.floor(Math.random() * 9999)}` },
     }));
-    console.log('WS open, joinQueue sent');
-  };
+  });
 
-  ws.onmessage = (evt) => {
-    const msg = JSON.parse(evt.data);
-    if (msg.type === 'game_state') {
-      drawFrame(msg.data);
+  socket.addEventListener('message', ev => {
+    const { type, payload, state } = JSON.parse(ev.data);
+
+    if (type === 'matchFound') {
+      console.log('Match ready, id =', payload.gameId);
+    } else if (type === 'state') {
+      drawFrame(state);
     }
-  };
+  });
 
-  ws.onclose = () => console.log('WS closed');
+  socket.addEventListener('close', () =>
+    console.log('Socket closed'),
+  );
 }
 
 export function stopGame() {
-  if (ws && ws.readyState === WebSocket.OPEN) ws.close();
+  if (socket && socket.readyState === WebSocket.OPEN) socket.close();
+  socket = null;
 }
 
+/* -------------------------------------------------- rendering */
 function drawFrame(state: any) {
-  const context = ctx;           // ← fresh alias that keeps the narrowed type
-  if (!context) return;          // exit if the canvas didn’t initialise
+  if (!ctx) return;                       // <-- guarantees it’s non‑null
+  const context = ctx;                    //      narrowed type
 
-  const { canvas } = context;    // destructure once, nicer to read
+  const { canvas } = context;
   const toX = (u: number) => u * canvas.width;
   const toY = (u: number) => u * canvas.height;
 
@@ -52,6 +63,6 @@ function drawFrame(state: any) {
   // paddles
   state.players.forEach((p: any, idx: number) => {
     const x = idx === 0 ? 10 : canvas.width - 25;
-    context.fillRect(x, toY(p.y) - 50, 15, 100);
+    context.fillRect(x, toY(p.y) - 50, 15, 100);   // <- use `context`
   });
 }

@@ -262,6 +262,7 @@ export function startGameLoop(broadcast) {
 
     // 2) Broadcast the new state
     const currentState = game.getState();
+    console.log("Broadcasting game state:", currentState);
     broadcast(currentState);
 
     // If the game ended, you can clear interval or continue as you like:

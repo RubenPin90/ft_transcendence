@@ -23,9 +23,9 @@ export class MatchManager {
         if (!room) return;
         room.players.forEach(p => {
           const ws = this.userSockets.get(p.playerId);
-          if (ws && ws.readyState === ws.OPEN) {
+          if (ws && ws.readyState === ws.OPEN) {      // instance constant
             ws.send(JSON.stringify({ type: 'state', state }));
-          }
+          }          
         });
       };
     }

@@ -1,4 +1,4 @@
-import { startGame, stopGame } from './game.js';
+import { initGameCanvas, startGame, stopGame } from './game.js';
 const navigate = (path) => {
     history.pushState({}, '', path);
     console.log('Navigating to:', path);
@@ -10,6 +10,7 @@ function route() {
     if (path.startsWith('/game')) {
         document.getElementById('game-container').style.display = 'block';
         document.getElementById('game-mode-title').textContent = 'Mode: ' + (path.split('/')[2] || 'pve');
+        initGameCanvas(); // Initialize the canvas for the game
         stopGame();
         const mode = path.split('/')[2] || 'pve';
         // show the container etc.
