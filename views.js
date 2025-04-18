@@ -53,6 +53,7 @@ async function login(request, response) {
 
 async function register(request, response) {
     const check_login = await utils.check_login(request, response);
+    console.log(check_login);
     if (check_login !== 0)
         return false;
     const check = await send.send_html('register.html', response, 200, async (data) => {

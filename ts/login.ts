@@ -1,37 +1,37 @@
 function getInputElement(id: string): HTMLInputElement {
-    const ellement = document.getElementById(id);
-    if (!(ellement instanceof HTMLInputElement)) {
+    const element = document.getElementById(id);
+    if (!(element instanceof HTMLInputElement)) {
         throw new Error(`Element with ID "${id}" is not an input element.`);
     }
-    return ellement;
+    return element;
 }
 
 function getHTMLElement(id: string): HTMLElement {
-    const ellement = document.getElementById(id);
-    if (!ellement) {
+    const element = document.getElementById(id);
+    if (!element) {
         throw new Error(`Element with ID "${id}" not found.`);
     }
-    return ellement;
+    return element;
 }
 
-async function toggle_login(): Promise<void> {
+// async function toggle_login(): Promise<void> {
 
-    const email = getInputElement("email-input");
-    const password = getInputElement("password-input");
+//     const email = getInputElement("email-input");
+//     const password = getInputElement("password-input");
 
-    email.classList.replace('error_input', 'form');
-    password.classList.replace('error_input', 'form');
+//     email.classList.replace('error_input', 'form');
+//     password.classList.replace('error_input', 'form');
 
-    const blur = getHTMLElement('toggle_login');
-    blur.classList.toggle('hidden');
+//     const blur = getHTMLElement('toggle_login');
+//     blur.classList.toggle('hidden');
 
-    const big_button = getHTMLElement('main_button');
-    if (blur.classList.contains('hidden')) {
-        big_button.classList.remove('hidden');
-    } else {
-        big_button.classList.add('hidden');
-    }
-}
+//     const big_button = getHTMLElement('main_button');
+//     if (blur.classList.contains('hidden')) {
+//         big_button.classList.remove('hidden');
+//     } else {
+//         big_button.classList.add('hidden');
+//     }
+// }
 
 async function let_it_shake(): Promise<void> {
     const email = getInputElement("email-input");

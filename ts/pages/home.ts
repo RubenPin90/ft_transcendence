@@ -66,8 +66,6 @@ export async function renderHome() : Promise<string> {
     const res = await fetch('/views/home.html');
     const ret = await res.text();
 
-    console.log(ret);
-    
     return ret;
 }
 
