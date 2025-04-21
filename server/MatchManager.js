@@ -7,103 +7,80 @@ export const GAME_MODES = {
 }
 
 export class MatchManager {
-    static GAME_MODES = GAME_MODES;
-    constructor(wss) {
-      this.wss = wss
-      this.rooms = new Map()
-      this.userSockets = new Map();        // NEW
-    }
-    
-    registerSocket(id, ws)  { this.userSockets.set(id, ws); }
-    unregisterSocket(id)    { this.userSockets.delete(id); }
+  static GAME_MODES = GAME_MODES;
 
-    _broadcastFor(roomId) {
-      return state => {
-        const room = this.rooms.get(roomId);
-        if (!room) return;
-        room.players.forEach(p => {
-          const ws = this.userSockets.get(p.playerId);
-          if (ws && ws.readyState === ws.OPEN) {      // instance constant
-            ws.send(JSON.stringify({ type: 'state', state }));
-          }          
-        });
-      };
+  constructor(wss) {
+    this.wss = wss
+    this.rooms = new Map()
+    this.userSockets = new Map()
+  }
+
+  registerSocket(id, ws)  { this.userSockets.set(id, ws) }
+  unregisterSocket(id)    { this.userSockets.delete(id) }
+
+  _broadcastFor(roomId) {
+    return state => {
+      const room = this.rooms.get(roomId)
+      if (!room) return
+      room.players.forEach(p => {
+        const ws = this.userSockets.get(p.playerId)
+        if (ws && ws.readyState === ws.OPEN) {
+          ws.send(JSON.stringify({ type: 'state', state }))
+        }
+      })
     }
+  }
 
   createRoom(options) {
-    const {
-      mode = GAME_MODES.PVP,
-      maxPlayers = 2,
-      creatorId,
-    } = options
-
+    const { mode = GAME_MODES.PVP, maxPlayers = 2, creatorId } = options
     const roomId = uuidv4()
 
     const newRoom = {
       roomId,
       mode,
       maxPlayers,
-      players: [],        // { playerId, isBot } objects
+      players: [],
       ballState: null,
       scoreBoard: {},
-      status: 'waiting',  // or 'running', 'finished' ...
+      status: 'waiting',
       updateInterval: null,
+      pauseTimeout: null,
+      maxScore: 5,
     }
 
-    // If it’s PVE mode, push a BOT right away
     if (mode === GAME_MODES.PVE) {
-      newRoom.players.push({ playerId: 'BOT', isBot: true })
+      newRoom.players.push({ playerId: 'BOT', isBot: true, paddleY: 0.5 })
+      newRoom.scoreBoard['BOT'] = 0
     }
 
-    // If the room creator is known, add them
     if (creatorId) {
-      newRoom.players.push({ playerId: creatorId, isBot: false })
+      newRoom.players.push({ playerId: creatorId, isBot: false, paddleY: 0.5 })
+      newRoom.scoreBoard[creatorId] = 0
     }
 
     this.rooms.set(roomId, newRoom)
-    console.log(`Created new room: ${roomId}, mode=${mode}, maxPlayers=${maxPlayers}`)
+
     if (newRoom.players.length === newRoom.maxPlayers) {
-      // Optional: ensure you really want to auto‑start for this mode
-      if (mode !== GAME_MODES.CUSTOM) {      // or any condition you like
-        newRoom.status = 'running'
-        this.startRoomLoop(roomId)
-      } else {
-        newRoom.status = 'pre‑game'          // waiting for "Ready"
-      }
+      newRoom.status = 'running'
+      this._initBall(roomId)
+      this._mainLoop(roomId)
     }
+
     return newRoom
   }
 
-  
-
   joinRoom(roomId, playerId) {
     const room = this.rooms.get(roomId)
-    if (!room) {
-      console.warn(`joinRoom failed: room ${roomId} not found.`)
-      return null
-    }
+    if (!room || room.players.length >= room.maxPlayers) return null
+    if (room.players.some(p => p.playerId === playerId)) return room
 
-    // If already full, return null
-    if (room.players.length >= room.maxPlayers) {
-      console.warn(`joinRoom failed: room ${roomId} is full.`)
-      return null
-    }
+    room.players.push({ playerId, isBot: false, paddleY: 0.5 })
+    room.scoreBoard[playerId] = 0
 
-    // Check if player is already in there
-    const alreadyJoined = room.players.some(p => p.playerId === playerId)
-    if (alreadyJoined) {
-      // Possibly no-op or return the room
-      return room
-    }
-
-    // Add them
-    room.players.push({ playerId, isBot: false })
-    console.log(`${playerId} joined room ${roomId}`)
-
-    // If we’ve now reached maxPlayers, start the game loop
     if (room.players.length === room.maxPlayers) {
       room.status = 'running'
-      this.startRoomLoop(roomId)
+      this._initBall(roomId)
+      this._mainLoop(roomId)
     }
 
     return room
@@ -112,62 +89,98 @@ export class MatchManager {
   leaveRoom(roomId, playerId) {
     const room = this.rooms.get(roomId)
     if (!room) return
-
     room.players = room.players.filter(p => p.playerId !== playerId)
+    delete room.scoreBoard[playerId]
+    if (room.players.length === 0) this.removeRoom(roomId)
+  }
 
-    if (room.players.length === 0) {
-      // No one left, remove the room
-      this.removeRoom(roomId)
+  _initBall(roomId) {
+    const room = this.rooms.get(roomId)
+    room.ballState = {
+      x: 0.5,
+      y: 0.5,
+      vx: (Math.random() < 0.5 ? 1 : -1) * 0.5,
+      vy: (Math.random() * 2 - 1) * 0.3,
     }
   }
 
-  startRoomLoop(roomId) {
+  _mainLoop(roomId) {
     const room = this.rooms.get(roomId)
     if (!room) return
-  
-    console.log(`Starting server loop for room ${roomId} in mode=${room.mode}`)
-  
-    /* ---------- one-time init ---------- */
-    room.ballState = { x: 0.5, y: 0.5, vx: 0.45, vy: 0.32 }   // unit coords (0..1)
-    room.players.forEach(p => (p.paddleY = 0.5))              // center paddles
-  
     const broadcast = this._broadcastFor(roomId)
-    const FPS       = 60
-  
+    const FPS = 60
+    const paddleSize = 0.2
+
     room.updateInterval = setInterval(() => {
-      /* -------- update physics -------- */
       const b = room.ballState
       b.x += b.vx / FPS
       b.y += b.vy / FPS
-  
-      // Reflect off top/bottom walls
-      if (b.y < 0 || b.y > 1) b.vy *= -1
-  
-      // Bounce back from left/right goals (placeholder logic)
-      if (b.x < 0 || b.x > 1) b.vx *= -1
-  
-      /* -------- broadcast snapshot -------- */
+
+      if (b.y <= 0) { b.y = 0; b.vy *= -1 }
+      if (b.y >= 1) { b.y = 1; b.vy *= -1 }
+
+      room.players.forEach((p, idx) => {
+        const withinY = b.y >= p.paddleY - paddleSize/2 && b.y <= p.paddleY + paddleSize/2
+        const hit = (idx === 0 && b.x <= 0.02) || (idx === 1 && b.x >= 0.98)
+        if (hit && withinY) {
+          b.vx *= -1.03
+          b.x = idx === 0 ? 0.02 : 0.98
+        }
+      })
+
+      // Goal scored
+      if (b.x < 0 || b.x > 1) {
+        const scorerIdx = b.x < 0 ? 1 : 0
+        const scorer = room.players[scorerIdx].playerId
+        room.scoreBoard[scorer]++
+
+        clearInterval(room.updateInterval)
+        if (room.scoreBoard[scorer] >= room.maxScore) {
+          room.status = 'finished'
+          broadcast({
+            roomId,
+            players: room.players.map(p => ({ id: p.playerId, y: p.paddleY })),
+            ball: null,
+            scores: room.scoreBoard,
+            status: room.status,
+            winner: scorer,
+          })
+        } else {
+          room.status = 'paused'
+          broadcast({
+            roomId,
+            players: room.players.map(p => ({ id: p.playerId, y: p.paddleY })),
+            ball: null,
+            scores: room.scoreBoard,
+            status: room.status,
+          })
+          room.pauseTimeout = setTimeout(() => {
+            room.status = 'running'
+            this._initBall(roomId)
+            this._mainLoop(roomId)
+          }, 1000)
+        }
+        return
+      }
+
+      // Regular update
       broadcast({
         roomId,
         players: room.players.map(p => ({ id: p.playerId, y: p.paddleY })),
-        ball:    { x: b.x, y: b.y },
-        scores:  room.scoreBoard,
-        status:  room.status,
+        ball: { x: b.x, y: b.y },
+        scores: room.scoreBoard,
+        status: room.status,
       })
-    }, 1000 / FPS)
+    }, 1000/FPS)
   }
-  
 
   removeRoom(roomId) {
     const room = this.rooms.get(roomId)
     if (!room) return
-
-    if (room.updateInterval) {
-      clearInterval(room.updateInterval)
-    }
-
+    clearInterval(room.updateInterval)
+    clearTimeout(room.pauseTimeout)
     this.rooms.delete(roomId)
-    console.log(`Room ${roomId} removed from manager.`)
+    console.log(`Room ${roomId} removed`)
   }
 
   getAllRooms() {

@@ -1,76 +1,81 @@
-import { initGameCanvas, startGame, stopGame } from './game.js';
+import {
+  initGameCanvas,
+  startGame,
+  stopGame,
+  setOnGameEnd
+} from './game.js'
+import type { GameMode } from './game.js' // вот это добавь
 
+const USER_ID = `cli_${Math.floor(Math.random() * 9999)}`
+let currentMode: string | null = null
+
+setOnGameEnd((winnerId: string) => {
+  alert(`Player ${winnerId} wins!`)
+})
 
 const navigate = (path: string) => {
-  history.pushState({}, '', path);
-  console.log('Navigating to:', path);
-  route();
-};
+  if (path === window.location.pathname) return
+  history.pushState({}, '', path)
+  console.log('Navigating to:', path)
+  route()
+}
 
 function route() {
-  const path = window.location.pathname;
-  hideAllPages();
+  const path = window.location.pathname
+  hideAllPages()
 
   if (path.startsWith('/game')) {
-    document.getElementById('game-container')!.style.display = 'block';
-    document.getElementById('game-mode-title')!.textContent = 'Mode: ' + (path.split('/')[2] || 'pve');
-    initGameCanvas(); // Initialize the canvas for the game
-    stopGame()
-
-  
+    document.getElementById('game-container')!.style.display = 'block'
     const mode = path.split('/')[2] || 'pve'
-    // show the container etc.
-    startGame(mode)          // ← already launches the socket
+    document.getElementById('game-mode-title')!.textContent = 'Mode: ' + mode
+
+    if (currentMode && currentMode !== mode) {
+      stopGame()
+    }
+    currentMode = mode
+
+    initGameCanvas()
+    if (['pve', '1v1', 'Customgame'].includes(mode)) {
+      startGame(mode as GameMode)
+    }
+
+    setOnGameEnd((winnerId: string) => {
+      stopGame()
+      alert(`Game over! Player ${winnerId} wins!`)
+    })
     return
   }
 
-  switch (path) {
-    case '/profile':
-      document.getElementById('profile-page')!.style.display = 'block';
-      break;
-    case '/settings':
-      document.getElementById('settings-page')!.style.display = 'block';
-      break;
-    default:
-      document.getElementById('main-menu')!.style.display = 'block';
+  const mapping: Record<string, string> = {
+    '/profile': 'profile-page',
+    '/settings': 'settings-page'
+  }
+  const pageId = mapping[path]
+  if (pageId) {
+    document.getElementById(pageId)!.style.display = 'block'
+  } else {
+    document.getElementById('main-menu')!.style.display = 'block'
   }
 }
 
 function hideAllPages() {
-  const pages = ['main-menu', 'profile-page', 'settings-page', 'game-container'];
-  pages.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
+  ['main-menu', 'profile-page', 'settings-page', 'game-container'].forEach(id => {
+    const el = document.getElementById(id)
+    if (el) el.style.display = 'none'
+  })
 }
 
-
 document.addEventListener('DOMContentLoaded', () => {
-  const showPage = (pageId: string) => {
-      const pages = ['profile-page', 'settings-page'];
-      pages.forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.style.display = id === pageId ? 'block' : 'none';
-      });
-  };
-  console.log('DOM fully loaded and parsed');
+  const btnMap: Record<string, string> = {
+    'sp-vs-pve-btn': '/game/pve',
+    'one-vs-one-btn': '/game/1v1',
+    'Customgame-btn': '/game/Customgame'
+  }
 
-  const settingsBtn = document.getElementById('settings-btn');
-  const profileBtn = document.getElementById('profile-btn');
-  const aiBtn = document.getElementById('sp-vs-pve-btn');
-  const oneVsOneBtn = document.getElementById('one-vs-one-btn');
-  const CustomgameBtn = document.getElementById('Customgame-btn');
+  Object.entries(btnMap).forEach(([btnId, routePath]: [string, string]) => {
+    document.getElementById(btnId)?.addEventListener('click', () => navigate(routePath))
+  })
 
-  settingsBtn?.addEventListener('click', () => showPage('settings-page'));
-  profileBtn?.addEventListener('click', () => showPage('profile-page'));
-
-  // Updated navigation for game modes
-  aiBtn?.addEventListener('click', () => navigate('/game/pve'));
-  oneVsOneBtn?.addEventListener('click', () => navigate('/game/1v1'));
-  CustomgameBtn?.addEventListener('click', () => navigate('/game/Customgame'));
-  console.log('Game mode buttons initialized');
-});
-
-
-window.addEventListener('popstate', route);
-document.addEventListener('DOMContentLoaded', route);
+  window.addEventListener('popstate', route)
+  route()
+})

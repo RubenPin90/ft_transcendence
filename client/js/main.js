@@ -1,5 +1,12 @@
-import { initGameCanvas, startGame, stopGame } from './game.js';
+import { initGameCanvas, startGame, stopGame, setOnGameEnd } from './game.js';
+const USER_ID = `cli_${Math.floor(Math.random() * 9999)}`;
+let currentMode = null;
+setOnGameEnd((winnerId) => {
+    alert(`Player ${winnerId} wins!`);
+});
 const navigate = (path) => {
+    if (path === window.location.pathname)
+        return;
     history.pushState({}, '', path);
     console.log('Navigating to:', path);
     route();
@@ -9,55 +16,51 @@ function route() {
     hideAllPages();
     if (path.startsWith('/game')) {
         document.getElementById('game-container').style.display = 'block';
-        document.getElementById('game-mode-title').textContent = 'Mode: ' + (path.split('/')[2] || 'pve');
-        initGameCanvas(); // Initialize the canvas for the game
-        stopGame();
         const mode = path.split('/')[2] || 'pve';
-        // show the container etc.
-        startGame(mode); // ← already launches the socket
+        document.getElementById('game-mode-title').textContent = 'Mode: ' + mode;
+        if (currentMode && currentMode !== mode) {
+            stopGame();
+        }
+        currentMode = mode;
+        initGameCanvas();
+        if (['pve', '1v1', 'Customgame'].includes(mode)) {
+            startGame(mode);
+        }
+        setOnGameEnd((winnerId) => {
+            stopGame();
+            alert(`Game over! Player ${winnerId} wins!`);
+        });
         return;
     }
-    switch (path) {
-        case '/profile':
-            document.getElementById('profile-page').style.display = 'block';
-            break;
-        case '/settings':
-            document.getElementById('settings-page').style.display = 'block';
-            break;
-        default:
-            document.getElementById('main-menu').style.display = 'block';
+    const mapping = {
+        '/profile': 'profile-page',
+        '/settings': 'settings-page'
+    };
+    const pageId = mapping[path];
+    if (pageId) {
+        document.getElementById(pageId).style.display = 'block';
+    }
+    else {
+        document.getElementById('main-menu').style.display = 'block';
     }
 }
 function hideAllPages() {
-    const pages = ['main-menu', 'profile-page', 'settings-page', 'game-container'];
-    pages.forEach(id => {
+    ['main-menu', 'profile-page', 'settings-page', 'game-container'].forEach(id => {
         const el = document.getElementById(id);
         if (el)
             el.style.display = 'none';
     });
 }
 document.addEventListener('DOMContentLoaded', () => {
-    const showPage = (pageId) => {
-        const pages = ['profile-page', 'settings-page'];
-        pages.forEach(id => {
-            const el = document.getElementById(id);
-            if (el)
-                el.style.display = id === pageId ? 'block' : 'none';
-        });
+    const btnMap = {
+        'sp-vs-pve-btn': '/game/pve',
+        'one-vs-one-btn': '/game/1v1',
+        'Customgame-btn': '/game/Customgame'
     };
-    console.log('DOM fully loaded and parsed');
-    const settingsBtn = document.getElementById('settings-btn');
-    const profileBtn = document.getElementById('profile-btn');
-    const aiBtn = document.getElementById('sp-vs-pve-btn');
-    const oneVsOneBtn = document.getElementById('one-vs-one-btn');
-    const CustomgameBtn = document.getElementById('Customgame-btn');
-    settingsBtn === null || settingsBtn === void 0 ? void 0 : settingsBtn.addEventListener('click', () => showPage('settings-page'));
-    profileBtn === null || profileBtn === void 0 ? void 0 : profileBtn.addEventListener('click', () => showPage('profile-page'));
-    // Updated navigation for game modes
-    aiBtn === null || aiBtn === void 0 ? void 0 : aiBtn.addEventListener('click', () => navigate('/game/pve'));
-    oneVsOneBtn === null || oneVsOneBtn === void 0 ? void 0 : oneVsOneBtn.addEventListener('click', () => navigate('/game/1v1'));
-    CustomgameBtn === null || CustomgameBtn === void 0 ? void 0 : CustomgameBtn.addEventListener('click', () => navigate('/game/Customgame'));
-    console.log('Game mode buttons initialized');
+    Object.entries(btnMap).forEach(([btnId, routePath]) => {
+        var _a;
+        (_a = document.getElementById(btnId)) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => navigate(routePath));
+    });
+    window.addEventListener('popstate', route);
+    route();
 });
-window.addEventListener('popstate', route);
-document.addEventListener('DOMContentLoaded', route);
