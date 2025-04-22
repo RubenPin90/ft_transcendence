@@ -82,7 +82,7 @@ async function encrypt_github(request) {
 	if (!user_email || !userid || !pfp || !username || user_email === undefined || userid === undefined || username === undefined || pfp === undefined || user_email.length == 0 || userid.length == 0 || username.length == 0 || pfp.length == 0)
 		return -7;
 	username = username.replace(/\./g, '-');
-	const db_return = await settings_db.create_settings_value('test', pfp, 0, user_email, userid, 0);
+	const db_return = await settings_db.create_settings_value('', pfp, 0, user_email, userid, 0);
 	if (db_return.self === undefined || db_return.return === undefined)
 		return userid;
 	if (db_return < 0)
@@ -129,7 +129,7 @@ async function encrypt_google(request) {
 		const username = create_username(email);
 		if (username < 0)
 			return -8;
-		const db_return = await settings_db.create_settings_value('test', pfp, 0, email, userid, 0);
+		const db_return = await settings_db.create_settings_value('', pfp, 0, email, userid, 0);
 		if (db_return.self === undefined || db_return.return === undefined)
 			return userid;
 		if (db_return < 0)
@@ -188,15 +188,19 @@ async function process_login(request, response) {
                 const data = JSON.parse(body);
                 const email = data.email;
                 if (!email) {
-					resolve(null);
+					resolve(-1);
                     return;
                 }
                 
 				const check_settings = await settings_db.get_settings_value('email', email);
-				// hash pw check				
-				if (!check_settings || data.password !== check_settings.password) {
+				if (!check_settings || check_settings === undefined) {
+					resolve(-2);
+					return;
+				}
+				const pw = await modules.check_encrypted_password(data.password, check_settings.password);
+				if (!pw || pw === undefined || pw < 0) {
 					console.log("Password incorrect");
-					resolve(null);
+					resolve(-3);
 					return;
 				}
 
@@ -424,34 +428,56 @@ async function verify_custom_code(userid, response, replace_data) {
 }
 
 async function create_email_code(userid, response, replace_data) {
-	const check_custom_error_code = custom_code_error_checker(userid, response, replace_data);
-	if (!check_custom_error_code || check_custom_error_code === undefined || check_custom_error_code < 0)
-		return -1;
-	const check_settings = await settings_db.get_settings_value('self', userid);
-	if (!check_settings || check_settings === undefined || check_settings < 0)
-		return -2;
-	response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-	if (!check_settings.email || check_settings.email === undefined) {
-		response.end(JSON.stringify({"Response": "NoEmail"}));
-		return -3;
-	}
-	var email_code = Math.floor(Math.random() * 1000000);
-	const email_code_len = 6 - (String(email_code).length);
-	for (var pos = 0; pos < email_code_len; pos++)
-		email_code = '0' + email_code;
-	const email_code_plain = email_code;
-	email_code = await modules.create_encrypted_password(String(email_code));
+	// const check_custom_error_code = custom_code_error_checker(userid, response, replace_data);
+	// if (!check_custom_error_code || check_custom_error_code === undefined || check_custom_error_code < 0)
+	// 	return -1;
+	// const check_settings = await settings_db.get_settings_value('self', userid);
+	// if (!check_settings || check_settings === undefined || check_settings < 0)
+	// 	return -2;
+	// response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+	// if (!check_settings.email || check_settings.email === undefined) {
+	// 	response.end(JSON.stringify({"Response": "NoEmail"}));
+	// 	return -3;
+	// }
+	// var email_code = Math.floor(Math.random() * 1000000);
+	// const email_code_len = 6 - (String(email_code).length);
+	// for (var pos = 0; pos < email_code_len; pos++)
+	// 	email_code = '0' + email_code;
+	// const email_code_plain = email_code;
+	// email_code = await modules.create_encrypted_password(String(email_code));
+	// const check_mfa = await mfa_db.get_mfa_value('self', userid);
+	// if (!check_mfa || check_mfa === undefined)
+	// 	await mfa_db.create_mfa_value(`${email_code}_temp`, '', '', 0, userid);
+	// else
+	// 	await mfa_db.update_mfa_value('email', `${email_code}_temp`, userid);
+	// const email = await modules.send_email(check_settings.email, 'MFA code', `This is your 2FA code. Please do not share: ${email_code_plain}`);
+	// if (!email || email === undefined || email < 0) {
+	// 	response.end({"Response": "Failed", "Content": `Error in sending to: ${check_settings.email}`});
+	// 	await mfa_db.update_mfa_value('email', '', userid);
+	// } else
+	// 	response.end(JSON.stringify({"Response": "Success", "Content": email_code}));
+	// return true;
+
+	// create here a encrypted pw then it will work
+	if (custom_code_error_checker(userid, response, replace_data) === false)
+		return false;
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
+	console.log(replace_data);
+	const check_code = replace_data.Code;
+	response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+	if (check_code.length != 6) {
+		response.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
+		return false;
+	}
+	if (isNaN(Number(check_code))) {
+		response.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
+		return false;
+	}
 	if (!check_mfa || check_mfa === undefined)
-		await mfa_db.create_mfa_value(`${email_code}_temp`, '', '', 0, userid);
+		await mfa_db.create_mfa_value('', '', `${check_code}_temp`, 0, userid);
 	else
-		await mfa_db.update_mfa_value('email', `${email_code}_temp`, userid);
-	const email = await modules.send_email(check_settings.email, 'MFA code', `This is your 2FA code. Please do not share: ${email_code_plain}`);
-	if (!email || email === undefined || email < 0) {
-		response.end({"Response": "Failed", "Content": `Error in sending to: ${check_settings.email}`});
-		await mfa_db.update_mfa_value('email', '', userid);
-	} else
-		response.end(JSON.stringify({"Response": "Success", "Content": email_code}));
+		await mfa_db.update_mfa_value('custom', `${check_code}_temp`, userid);
+	response.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Success"}));
 	return true;
 }
 
@@ -478,29 +504,31 @@ async function verify_email_code(userid, response, replace_data) {
 }
 
 async function clear_settings_mfa(userid, search_value, response) {
+	var fallback_options = ['email', 'otc', 'custom'];
+	if (!fallback_options.indexOf(search_value))
+		return false;
 	response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
-	if (check_mfa !== undefined) {
-		await mfa_db.update_mfa_value(`${search_value}`, '', userid);
-		var fallback_options = ['email', 'otc', 'custom'];
-		var found = false;
-		for (const option of fallback_options) {
-			if (search_value == option)
-				continue;
-            console.log(check_mfa[option]);
-            if (!check_mfa[option].endsWith('_temp') && check_mfa[option].length !== 0) {
-                await mfa_db.update_mfa_value('prefered', fallback_options.indexOf(option) + 1, userid);
-				found = true;
-                break;
-            }
-			if (!found)
-				await mfa_db.update_mfa_value('prefered', 0, userid);
-        }
-		response.end(JSON.stringify({"Response": "Success"}));
-		return true;
+	if (check_mfa || check_mfa === undefined) {
+		response.end(JSON.stringify({"Response": "Failed"}));
+		return false;
 	}
-	response.end(JSON.stringify({"Response": "Failed"}));
-	return false;
+	await mfa_db.update_mfa_value(`${search_value}`, '', userid);
+	var found = false;
+	for (const option of fallback_options) {
+		if (search_value == option)
+			continue;
+		console.log(check_mfa[option]);
+		if (!check_mfa[option].endsWith('_temp') && check_mfa[option].length !== 0) {
+			await mfa_db.update_mfa_value('prefered', fallback_options.indexOf(option) + 1, userid);
+			found = true;
+			break;
+		}
+	}
+	if (!found)
+		await mfa_db.update_mfa_value('prefered', 0, userid);
+	response.end(JSON.stringify({"Response": "Success"}));
+	return true;
 }
 
 export {

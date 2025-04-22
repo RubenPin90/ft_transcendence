@@ -12,7 +12,7 @@ async function send_html(filename, response, status, func) {
         return false;
     if (func && typeof func === 'function') {
         const temp = await func(data);
-        if (!temp)
+        if (!temp || temp === undefined || temp == false)
             return false;
         data = temp;
     }
@@ -26,7 +26,7 @@ async function send_error_page(filename, response, status, func) {
         return false;
     if (func && typeof func === 'function') {
         const temp = await func(data);
-        if (!temp)
+        if (!temp || temp === undefined || temp == false)
             return false;
         data = temp;
     }

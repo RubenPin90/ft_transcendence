@@ -1,64 +1,105 @@
 import * as modules from './modules.js';
 import * as utils from './utils.js';
 import * as send from './responses.js';
+import * as settings_db from './database/db_settings_functions.js';
 import * as users_db from './database/db_users_functions.js';
 import * as mfa_db from './database/db_mfa_functions.js';
 import qrcode from 'qrcode';
 
 async function login(request, response) {
     const check_login = utils.check_login(request, response);
+    if (check_login === true)
+        return true;
     if (request.method === "POST") {
         const parsed = await utils.process_login(request, response);
-        console.log(parsed);
-        if (parsed) {
-            if (parsed.mfa && parsed.mfa.email && !parsed.mfa.email.endsWith('_temp') && parsed.mfa.prefered === 1) {
-                console.log(parsed.mfa.self);
-                var email_code = Math.floor(Math.random() * 1000000);
-                const email_code_len = 6 - (String(email_code).length);
-                for (var pos = 0; pos < email_code_len; pos++)
-                    email_code = '0' + email_code;
-                await modules.send_email(parsed.settings.email, 'MFA code', `This is your 2FA code. Please do not share: ${email_code}`);
-                email_code = await modules.create_encrypted_password(String(email_code));
-                await mfa_db.update_mfa_value('email', email_code, parsed.mfa.self);
-                response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-                response.end(JSON.stringify({"Response": 'send_email_verification', "Content": parsed.settings.self}));
-                return true;
-            } else if (parsed.mfa && parsed.mfa.otc && !parsed.mfa.otc.endsWith('_temp') && parsed.mfa.prefered === 2) {
-                response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-                response.end(JSON.stringify({"Response": 'send_2FA_verification', "Content": parsed.settings.self}));
-                return true;
-            } else if (parsed.mfa && parsed.mfa.custom && !parsed.mfa.custom.endsWith('_temp') && parsed.mfa.prefered === 3) {
-                response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-                response.end(JSON.stringify({"Response": 'send_custom_verification', "Content": parsed.settings.self}));
-                return true;
-            }
-            const token = await modules.create_jwt(parsed.settings.self, '1h');
-                    
-            await modules.set_cookie(response, 'token', token, true, true, 'strict');
+        if (!parsed || parsed === undefined)
+            return `1_${parsed}`;
+        else if (parsed < 0) {
             response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-            response.end(JSON.stringify({"Response": 'reload', "Content": null}));
+            if (parsed == -1)
+                response.end(JSON.stringify({"Response": 'Error', "Content": 'Wrong email'}));
+            else if (parsed == -2)
+                response.end(JSON.stringify({"Response": 'Error', "Content": 'Wrong password'}));
             return true;
         }
+        if (parsed.mfa && parsed.mfa.email && !parsed.mfa.email.endsWith('_temp') && parsed.mfa.prefered === 1) {
+            var email_code = Math.floor(Math.random() * 1000000);
+            const email_code_len = 6 - (String(email_code).length);
+            for (var pos = 0; pos < email_code_len; pos++)
+                email_code = '0' + email_code;
+            await modules.send_email(parsed.settings.email, 'MFA code', `This is your 2FA code. Please do not share: ${email_code}`);
+            email_code = await modules.create_encrypted_password(String(email_code));
+            await mfa_db.update_mfa_value('email', email_code, parsed.mfa.self);
+            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            response.end(JSON.stringify({"Response": 'send_email_verification', "Content": parsed.settings.self}));
+            return true;
+        } else if (parsed.mfa && parsed.mfa.otc && !parsed.mfa.otc.endsWith('_temp') && parsed.mfa.prefered === 2) {
+            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            response.end(JSON.stringify({"Response": 'send_2FA_verification', "Content": parsed.settings.self}));
+            return true;
+        } else if (parsed.mfa && parsed.mfa.custom && !parsed.mfa.custom.endsWith('_temp') && parsed.mfa.prefered === 3) {
+            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            response.end(JSON.stringify({"Response": 'send_custom_verification', "Content": parsed.settings.self}));
+            return true;
+        }
+        const token = modules.create_jwt(parsed.settings.self, '1h');
+        if (!token || token === undefined || token < 0)
+            return `2_${token}`;
+        
+        modules.set_cookie(response, 'token', token, true, true, 'strict');
+        response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+        response.end(JSON.stringify({"Response": 'reload', "Content": null}));
+        return true;
     }
     if (!check_login || check_login === undefined || check_login < -1)
-        return false;
-    const check = await send.send_html('login.html', response, 200, async (data) => {
-        const google_link = await utils.google_input_handler();
+        return `3_${check_login}`;
+    await send.send_html('login.html', response, 200, async (data) => {
+        const google_link = utils.google_input_handler();
         data = data.replace("{{google_login}}", google_link);
-        const github_link = await utils.github_input_handler();
+        const github_link = utils.github_input_handler();
         return data.replace("{{github_login}}", github_link);
     });
-    return check;
+    return true;
 }
 
 async function register(request, response) {
-    const check_login = await utils.check_login(request, response);
-    if (check_login !== 0)
-        return false;
+    const check_login = utils.check_login(request, response);
+    if (check_login === true)
+        return true;
+    if (request.method == 'POST') {
+        const replace_data = await utils.get_frontend_content(request);
+        const check_settings = await settings_db.get_settings_value('email', replace_data.email);
+        if (check_settings || check_settings !== undefined) {
+            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            response.end(JSON.stringify({"Response": 'User already exists', "Content": null}));
+            return true;
+        }
+        const hashed = await modules.create_encrypted_password(replace_data.password);
+        if (!hashed || hashed === undefined || hashed < 0)
+            return `1_${hashed}`;
+        const settings = await settings_db.create_settings_value(hashed, '', 0, replace_data.email, '', '');
+        if (!settings || settings === undefined || settings < 0)
+            return `2_${settings}`;
+        const user = await users_db.create_users_value(0, replace_data.username, settings.self);
+        if (!user || user === undefined || user < 0) {
+            await settings_db.delete_settings_value(settings.self);
+            return `3_${user}`;
+        }
+        const token = modules.create_jwt(settings.self, '1h');
+        if (!token || token === undefined || token < 0)
+            return `4_${token}`;
+        
+        modules.set_cookie(response, 'token', token, true, true, 'strict');
+        response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+        response.end(JSON.stringify({"Response": 'reload', "Content": null}));
+        return true;
+    }
+    if (!check_login || check_login === undefined || check_login < -1)
+        return `5_${check_login}`;
     const check = await send.send_html('register.html', response, 200, async (data) => {
-        const google_link = await utils.google_input_handler();
+        const google_link = utils.google_input_handler();
         data = data.replace("{{google_login}}", google_link);
-        const github_link = await utils.github_input_handler();
+        const github_link = utils.github_input_handler();
         return data.replace("{{github_login}}", github_link);
     })
     return check;
@@ -71,8 +112,7 @@ async function home(request, response) {
     if (request.url !== '/' && !request.url.includes('&state=')) {
         const data = await utils.encrypt_google(request);
         if (data < 0) {
-            console.log(data);
-            return false;
+            return `1_${data}`;
         }
         const token = modules.create_jwt(data, '1h');
         
@@ -82,8 +122,7 @@ async function home(request, response) {
     } else if (request.url !== '/') {
         const data = await utils.encrypt_github(request, response);
         if (data < 0) {
-            console.log(data);
-            return false;
+            return `2_${data}`;
         }
         const token = modules.create_jwt(data, '1h');
         
@@ -91,14 +130,16 @@ async function home(request, response) {
 		send.redirect(response, '/', 302);
         return true;
     }
-    // all good till here
     const check = await send.send_html('home.html', response, 200, async (data) => {
         const tokenIndex = keys?.find((key) => key === 'token');
+        if (!tokenIndex || tokenIndex === undefined || tokenIndex == false)
+            return false;
         const token = values?.at(tokenIndex);
+        if (!token || token === undefined || token == false)
+            return false;
         try {
             var decoded = await modules.get_jwt(token);
         } catch (err) {
-            console.log(err);
             return false;
         }
         const replace_data = await users_db.get_users_value('self', decoded.userid);
@@ -106,28 +147,34 @@ async function home(request, response) {
             return false;
         return data.replace("{{userid}}", replace_data.username);
     });
+    if (!check || check === undefined || check == false)
+        return `3_${check}`
     return true;
 }
 
 async function settings(request, response) {
-    var [keys, values] = await modules.get_cookies(request.headers.cookie);
-    if (!keys?.includes('token')) {
-        await send.redirect(response, '/login', 302);
-        return true;
-    }
-        if (request.method === "POST") {
+    var [keys, values] = modules.get_cookies(request.headers.cookie);
+    if (!keys?.includes('token'))
+        return send.redirect(response, '/login', 302);
+    if (request.method === "POST") {
         var replace_data = await utils.get_frontend_content(request);
-        console.log(replace_data);
-        if (!replace_data) {
-            return false;
-        }
+        if (!replace_data || replace_data === undefined)
+            return `1_${replace_data}`;
         const userid = await utils.get_decrypted_userid(request, response);
+        if (!userid || userid === undefined || userid < 0)
+            return `2_${userid}`;
         if (replace_data.Function == 'create_otc') {
-            return await utils.create_otc(userid, response);
+            const otc_return = await utils.create_otc(userid, response);
+            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            if (!otc_return || otc_return === undefined || otc_return < 0)
+                response.end(JSON.stringify({"Response": "Failed"}));
+            else
+                response.end(JSON.stringify({"Response": "Success"}));
+            return true;
         } else if (replace_data.Function == 'verify') {
             response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
             var verified = await utils.verify_otc(request, response, replace_data, null);
-            if (verified) {
+            if (verified && verified !== undefined && !(verified < 0)) {
                 const check_mfa = await mfa_db.get_mfa_value('self', userid);
                 var new_otc_str = check_mfa.otc;
                 if (new_otc_str.endsWith('_temp'))
@@ -143,33 +190,44 @@ async function settings(request, response) {
         } else if (replace_data.Function == 'create_custom') {
             return await utils.create_custom_code(userid, response, replace_data);
         } else if (replace_data.Function == 'verify_function') {
-            const custom_code_return = await utils.verify_custom_code(userid, response, replace_data);
-            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-            if (custom_code_return === true)
-                response.end(JSON.stringify({"Response": "Success"}));
-            else
-                response.end(JSON.stringify({"Response": "failed"}));
-            return custom_code_return;
+            return await utils.verify_custom_code(userid, response, replace_data);
         } else if (replace_data.Function == 'create_email') {
             return await utils.create_email_code(userid, response, replace_data);
         } else if (replace_data.Function == 'verify_email') {
-            return await utils.verify_email_code(userid, response, replace_data);
+            return await utils.verify_email_code(userid, response, replace_data);;
         } else if (replace_data.Function == 'remove_custom_code') {
-            return await utils.clear_settings_mfa(userid, 'custom', response);
+            const clear_return = await utils.clear_settings_mfa(userid, 'custom', response);
+            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            if (!clear_return || clear_return === undefined || clear_return < 0)
+                response.end(JSON.stringify({"Response": "failed"}));
+            else
+                response.end(JSON.stringify({"Response": "Success"}));
+            return true;
         } else if (replace_data.Function === 'remove_otc') {
-            return await utils.clear_settings_mfa(userid, 'otc', response);
+            const clear_return = await utils.clear_settings_mfa(userid, 'otc', response);
+            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            if (!clear_return || clear_return === undefined || clear_return < 0)
+                response.end(JSON.stringify({"Response": "failed"}));
+            else
+                response.end(JSON.stringify({"Response": "Success"}));
+            return true;
         } else if (replace_data.Function === 'remove_email') {
-            return await utils.clear_settings_mfa(userid, 'email', response);
+            const clear_return = await utils.clear_settings_mfa(userid, 'email', response);
+            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            if (!clear_return || clear_return === undefined || clear_return < 0)
+                response.end(JSON.stringify({"Response": "failed"}));
+            else
+                response.end(JSON.stringify({"Response": "Success"}));
+            return true;
         }
     }
     const status = await send.send_html('settings.html', response, 200, async (data) => {
         const userid = await utils.get_decrypted_userid(request, response);
         if (userid === -1)
-            await send.redirect(response, '/login', 302);
+            return send.redirect(response, '/login', 302);
         else if (userid === -2)
             return true;
         const check_mfa = await mfa_db.get_mfa_value('self', userid);
-        console.log(check_mfa);
         if (check_mfa === undefined || check_mfa === null)
             return data.replace("{{mfa-button}}", '<button onclick="create_otc()">Create OTC</button> <br></br>\
                 <button onclick="create_custom_code()">Create custom 6 diggit code</button> <br></br>\
@@ -196,7 +254,6 @@ async function settings(request, response) {
             replace_string += '<button onclick="create_custom_code()">Create custom 6 diggit code</button> ';
         replace_string += '<br></br>'
         if (check_mfa.email.length !== 0 && !check_mfa.email.endsWith('_temp')) {
-            console.log("WOW");
             replace_string += '<button onclick="remove_email()">Disable email authentication</button> ';
             select_number++;
             select_menu += '<option value="email">Email</option>';
@@ -218,29 +275,29 @@ async function settings(request, response) {
         return data.replace("{{mfa-button}}", `${replace_string} ${select_menu} <button onclick="window.location.href = \'http://localhost:8080\'">Back</button> \
         <button onclick="logout()">Logout</button>`);
     });
-    if (!status)
-        return false;
+    if (!status || status === undefined || status < 0 || status == false)
+        return `3_${status}`;
     return true;
 }
 
 async function settings_set_prefered_mfa(request, response) {
     if (request.url.length < 11)
-        return await send.redirect(response, '/settings', 302);
+        return send.redirect(response, '/settings', 302);
     const location = request.url.slice(10);
     if (!location.indexOf('='))
-        return await send.redirect(response, '/settings', 302);
+        return send.redirect(response, '/settings', 302);
     const pos = location.indexOf('=') + 1;
     if (location.length === pos)
-        return await send.redirect(response, '/settings', 302);
+        return send.redirect(response, '/settings', 302);
     const method = location.slice(pos);
-    const {keys, values} = await utils.get_cookie('token', request);
+    const {keys, values} = utils.get_cookie('token', request);
     if ((!keys && !values) || (keys === undefined && values === undefined))
-        return await send.redirect(response, '/settings', 302);
-    const decrypted_user = await modules.get_jwt(values[0]);
+        return send.redirect(response, '/settings', 302);
+    const decrypted_user =  modules.get_jwt(values[0]);
     const userid = decrypted_user.userid;
     const check_mfa = await mfa_db.get_mfa_value('self', userid);
     if (!check_mfa || check_mfa === undefined)
-        return await send.redirect(response, '/settings', 302);
+        return send.redirect(response, '/settings', 302);
     if (method === 'email') {
         await mfa_db.update_mfa_value('prefered', 1, userid);
     } else if (method === 'otc') {
@@ -248,26 +305,26 @@ async function settings_set_prefered_mfa(request, response) {
     } else if (method === 'custom') {
         await mfa_db.update_mfa_value('prefered', 3, userid);
     }
-    return await send.redirect(response, '/settings', 302);    
+    return send.redirect(response, '/settings', 302);    
 }
 
 async function verify_email(request, response) {
     if (request.method !== 'POST')
         return await send.send_error_page('404.html', response, 404);
     const frontend_data = await utils.get_frontend_content(request);
-    if (!frontend_data)
+    if (!frontend_data || frontend_data === undefined || frontend_data < 0)
         return false;
     const check_mfa = await mfa_db.get_mfa_value('self', frontend_data.userid);
-    if (!check_mfa || check_mfa === null || check_mfa.email.length === 0 || check_mfa.email.endsWith('_temp'))
+    if (!check_mfa || check_mfa === undefined || check_mfa.email.length === 0 || check_mfa.email.endsWith('_temp'))
         return false;
     const valid_password = await modules.check_encrypted_password(frontend_data.code, check_mfa.email);
-    if (!valid_password) {
+    if (!valid_password || valid_password === undefined || valid_password < 0) {
         response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
         response.end(JSON.stringify({"Response": 'failed', "Content": null}));
     } else {
-        const token = await modules.create_jwt(frontend_data.userid, '1h');
+        const token = modules.create_jwt(frontend_data.userid, '1h');
         
-        await modules.set_cookie(response, 'token', token, true, true, 'strict');
+        modules.set_cookie(response, 'token', token, true, true, 'strict');
         response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
         response.end(JSON.stringify({"Response": 'reload', "Content": null}));
     }
@@ -278,18 +335,17 @@ async function verify_2fa(request, response) {
     if (request.method !== 'POST')
         return await send.send_error_page('404.html', response, 404);
     const frontend_data = await utils.get_frontend_content(request);
-    if (!frontend_data)
+    if (!frontend_data || frontend_data === undefined || frontend_data < 0)
         return false;
     const replace_data = {'Function': 'verify', 'Code': frontend_data.code};
     const temp = await utils.verify_otc(request, response, replace_data, frontend_data.userid);
-    console.log(temp);
-    if (temp === false) {
+    if (temp === false || !temp || temp === undefined || temp < 0) {
         response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
         response.end(JSON.stringify({"Response": 'failed', "Content": null}));
     } else {
-        const token = await modules.create_jwt(frontend_data.userid, '1h');
+        const token = modules.create_jwt(frontend_data.userid, '1h');
         
-        await modules.set_cookie(response, 'token', token, true, true, 'strict');
+        modules.set_cookie(response, 'token', token, true, true, 'strict');
         response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
         response.end(JSON.stringify({"Response": 'reload', "Content": null}));
     }
@@ -308,9 +364,9 @@ async function verify_custom(request, response) {
         response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
         response.end(JSON.stringify({"Response": 'failed', "Content": null}));
     } else {
-        const token = await modules.create_jwt(frontend_data.userid, '1h');
+        const token = modules.create_jwt(frontend_data.userid, '1h');
         
-        await modules.set_cookie(response, 'token', token, true, true, 'strict');
+        modules.set_cookie(response, 'token', token, true, true, 'strict');
         response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
         response.end(JSON.stringify({"Response": 'reload', "Content": null}));
     }
