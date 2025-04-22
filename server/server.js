@@ -194,6 +194,7 @@ wss.on('connection', (ws, request) => {
         break
       }
       case 'movePaddle': {
+        console.log('Incoming movePaddle request')
         const { dy } = data.payload        
         const room   = matchManager.rooms.get(ws.currentGameId)
         if (!room) break
@@ -228,4 +229,5 @@ wss.on('connection', (ws, request) => {
     }
   })
 })
+
 

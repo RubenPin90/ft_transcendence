@@ -4,7 +4,7 @@ import {
   stopGame,
   setOnGameEnd
 } from './game.js'
-import type { GameMode } from './game.js' // вот это добавь
+import type { GameMode } from './game.js'
 
 const USER_ID = `cli_${Math.floor(Math.random() * 9999)}`
 let currentMode: string | null = null

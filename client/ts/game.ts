@@ -19,6 +19,8 @@ let ctx: CanvasRenderingContext2D | null = null
 const USER_ID = `cli_${Math.floor(Math.random() * 100000)}`
 let onGameEndCallback: ((winnerId: string) => void) | null = null
 
+const keysPressed: Record<string, boolean> = {}
+
 export function setOnGameEnd(cb: (winnerId: string) => void): void {
   onGameEndCallback = cb
 }
@@ -39,6 +41,7 @@ export function startGame(mode: GameMode): void {
       type: 'joinQueue',
       payload: { mode, userId: USER_ID }
     }))
+    setupInputHandlers()
   })
 
   socket.addEventListener('message', (ev) => {
@@ -80,18 +83,18 @@ function drawFrame(state: GameState): void {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
+  // ✅ only draw if ball is non‑null
   if (state.ball) {
+    const { x, y } = state.ball
     ctx.beginPath()
-    ctx.arc(toX(state.ball.x), toY(state.ball.y), 8, 0, Math.PI * 2)
+    ctx.arc(toX(x), toY(y), 8, 0, Math.PI * 2)
     ctx.fillStyle = '#fff'
     ctx.fill()
   }
 
   state.players.forEach((p, i) => {
     const x = i === 0 ? 10 : canvas.width - 25
-    if (ctx) {
-      ctx.fillRect(x, toY(p.y) - 50, 15, 100)
-    }
+    ctx?.fillRect(x, toY(p.y) - 50, 15, 100)
   })
 
   ctx.font = '20px sans-serif'
@@ -105,4 +108,33 @@ function drawFrame(state: GameState): void {
     canvas.width * 0.75,
     30
   )
+}
+
+function setupInputHandlers(): void {
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      if (!keysPressed[e.key]) {
+        keysPressed[e.key] = true
+        const direction = e.key === 'ArrowUp' ? 'up' : 'down'
+        socket?.send(JSON.stringify({
+          type: 'movePaddle',
+          payload: { userId: USER_ID, direction, active: true }
+        }))
+      }
+      e.preventDefault()
+    }
+  })
+
+  window.addEventListener('keyup', (e) => {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      if (keysPressed[e.key]) {
+        keysPressed[e.key] = false
+        socket?.send(JSON.stringify({
+          type: 'movePaddle',
+          payload: { userId: USER_ID, direction: 'stop', active: false }
+        }))
+      }
+      e.preventDefault()
+    }
+  })
 }
