@@ -1,12 +1,10 @@
  /* @type {import('tailwindcss').Config} */
 export default {
-   content: ["./scripts/login/*.js", "./templates/*.html", "*.html", "*.js", "./js/**/*.{js,ts}", "./ts/**/*.ts", "./views/*.{html,ts}"],
+   content: ["./scripts/**/*.js", "./templates/*.html", "*.html", "*.js", "./js/**/*.{js,ts}", "./ts/**/*.ts", "./views/*.{html,ts}, ./scripts/*.js"],
    theme: {
      extend: {
-      colors: {
-        darkPurple: '#24152c',
-        darkRed: '#291515',
-        darkPink: '#22112c',
+      boxShadow: {
+        'strong': '0 10px 20px rgba(0, 0, 0, 0.5), 0 -5px 10px rgba(0, 0, 0, 0.3)',
       },
       keyframes: {
         shaking: {
@@ -33,7 +31,6 @@ export default {
       },
       animation: {
           "wrong_input" : "shaking 0.3s linear 1 ",
-          "open_login" : "open_up 1 linear 1 ",
       },
      },
 

@@ -11,9 +11,25 @@
 }
 
 .background{
-    @apply h-screen w-screen bg-gradient-to-br from-fuchsia-900 via-pink-900 to-rose-900 relative
+    @apply h-screen w-screen bg-gradient-to-br from-[#191e64] to-[#5e2669] relative
 }
 
 .bubble{
     @apply absolute bg-gradient-to-br shadow-2xl shadow-red-950 z-0 rounded-full
+}
+
+.field{
+    @apply bg-gray-600 w-11/12 max-w-lg rounded-3xl p-6 mx-auto bg-clip-padding backdrop-filter backdrop-blur-xl bg-opacity-30 border-[#ffe342] border-2 shadow-strong shadow-yellow-700/80
+}
+
+.buttons{
+    @apply flex items-center gap-2 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl
+}
+
+.buttons_small_C{
+    @apply to-[#d16e1d] from-[#e0d35f]
+}
+
+.button_text{
+    @apply font-bold text-3xl
 }

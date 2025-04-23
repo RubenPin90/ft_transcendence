@@ -1,19 +1,24 @@
-const signupButton = document.getElementById('signupBtn') as HTMLButtonElement;
-const loginButton = document.getElementById('loginBtn') as HTMLButtonElement;
-const fieldHighlight = document.getElementById('highlight') as HTMLDivElement;
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+const signupButton = document.getElementById('signupBtn');
+const loginButton = document.getElementById('loginBtn');
+const fieldHighlight = document.getElementById('highlight');
 let field = document.getElementById('login-signup-field');
-
-let activeBtn: 'login' | 'signup' = 'login';
+let activeBtn = 'login';
 fieldHighlight.style.left = '0%';
-
-let googleHref: string | null = null;
-let githubHref: string | null = null;
-
-// Retrieve the initial href values when the page loads
+let googleHref = null;
+let githubHref = null;
 document.addEventListener('DOMContentLoaded', () => {
-    const googleLinkElement = document.getElementById('google') as HTMLAnchorElement;
-    const githubLinkElement = document.getElementById('github') as HTMLAnchorElement;
-
+    const googleLinkElement = document.getElementById('google');
+    const githubLinkElement = document.getElementById('github');
     if (googleLinkElement) {
         googleHref = googleLinkElement.href;
     }
@@ -21,8 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
         githubHref = githubLinkElement.href;
     }
 });
-
-function returnLogin(): string {
+function returnLogin() {
     return `
     <input type="text" id="email-input" placeholder="Email" required class="rounded-xl border-2 border-violet-800 py-3 text-black text-center text-lg mb-4 w-full" />
     <input type="password" id="password-input" placeholder="Password" required class="rounded-xl border-2 border-violet-800 py-3 text-black text-center text-lg mb-4 w-full" />
@@ -53,8 +57,7 @@ function returnLogin(): string {
         </a>
     </div>`;
 }
-
-function returnSignUp() : string {
+function returnSignUp() {
     return `
     <input type="text" id="email-input" placeholder="Email" required class="rounded-xl border-2 border-violet-800 py-3 text-black text-center text-lg mb-4 w-full" />
     <input type="password" id="password-input" placeholder="Password" required class="rounded-xl border-2 border-violet-800 py-3 text-black text-center text-lg mb-4 w-full" />
@@ -85,40 +88,29 @@ function returnSignUp() : string {
             Already have an account? Log in
         </a>
     </div>
-    `
+    `;
 }
-
 document.addEventListener('click', (event) => {
-    const target = event.target as HTMLElement;
-
-    // Handle clicks on the login button
+    const target = event.target;
     if (target.id === 'loginBtn') {
         activate('login');
     }
-
-    // Handle clicks on the sign-up button
     if (target.id === 'signupBtn') {
         activate('signup');
     }
 });
-
-async function activate(tab: 'login' | 'signup') {
-    activeBtn = tab;
-    if (tab === 'login'){ //clicked on login
-        fieldHighlight.style.left = '0%';
-        if (field)
-            field.innerHTML = returnLogin();
-    }else { //clicked on sign up
-        fieldHighlight.style.left = '50%';
-        if (field)
-            field.innerHTML = returnSignUp();
-    }
+function activate(tab) {
+    return __awaiter(this, void 0, void 0, function* () {
+        activeBtn = tab;
+        if (tab === 'login') {
+            fieldHighlight.style.left = '0%';
+            if (field)
+                field.innerHTML = returnLogin();
+        }
+        else {
+            fieldHighlight.style.left = '50%';
+            if (field)
+                field.innerHTML = returnSignUp();
+        }
+    });
 }
-
-
-// [loginButton, signupButton].forEach((button) => {
-//     button.addEventListener('click', () =>{
-//         if (button === loginButton) {activate('login');}
-//         else {activate('signup');}
-//     });
-// });
