@@ -198,7 +198,7 @@ async function settings(request, response) {
         // replace_string += '<br></br>'
         if (check_mfa.email.length !== 0 && !check_mfa.email.endsWith('_temp')) {
             console.log("WOW");
-            replace_string += '<button onclick="remove_email()">Disable email authentication</button> ';
+            replace_string += '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="remove_email()"><span class="button_text">Disable email authentication</span></button></div> ';
             select_number++;
             select_menu += '<option value="email">Email</option>';
         } else

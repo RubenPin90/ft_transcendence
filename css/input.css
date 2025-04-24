@@ -33,3 +33,7 @@
 .button_text{
     @apply font-bold text-3xl
 }
+
+.number_input{
+    @apply font-bold w-14 h-20 text-center bg-transparent border-b-4 text-white text-6xl
+}

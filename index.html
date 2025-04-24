@@ -1,18 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Vanilla TS SPA</title>
-  <link rel="stylesheet" href="./css/output.css">
-  <script type="module" src="js/main.js"></script>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="css/output.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
 </head>
 <body class="background">
-
-  <main id="app"></main>
-  
-  
-</body>
-</html>
-
-<!-- <a href="/" class="text-blue-600 hover:underline route-link">Home</a>
-<a href="/login" class="text-blue-600 hover:underline route-link">About</a> -->
+  <div class="min-h-screen flex items-center justify-center px-4 py-10">
+    <div class="field">
+      <div id="mfa"><h1 class="text-4xl font-bold text-center bg mb-8">Create your 2FA custom<br>6 diggit code</h1></div>
+        <div id="mfa-button" class="flex space-x-4 justify-center bg-slate-800/40 rounded-xl pb-2">
+          <div>
+            <label for="one" class="sr-only">First</label>
+            <input id="num-1" type="text" maxlength="1" data-focus-input-init data-focus-input-next="num-2" class="number_input">
+          </div>
+          <div>
+            <label for="two" class="sr-only">second</label>
+            <input id="num-2" type="text" maxlength="1" data-focus-input-init data-focus-input-prev="num-1" data-focus-input-next="num-3" class="number_input">
+          </div>
+          <div>
+            <label for="three" class="sr-only">Third</label>
+            <input id="num-3" type="text" maxlength="1" data-focus-input-init data-focus-input-prev="num-2" data-focus-input-next="num-4" class="number_input">
+          </div>
+          <div>
+            <label for="four" class="sr-only">Fourth</label>
+            <input id="num-4" type="text" maxlength="1" data-focus-input-init data-focus-input-prev="num-3" data-focus-input-next="num-5" class="number_input">
+          </div>
+          <div>
+            <label for="five" class="sr-only">Fifth</label>
+            <input id="num-5" type="text" maxlength="1" data-focus-input-init data-focus-input-prev="num-4" data-focus-input-next="num-6" class="number_input">
+          </div>
+          <div>
+            <label for="six" class="sr-only">Sixth</label>
+            <input id="num-6" type="text" maxlength="1" data-focus-input-init data-focus-input-prev="num-5" class="number_input">
+          </div>
+          <!-- <input id="Code" name="Code" placeholder="Code"><br> -->
+        </div>
+        
+        <div class="flex mt-12 gap-4 w-full">
+          <a class="flex-1">
+            <button onclick="window.location.reload()" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
+              <span class="font-bold text-lg">Back</span>
+            </button>
+          </a>
+          <a class="flex-1">
+            <button id="nextButton" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
+              <span class="font-bold text-lg">Next</span>
+            </button>
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+  </html>
+<script src="scripts/input.js"></script>

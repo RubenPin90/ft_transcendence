@@ -113,6 +113,8 @@ async function verify_custom_code() {
     }
 }
 
+
+
 // THIS IS COPIED FROM CHATGPT. CREATE OWN FRONTEND UI
 async function create_custom_code() {
     console.log("create_custom_code gestartet");
@@ -123,7 +125,7 @@ async function create_custom_code() {
     if (!qrcodeDiv)
         return;
 
-    qrcodeDiv.innerHTML = '<h2>Create your 2FA custom 6 diggit code</h2>';
+    qrcodeDiv.innerHTML = '<h1 class="text-4xl font-bold text-center bg mb-8">Create your 2FA custom<br>6 diggit code</h1>';
     if (!document.getElementById('Code')) {
         qrcodeButtonDiv.innerHTML = `
             <input id="Code" name="Code" placeholder="Code"><br>
