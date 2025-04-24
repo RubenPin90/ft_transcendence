@@ -165,11 +165,8 @@ async function settings(request, response) {
             return `2_${userid}`;
         if (replace_data.Function == 'create_otc') {
             const otc_return = await utils.create_otc(userid, response);
-            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
             if (!otc_return || otc_return === undefined || otc_return < 0)
-                response.end(JSON.stringify({"Response": "Failed"}));
-            else
-                response.end(JSON.stringify({"Response": "Success"}));
+                return `3_${otc_return}`;
             return true;
         } else if (replace_data.Function == 'verify') {
             response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
@@ -192,32 +189,25 @@ async function settings(request, response) {
         } else if (replace_data.Function == 'verify_function') {
             return await utils.verify_custom_code(userid, response, replace_data);
         } else if (replace_data.Function == 'create_email') {
-            return await utils.create_email_code(userid, response, replace_data);
+            const returned = await utils.create_email_code(userid, response, replace_data);
+            console.log(returned);
+            return returned;
         } else if (replace_data.Function == 'verify_email') {
             return await utils.verify_email_code(userid, response, replace_data);;
         } else if (replace_data.Function == 'remove_custom_code') {
             const clear_return = await utils.clear_settings_mfa(userid, 'custom', response);
-            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
             if (!clear_return || clear_return === undefined || clear_return < 0)
-                response.end(JSON.stringify({"Response": "failed"}));
-            else
-                response.end(JSON.stringify({"Response": "Success"}));
+                return `4_${clear_return}`;
             return true;
         } else if (replace_data.Function === 'remove_otc') {
             const clear_return = await utils.clear_settings_mfa(userid, 'otc', response);
-            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
             if (!clear_return || clear_return === undefined || clear_return < 0)
-                response.end(JSON.stringify({"Response": "failed"}));
-            else
-                response.end(JSON.stringify({"Response": "Success"}));
+                return `5_${clear_return}`;
             return true;
         } else if (replace_data.Function === 'remove_email') {
             const clear_return = await utils.clear_settings_mfa(userid, 'email', response);
-            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
             if (!clear_return || clear_return === undefined || clear_return < 0)
-                response.end(JSON.stringify({"Response": "failed"}));
-            else
-                response.end(JSON.stringify({"Response": "Success"}));
+                return `6_${clear_return}`;
             return true;
         }
     }
@@ -276,7 +266,7 @@ async function settings(request, response) {
         <button onclick="logout()">Logout</button>`);
     });
     if (!status || status === undefined || status < 0 || status == false)
-        return `3_${status}`;
+        return `7_${status}`;
     return true;
 }
 
