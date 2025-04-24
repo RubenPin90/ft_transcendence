@@ -1,6 +1,7 @@
 let socket = null;
 let ctx = null;
-const USER_ID = `cli_${Math.floor(Math.random() * 100000)}`;
+let userId = null;
+let currentRoomId = null;
 let onGameEndCallback = null;
 const keysPressed = {};
 export function setOnGameEnd(cb) {
@@ -19,14 +20,16 @@ export function startGame(mode) {
     socket.addEventListener('open', () => {
         socket.send(JSON.stringify({
             type: 'joinQueue',
-            payload: { mode, userId: USER_ID }
+            payload: { mode }
         }));
         setupInputHandlers();
     });
     socket.addEventListener('message', (ev) => {
         const msg = JSON.parse(ev.data);
         if (msg.type === 'matchFound') {
-            console.log('Match ready, id =', msg.payload.gameId);
+            currentRoomId = msg.payload.gameId;
+            userId = msg.payload.userId;
+            console.log(`Match ready: room=${currentRoomId}, user=${userId}`);
         }
         else if (msg.type === 'state') {
             drawFrame(msg.state);
@@ -43,7 +46,10 @@ export function startGame(mode) {
 }
 export function stopGame() {
     if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: 'leaveGame', payload: { userId: USER_ID } }));
+        socket.send(JSON.stringify({
+            type: 'leaveGame',
+            payload: { roomId: currentRoomId, userId }
+        }));
         socket.close();
     }
     socket = null;
@@ -55,7 +61,6 @@ function drawFrame(state) {
     const toX = (u) => u * canvas.width;
     const toY = (u) => u * canvas.height;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // ✅ only draw if ball is non‑null
     if (state.ball) {
         const { x, y } = state.ball;
         ctx.beginPath();
@@ -72,27 +77,54 @@ function drawFrame(state) {
     ctx.fillText(`${state.scores[state.players[1].id] || 0}`, canvas.width * 0.75, 30);
 }
 function setupInputHandlers() {
+    let moveInterval = null;
+    // figure out current direction from keysPressed
+    function getDirection() {
+        if (keysPressed['ArrowUp'] && !keysPressed['ArrowDown'])
+            return 'up';
+        if (keysPressed['ArrowDown'] && !keysPressed['ArrowUp'])
+            return 'down';
+        return null;
+    }
+    // send a single movePaddle packet
+    function sendMovement(active) {
+        const direction = getDirection();
+        socket === null || socket === void 0 ? void 0 : socket.send(JSON.stringify({
+            type: 'movePaddle',
+            payload: {
+                roomId: currentRoomId,
+                userId,
+                direction: active ? direction : 'stop',
+                active
+            }
+        }));
+    }
     window.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && userId && currentRoomId) {
             if (!keysPressed[e.key]) {
                 keysPressed[e.key] = true;
-                const direction = e.key === 'ArrowUp' ? 'up' : 'down';
-                socket === null || socket === void 0 ? void 0 : socket.send(JSON.stringify({
-                    type: 'movePaddle',
-                    payload: { userId: USER_ID, direction, active: true }
-                }));
+                // send one immediately…
+                sendMovement(true);
+                // …then start a 60 fps loop if not already running
+                if (moveInterval == null) {
+                    moveInterval = window.setInterval(() => {
+                        sendMovement(true);
+                    }, 1000 / 60);
+                }
             }
             e.preventDefault();
         }
     });
     window.addEventListener('keyup', (e) => {
-        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && userId && currentRoomId) {
             if (keysPressed[e.key]) {
                 keysPressed[e.key] = false;
-                socket === null || socket === void 0 ? void 0 : socket.send(JSON.stringify({
-                    type: 'movePaddle',
-                    payload: { userId: USER_ID, direction: 'stop', active: false }
-                }));
+            }
+            // if neither arrow is down, stop the loop
+            if (!keysPressed['ArrowUp'] && !keysPressed['ArrowDown'] && moveInterval != null) {
+                clearInterval(moveInterval);
+                moveInterval = null;
+                sendMovement(false); // tell server we’ve stopped
             }
             e.preventDefault();
         }

@@ -6,8 +6,8 @@ import {
 } from './game.js'
 import type { GameMode } from './game.js'
 
-const USER_ID = `cli_${Math.floor(Math.random() * 9999)}`
 let currentMode: string | null = null
+let currentRoomId: string | null = null  
 
 setOnGameEnd((winnerId: string) => {
   alert(`Player ${winnerId} wins!`)
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
     'Customgame-btn': '/game/Customgame'
   }
 
-  Object.entries(btnMap).forEach(([btnId, routePath]: [string, string]) => {
+  Object.entries(btnMap).forEach(([btnId, routePath]) => {
     document.getElementById(btnId)?.addEventListener('click', () => navigate(routePath))
   })
 

@@ -1,6 +1,6 @@
 import { initGameCanvas, startGame, stopGame, setOnGameEnd } from './game.js';
-const USER_ID = `cli_${Math.floor(Math.random() * 9999)}`;
 let currentMode = null;
+let currentRoomId = null;
 setOnGameEnd((winnerId) => {
     alert(`Player ${winnerId} wins!`);
 });

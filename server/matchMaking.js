@@ -6,29 +6,74 @@
 // -------------------------------------------------------------
 
 import { GAME_MODES } from './MatchManager.js';
+import { v4 as uuidv4 } from 'uuid'
+// import BotClient from './bot.js';
 
 const waiting1v1 = [];
 
-export function createGameAI(matchManager, userId, ws) {
 
-  const room = matchManager.createRoom({
+
+export function createGameAI(matchManager, userId, ws) {
+  const botId = `bot_${uuidv4()}`;
+  // pass botId into createRoom
+  const room  = matchManager.createRoom({
     mode:       GAME_MODES.PVE,
     maxPlayers: 2,
-    creatorId:  userId,   
+    creatorId:  userId,
+    botId,
   });
+
+  
+  ws.userId        = userId;
   ws.currentGameId = room.roomId;
   ws.inGame        = true;
-
   matchManager.registerSocket(userId, ws);
+
+  const botAdapter = new BotAdapter(botId, room.roomId);
+  matchManager.registerSocket(botId, botAdapter);
+  botAdapter.start();
 
   ws.send(JSON.stringify({
     type:    'matchFound',
-    payload: { gameId: room.roomId, mode: 'pve' },
+    payload: { gameId: room.roomId, mode:'pve', userId }
   }));
-
   return room;
 }
 
+export function joinQueueCustomgame(userId, ws) {
+  const REQUIRED_PLAYERS = 4
+
+  waitingCustomgamePlayers.push({ userId, ws })
+  console.log(`${userId} queued for a Custom game. Currently: ${waitingCustomgamePlayers.length} waiting.`)
+
+  if (waitingCustomgamePlayers.length >= REQUIRED_PLAYERS) {
+    const group = waitingCustomgamePlayers.splice(0, REQUIRED_PLAYERS)
+
+    const room = matchManager.createRoom({
+      mode: GAME_MODES.CUSTOM,
+      maxPlayers: REQUIRED_PLAYERS,
+    })
+
+    group.forEach((player) => {
+      matchManager.joinRoom(room.roomId, player.userId)
+      player.ws.inGame = true
+      player.ws.currentGameId = room.roomId
+    })
+
+    group.forEach((player) => {
+      player.ws.send(JSON.stringify({
+        type: 'matchFound',
+        payload: {
+          gameId: room.roomId,
+          mode: 'Customgame',
+          players: group.map((g) => g.userId),
+        },
+      }))
+    })
+
+    console.log(`Customgame started with ${REQUIRED_PLAYERS} players (roomId = ${room.roomId})`)
+  }
+}
 
 export function joinQueue1v1(matchManager, userId, ws) {
   if (waiting1v1.length > 0) {

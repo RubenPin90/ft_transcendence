@@ -8,6 +8,7 @@ export const GAME_MODES = {
 
 export class MatchManager {
   static GAME_MODES = GAME_MODES;
+  static TICK_RATE = 60
 
   constructor(wss) {
     this.wss = wss
@@ -31,9 +32,8 @@ export class MatchManager {
     }
   }
 
-  createRoom(options) {
-    const { mode = GAME_MODES.PVP, maxPlayers = 2, creatorId } = options
-    const roomId = uuidv4()
+  createRoom({ mode = GAME_MODES.PVP, maxPlayers = 2, creatorId, botId = 'BOT' }) {
+    const roomId = uuidv4();
 
     const newRoom = {
       roomId,
@@ -45,30 +45,31 @@ export class MatchManager {
       status: 'waiting',
       updateInterval: null,
       pauseTimeout: null,
+      FPS: MatchManager.TICK_RATE,
       maxScore: 5,
-    }
+    };
 
     if (mode === GAME_MODES.PVE) {
-      newRoom.players.push({ playerId: 'BOT', isBot: true, paddleY: 0.5 })
-      newRoom.scoreBoard['BOT'] = 0
+      console.log('Creating PVE room with botId:', botId);
+      newRoom.players.push({ playerId: botId, isBot: true, paddleY: 0.5 });
+      newRoom.scoreBoard[botId] = 0;
     }
 
     if (creatorId) {
-      newRoom.players.push({ playerId: creatorId, isBot: false, paddleY: 0.5 })
-      newRoom.scoreBoard[creatorId] = 0
+      newRoom.players.push({ playerId: creatorId, isBot: false, paddleY: 0.5 });
+      newRoom.scoreBoard[creatorId] = 0;
     }
 
-    this.rooms.set(roomId, newRoom)
+    this.rooms.set(roomId, newRoom);
 
-    if (newRoom.players.length === newRoom.maxPlayers) {
-      newRoom.status = 'running'
-      this._initBall(roomId)
-      this._mainLoop(roomId)
+    if (newRoom.players.length === maxPlayers) {
+      newRoom.status = 'running';
+      this._initBall(roomId);
+      this._mainLoop(roomId);
     }
 
-    return newRoom
+    return newRoom;
   }
-
   joinRoom(roomId, playerId) {
     const room = this.rooms.get(roomId)
     if (!room || room.players.length >= room.maxPlayers) return null
@@ -94,6 +95,20 @@ export class MatchManager {
     if (room.players.length === 0) this.removeRoom(roomId)
   }
 
+  _updateBotPaddle(room) {
+    const bot = room.players.find(p => p.isBot);
+    if (!bot) return;
+  
+    const { y: ballY } = room.ballState;         // 0 → top, 1 → bottom
+    const speed        = 0.02;                   // units per tick
+  
+    // chase the ball, but cap the step by `speed`
+    if (Math.abs(ballY - bot.paddleY) > speed) {
+      bot.paddleY += speed * Math.sign(ballY - bot.paddleY);
+      bot.paddleY = Math.max(0, Math.min(1, bot.paddleY)); // clamp 0-1
+    }
+  }
+
   _initBall(roomId) {
     const room = this.rooms.get(roomId)
     room.ballState = {
@@ -108,10 +123,14 @@ export class MatchManager {
     const room = this.rooms.get(roomId)
     if (!room) return
     const broadcast = this._broadcastFor(roomId)
-    const FPS = 60
+    const FPS = room.FPS
     const paddleSize = 0.2
 
     room.updateInterval = setInterval(() => {
+      if (room.mode === MatchManager.GAME_MODES.PVE &&
+                  room.status === 'running') {
+                this._updateBotPaddle(room);
+      }
       const b = room.ballState
       b.x += b.vx / FPS
       b.y += b.vy / FPS
