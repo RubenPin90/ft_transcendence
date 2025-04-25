@@ -22,7 +22,7 @@ async function create_otc() {
         const qrcodeDiv = document.getElementById('mfa');
         const qrcodeButtonDiv = document.getElementById('mfa-button');
         if (qrcodeDiv && qrcodeButtonDiv) {
-            qrcodeDiv.innerHTML = `<img src=${data}></p>`;
+            qrcodeDiv.innerHTML = `<img src=${data.qrCodeUrl}></p>`;
             qrcodeButtonDiv.innerHTML = '<input id="Code" name="Code" placeholder="Code"></label> <button onclick="verify_code()">Verify</button> <button onclick="window.location.reload()">Back</button>';
         }
 

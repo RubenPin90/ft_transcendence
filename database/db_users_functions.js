@@ -52,17 +52,17 @@ async function create_users_value(role_id, username, self) {
     try {
         const check = await db.get(`
             SELECT * FROM settings
-            WHERE self = '${self}'`);
+            WHERE self = ?`, [self]);
         if (!check)
             return -1;
 		const check_username = await db.get(`
 			SELECT * FROM users
-			WHERE username = '${username}'`)
+			WHERE username = ?`, [username])
 		if (check_username)
 			return -2;
         const check_self = await db.get(`
             SELECT * FROM users
-            WHERE self = '${self}'`)
+            WHERE self = ?`, [self])
         if (check_self)
             return -3;
         var row = await db.run(`

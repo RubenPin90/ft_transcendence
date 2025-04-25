@@ -51,32 +51,35 @@ async function create_settings_value(password, pfp, mfa, email, google, github) 
         filename: 'db.sqlite',
         driver: sqlite3.Database
     });
-
+    
+    
     try {
         let check = await db.get(
             `SELECT * FROM settings
 			WHERE google = ?
 			`, [google]
 		);
-		if (check && google !== 0)
+        // console.log(check);
+        if (check && google.length !== 0)
 			return -1;
         check = await db.get(
             `SELECT * FROM settings
 			WHERE github = ?
 			`, [github]
 		);
-		if (check && github !== 0)
+		if (check && github.length !== 0)
 			return -2;
         var self;
-        if (google !== 0)
-            self = google;
-        else if (github !== 0)
+        if (google.length !== 0) {
+           self = google;
+        }
+        else if (github.length !== 0)
             self = github;
         else {
-            console.log(max_loop_size);
             var random_self = Math.floor(Math.random() * 1000000000);
+            console.log(random_self);
             var it = 0
-            while (it < max_loop_size) {
+            while (it < 2000000000) {
                 check = await db.get(`
                     SELECT * from settings
                     WHERE self = ${random_self}`);
@@ -89,6 +92,7 @@ async function create_settings_value(password, pfp, mfa, email, google, github) 
                 console.log(`Error in create_settings_value: ${err}`);
                 return null;
             }
+            console.log(`Random: ${random_self}`);
             self = random_self;
         }
         var row = await db.run(
