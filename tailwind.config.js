@@ -22,11 +22,6 @@ export default {
             transform: "translateX(-6px)",
           },
 
-          open_up: {
-            "0%": {
-              transform: "translateX(-6px)"
-            },
-          },
         },
       },
       animation: {
