@@ -29,10 +29,6 @@ export function createGameAI(matchManager, userId, ws) {
   ws.inGame        = true;
   matchManager.registerSocket(userId, ws);
 
-  const botAdapter = new BotAdapter(botId, room.roomId);
-  matchManager.registerSocket(botId, botAdapter);
-  botAdapter.start();
-
   ws.send(JSON.stringify({
     type:    'matchFound',
     payload: { gameId: room.roomId, mode:'pve', userId }
@@ -92,17 +88,19 @@ export function joinQueue1v1(matchManager, userId, ws) {
       s.currentGameId = room.roomId;
     });
 
-    const notify = (socket, opponentId) => socket.send(JSON.stringify({
-      type:    'matchFound',
+    const notify = (socket, selfId, opponentId) => socket.send(JSON.stringify({
+      type: 'matchFound',
       payload: {
         gameId:     room.roomId,
         mode:       '1v1',
-        opponentId,         
+        userId:     selfId,      // <-- tell each client who *they* are
+        opponentId,              //    …and who they’ll face
       },
     }));
-
-    notify(ws,        other.userId);
-    notify(other.ws,  userId);
+    
+    notify(ws,        userId,     other.userId);
+    notify(other.ws,  other.userId, userId);
+    
 
     return room;
   }
