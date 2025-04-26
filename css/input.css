@@ -43,9 +43,21 @@
 }
 
 .input_field{
-    @apply rounded-xl border-2 border-violet-800 py-3 text-black text-center text-lg mb-4 w-full outline-none
+    @apply rounded-xl border-2 border-violet-800 py-3 text-black text-left pl-14 text-lg w-full outline-none
 }
 
 .input_field_error{
     @apply rounded-xl border-2 border-red-800 py-3 text-black bg-red-900 text-center text-lg mb-4 w-full transition animate-wrong_input
+}
+
+.input_svg{
+    @apply absolute py-4 start-0 flex items-center justify-center ps-4 pointer-events-none bg-gray-600/30 rounded-l-lg pr-4
+}
+
+.password_eye{
+    @apply absolute py-4 end-0 flex items-center justify-center pe-4 pl-4 pointer-events-auto
+}
+
+.label_text{
+    @apply text-[#ffe342] font-bold text-lg
 }
