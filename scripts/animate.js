@@ -10,10 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const signupButton = document.getElementById('signupBtn');
 const loginButton = document.getElementById('loginBtn');
-const fieldHighlight = document.getElementById('highlight');
-let field = document.getElementById('login-signup-field');
 let activeBtn = 'login';
-fieldHighlight.style.left = '0%';
 let googleHref = null;
 let githubHref = null;
 document.addEventListener('DOMContentLoaded', () => {
@@ -22,8 +19,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (googleLinkElement) {
         googleHref = googleLinkElement.href;
     }
+    else if (!googleLinkElement) {
+        console.error("google element is null");
+    }
     if (githubLinkElement) {
         githubHref = githubLinkElement.href;
+    }
+    else if (!githubLinkElement) {
+        console.error("github element is null");
     }
 });
 function eye_one() {
@@ -165,6 +168,13 @@ document.addEventListener('click', (event) => {
 });
 function activate(tab) {
     return __awaiter(this, void 0, void 0, function* () {
+        let field = document.getElementById('login-signup-field');
+        const fieldHighlight = document.getElementById('highlight');
+        console.log(fieldHighlight);
+        if (!fieldHighlight) {
+            console.error('could not find fieldHighlight for the Login | Signup field');
+            return;
+        }
         activeBtn = tab;
         if (tab === 'login') {
             fieldHighlight.style.left = '0%';

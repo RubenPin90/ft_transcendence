@@ -47,7 +47,7 @@
 }
 
 .input_field_error{
-    @apply rounded-xl border-2 border-red-800 py-3 text-black bg-red-900 text-center text-lg mb-4 w-full transition animate-wrong_input
+    @apply rounded-xl border-2 border-red-800 py-3 text-black bg-red-700/10 text-left pl-14 text-lg w-full
 }
 
 .input_svg{
@@ -60,4 +60,8 @@
 
 .label_text{
     @apply text-[#ffe342] font-bold text-lg
+}
+
+.input_total{
+    @apply transition
 }

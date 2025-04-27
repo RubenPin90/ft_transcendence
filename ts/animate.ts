@@ -1,10 +1,10 @@
 const signupButton = document.getElementById('signupBtn') as HTMLButtonElement;
 const loginButton = document.getElementById('loginBtn') as HTMLButtonElement;
-const fieldHighlight = document.getElementById('highlight') as HTMLDivElement;
-let field = document.getElementById('login-signup-field');
+// const fieldHighlight = document.getElementById('highlight') as HTMLDivElement;
+// let field = document.getElementById('login-signup-field');
 
 let activeBtn: 'login' | 'signup' = 'login';
-fieldHighlight.style.left = '0%';
+// fieldHighlight.style.left = '0%';
 
 let googleHref: string | null = null;
 let githubHref: string | null = null;
@@ -16,9 +16,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (googleLinkElement) {
         googleHref = googleLinkElement.href;
+    } else if (!googleLinkElement){
+        console.error("google element is null");
     }
     if (githubLinkElement) {
         githubHref = githubLinkElement.href;
+    } else if (!githubLinkElement){
+        console.error("github element is null");
     }
 });
 
@@ -211,6 +215,13 @@ document.addEventListener('click', (event) => {
 });
 
 async function activate(tab: 'login' | 'signup') {
+    let field = document.getElementById('login-signup-field');
+    const fieldHighlight = document.getElementById('highlight');
+    console.log(fieldHighlight);
+    if (!fieldHighlight){
+        console.error('could not find fieldHighlight for the Login | Signup field');
+        return;
+    }
     activeBtn = tab;
     if (tab === 'login'){ //clicked on login
         fieldHighlight.style.left = '0%';
