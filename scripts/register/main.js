@@ -99,24 +99,21 @@ async function create_account() {
         })
     });
 
-    if (!response.ok)
+    if (!response.ok){
+        alert("error with response");
         return; // show error on screen
+    }
 
     var data = await response.json();
     console.log(data);
     try {
         if (data.Response == 'reload')
             window.location.reload();
-        else
+        else{
+            alert("error line 113");
             return; // show error on screen
+        }
     } catch (err) {
 
     }
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    const highlight = document.getElementById('highlight');
-    if (highlight) {
-        highlight.style.left = '50%'; // Move the highlight to the "Sign Up" button
-    }
-});

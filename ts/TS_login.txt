@@ -14,6 +14,8 @@ function getHTMLElement(id: string): HTMLElement {
     return element;
 }
 
+console.log("please dont show up");
+
 // async function toggle_login(): Promise<void> {
 
 //     const email = getInputElement("email-input");

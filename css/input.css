@@ -19,7 +19,7 @@
 }
 
 .field{
-    @apply bg-gray-600 w-11/12 max-w-lg rounded-3xl p-6 mx-auto bg-clip-padding backdrop-filter backdrop-blur-xl bg-opacity-30 border-[#ffe342] border-2 shadow-strong shadow-yellow-700/80
+    @apply bg-gray-600 w-11/12 max-w-lg rounded-3xl p-6 mx-auto bg-clip-padding backdrop-filter backdrop-blur-xl bg-opacity-30 border-[#ff00d0] border-2 shadow-strong shadow-[#ff00d0]/80
 }
 
 .buttons{
@@ -59,7 +59,7 @@
 }
 
 .label_text{
-    @apply text-[#ffe342] font-bold text-lg
+    @apply text-[#ffffff] font-bold text-lg
 }
 
 .input_total{

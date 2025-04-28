@@ -219,11 +219,24 @@ async function settings(request, response) {
             return true;
         const check_mfa = await mfa_db.get_mfa_value('self', userid);
         if (check_mfa === undefined || check_mfa === null)
-            return data.replace("{{mfa-button}}", '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="create_otc()"><span class="button_text">Create OTC</span></button></div>\
-                <div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="create_custom_code()"><span class="button_text">Create custom 6 diggit code</span></button></div>\
-                <div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="create_email()"><span class="button_text">Enable email authentication</span></button></div>\
-                <button onclick="window.location.href = \'http://localhost:8080\'">Back</button>\
-                <button onclick="logout()">Logout</button>');
+            return data.replace("{{mfa-button}}", '<div class="buttons mb-6" onclick="create_otc()"><button class="block w-full mb-6 mt-6" "><span class="button_text">Create OTC</span></button></div>\
+                <div class="buttons mb-6" onclick="create_custom_code()"><button class="block w-full mb-6 mt-6""><span class="button_text">Create custom 6 diggit code</span></button></div>\
+                <div class="buttons mb-6" onclick="create_email()"><button class="block w-full mb-6 mt-6""><span class="button_text">Enable email authentication</span></button></div>\
+                <div class="buttons mb-6" onclick="change_info()"><button class="block w-full mb-6 mt-6"><span class="button_text">Change User Information</span></button></div>\
+                <div class="flex mt-12 gap-4 w-full">\
+                <a class="flex-1">\
+                    <button onclick="window.location.href=\'/\'" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">\
+                        <span class="font-bold text-lg">Back</span>\
+                    </button>\
+                </a>\
+                <a class="flex-1">\
+                    <button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">\
+                        <span class="font-bold text-lg">Logout</span>\
+                    </button>\
+                    </a>\
+                </div>'
+            );
+        // <button onclick="window.location.reload()" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">\
         var replace_string = "";
         var select_number = 0;
         var select_menu = "";
@@ -251,6 +264,7 @@ async function settings(request, response) {
         } else
             replace_string += '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="create_email()"><span class="button_text">Enable email authentication</span></button></div> ';
         // replace_string += '<br></br>'
+        replace_string += '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="change_info()"><span class="button_text">Change User Information</span></button></div> ';
         if (select_number < 2)
             return data.replace("{{mfa-button}}", `${replace_string} <button onclick="window.location.href = \'http://localhost:8080\'">Back</button> \
                 <button onclick="logout()">Logout</button>`);
