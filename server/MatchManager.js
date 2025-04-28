@@ -13,10 +13,21 @@ export class MatchManager {
   static GAME_MODES = GAME_MODES
   static MAX_BOUNCE_ANGLE = Math.PI / 4 // 45°
   static TICK_RATE = 60
-  static MAX_BALL_SPEED = 0.7
+  static BOT_PIXELS_PER_SECOND = 300   // Desired bot speed in pixels/sec
+  static BOT_MIN_REACTION_MS = 100     // Bot reaction delay range (min)
+  static BOT_MAX_REACTION_MS = 200     // Bot reaction delay range (max)
+  static get BOT_MAX_SPEED () {        // Normalised units per tick
+    return MatchManager.BOT_PIXELS_PER_SECOND /
+           MatchManager.TICK_RATE
+  }
   // Throttling rules
   static MIN_HITS_AFTER_MAX = 5          // After reaching max‑speed, wait this many paddle hits …
   static BALL_BROADCAST_FRAMES = 10      // … then show ball for this many frames after each hit
+
+  static getRandomReactionDelay () {
+    return MatchManager.BOT_MIN_REACTION_MS +
+           Math.random() * (MatchManager.BOT_MAX_REACTION_MS - MatchManager.BOT_MIN_REACTION_MS)
+  }
 
   /*───────────────────────────
     Construction / bookkeeping
@@ -116,12 +127,26 @@ export class MatchManager {
   _updateBotPaddle (room) {
     const bot = room.players.find(p => p.isBot)
     if (!bot) return
+
+    // Respect a random reaction delay (100‑200 ms) before each movement decision
+    const now = Date.now()
+    if (bot.aiNextMoveTime && now < bot.aiNextMoveTime) return
+
     const { y: ballY } = room.ballState
-    const speed = 0.02
-    if (Math.abs(ballY - bot.paddleY) > speed) {
-      bot.paddleY += speed * Math.sign(ballY - bot.paddleY)
-      bot.paddleY = Math.max(0, Math.min(1, bot.paddleY))
+    const dy = ballY - bot.paddleY
+
+    // Move toward the ball at a constant speed (BOT_MAX_SPEED normalised units per tick)
+    if (Math.abs(dy) <= MatchManager.BOT_MAX_SPEED) {
+      bot.paddleY = ballY
+    } else {
+      bot.paddleY += MatchManager.BOT_MAX_SPEED * Math.sign(dy)
     }
+
+    // Clamp inside arena bounds
+    bot.paddleY = Math.max(0, Math.min(1, bot.paddleY))
+
+    // Schedule next movement decision after a random reaction delay
+    bot.aiNextMoveTime = now + MatchManager.getRandomReactionDelay()
   }
 
   _initBall (roomId) {
