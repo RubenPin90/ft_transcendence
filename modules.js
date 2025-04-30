@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
+import translate from 'google-translate-api'
 
 dotenv.config();
 
@@ -118,6 +119,28 @@ async function easyfetch(url, method, header, body) {
 	return token_data;
 }
 
+async function translator(text, lang) {
+	const response = await fetch("https://libretranslate.com/translate", {
+		method: "POST",
+		body: JSON.stringify({
+			q: "Hallo Welt",
+			source: "de",
+			target: "en"
+		}),
+		headers: { "Content-Type": "application/json" }
+	});
+	console.log(await response.json());
+	
+	if (!response.ok)
+		return -1;
+
+	const data = await response.json();
+	if (!data || data === undefined)
+		return -2;
+	console.log(data);
+	return data;
+}
+
 export {
 	get_cookies,
 	set_cookie,
@@ -126,5 +149,6 @@ export {
 	create_encrypted_password,
 	check_encrypted_password,
 	send_email,
-	easyfetch
+	easyfetch,
+	translator
 }

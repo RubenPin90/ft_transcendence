@@ -29,6 +29,7 @@ async function create_db() {
             pfp text,
             MFA INTEGER,
             email TEXT,
+            lang TEXT,
             google TEXT,
             github TEXT,
             self TEXT UNIQUE NOT NULL

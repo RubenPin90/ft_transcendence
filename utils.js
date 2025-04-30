@@ -82,7 +82,7 @@ async function encrypt_github(request) {
 	if (!user_email || !userid || !pfp || !username || user_email === undefined || userid === undefined || username === undefined || pfp === undefined || user_email.length == 0 || userid.length == 0 || username.length == 0 || pfp.length == 0)
 		return -7;
 	username = username.replace(/\./g, '-');
-	const db_return = await settings_db.create_settings_value('', pfp, 0, user_email, userid, 0);
+	const db_return = await settings_db.create_settings_value('', pfp, 0, user_email, 'en', userid, 0);
 	if (db_return.self === undefined || db_return.return === undefined)
 		return userid;
 	if (db_return < 0)
@@ -129,7 +129,7 @@ async function encrypt_google(request) {
 		const username = create_username(email);
 		if (username < 0)
 			return -8;
-		const db_return = await settings_db.create_settings_value('', pfp, 0, email, userid, 0);
+		const db_return = await settings_db.create_settings_value('', pfp, 0, email, 'en', userid, 0);
 		if (db_return.self === undefined || db_return.return === undefined)
 			return userid;
 		if (db_return < 0)

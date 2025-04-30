@@ -5,7 +5,7 @@ const max_loop_size = 1000000000;
 
 // Tested: All working
 async function get_settings_value(search_value, value) {
-    const valid_values = ['password', 'pfp', 'MFA', 'email', 'google', 'github', 'self'];
+    const valid_values = ['password', 'pfp', 'MFA', 'email', 'lang', 'google', 'github', 'self'];
     if (!valid_values.includes(search_value))
         return -1;
 
@@ -46,7 +46,7 @@ async function get_settings() {
 }
 
 // Not tested: But working propperly so far
-async function create_settings_value(password, pfp, mfa, email, google, github) {
+async function create_settings_value(password, pfp, mfa, email, lang, google, github) {
     const db = await open({
         filename: 'db.sqlite',
         driver: sqlite3.Database
@@ -96,8 +96,8 @@ async function create_settings_value(password, pfp, mfa, email, google, github) 
             self = random_self;
         }
         var row = await db.run(
-			`INSERT INTO settings (password, pfp, mfa, email, google, github, self) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-			[password, pfp, mfa, email, google, github, self]
+			`INSERT INTO settings (password, pfp, mfa, email, lang, google, github, self) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			[password, pfp, mfa, email, lang, google, github, self]
 		);
 		console.log(`New user created with ID: ${row.lastID}`);
     } catch (err) {
@@ -111,7 +111,7 @@ async function create_settings_value(password, pfp, mfa, email, google, github) 
 
 // Tested: all working
 async function update_settings_value(search_value, value, self) {
-    const valid_values = ['pfp', 'password', 'mfa', 'email', 'google', 'github'];
+    const valid_values = ['pfp', 'password', 'mfa', 'email', 'lang', 'google', 'github'];
     if (!valid_values.includes(search_value))
         return null;
     const db = await open({

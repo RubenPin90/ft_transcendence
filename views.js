@@ -77,7 +77,7 @@ async function register(request, response) {
         const hashed = await modules.create_encrypted_password(replace_data.password);
         if (!hashed || hashed === undefined || hashed < 0)
             return `1_${hashed}`;
-        const settings = await settings_db.create_settings_value(hashed, '', 0, replace_data.email, '', '');
+        const settings = await settings_db.create_settings_value(hashed, '', 0, replace_data.email, 'en', '', '');
         if (!settings || settings === undefined || settings < 0)
             return `2_${settings}`;
         const user = await users_db.create_users_value(0, replace_data.username, settings.self);
@@ -106,6 +106,7 @@ async function register(request, response) {
 }
 
 async function home(request, response) {
+    console.log(await modules.translator("Das ist ein test", "en"));
     var [keys, values] = modules.get_cookies(request.headers.cookie);
     if (request.url === '/' && !keys?.includes('token'))
         return send.redirect(response, '/login', 302);
