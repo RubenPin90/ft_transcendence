@@ -1,7 +1,7 @@
 // server/messageHandler.js
 import WebSocket from 'ws';
 import { createGameAI } from './matchMaking.js';
-import { joinQueue1v1, joinQueueCustomgame } from './matchMaking.js';
+import { joinQueue1v1, joinQueueTournament } from './matchMaking.js';
 import { MatchManager } from './MatchManager.js';
 
 
@@ -41,8 +41,8 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
         createGameAI(matchManager, userId, ws);
       } else if (mode === '1v1') {
         joinQueue1v1(matchManager, userId, ws);
-      } else if (mode === 'Customgame') {
-        joinQueueCustomgame(userId, ws);
+      } else if (mode === 'Tournament') {
+        joinQueueTournament(userId, ws);
       }
       break;
     }

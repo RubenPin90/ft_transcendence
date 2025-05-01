@@ -23,7 +23,7 @@ function route() {
         }
         currentMode = mode;
         initGameCanvas();
-        if (['pve', '1v1', 'Customgame'].includes(mode)) {
+        if (['pve', '1v1', 'Tournament'].includes(mode)) {
             startGame(mode);
         }
         setOnGameEnd((winnerId) => {
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnMap = {
         'sp-vs-pve-btn': '/game/pve',
         'one-vs-one-btn': '/game/1v1',
-        'Customgame-btn': '/game/Customgame'
+        'Tournament-btn': '/game/Tournament'
     };
     Object.entries(btnMap).forEach(([btnId, routePath]) => {
         var _a;

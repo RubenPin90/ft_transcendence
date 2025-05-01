@@ -43,7 +43,7 @@ const matchManager = new MatchManager(wss)
  * Once we find enough players, we create/join a room using matchManager.
  */
 const waiting1v1Players = []
-const waitingCustomgamePlayers = []
+const waitingTournamentPlayers = []
 
 function removeFromQueue(queue, userId) {
   const idx = queue.findIndex((p) => p.userId === userId)
@@ -81,7 +81,7 @@ wss.on('connection', (ws, request) => {
 
     removeFromQueue(waiting1v1Players, ws.userId)
 
-    removeFromQueue(waitingCustomgamePlayers, ws.userId)
+    removeFromQueue(waitingTournamentPlayers, ws.userId)
     matchManager.unregisterSocket(ws.userId)
 
     if (ws.inGame) {

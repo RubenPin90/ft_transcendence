@@ -36,14 +36,14 @@ export function createGameAI(matchManager, userId, ws) {
   return room;
 }
 
-export function joinQueueCustomgame(userId, ws) {
+export function joinQueueTournament(userId, ws) {
   const REQUIRED_PLAYERS = 4
 
-  waitingCustomgamePlayers.push({ userId, ws })
-  console.log(`${userId} queued for a Custom game. Currently: ${waitingCustomgamePlayers.length} waiting.`)
+  waitingTournamentPlayers.push({ userId, ws })
+  console.log(`${userId} queued for a Tournament. Currently: ${waitingTournamentPlayers.length} waiting.`)
 
-  if (waitingCustomgamePlayers.length >= REQUIRED_PLAYERS) {
-    const group = waitingCustomgamePlayers.splice(0, REQUIRED_PLAYERS)
+  if (waitingTournamentPlayers.length >= REQUIRED_PLAYERS) {
+    const group = waitingTournamentPlayers.splice(0, REQUIRED_PLAYERS)
 
     const room = matchManager.createRoom({
       mode: GAME_MODES.CUSTOM,
@@ -61,13 +61,13 @@ export function joinQueueCustomgame(userId, ws) {
         type: 'matchFound',
         payload: {
           gameId: room.roomId,
-          mode: 'Customgame',
+          mode: 'Tournament',
           players: group.map((g) => g.userId),
         },
       }))
     })
 
-    console.log(`Customgame started with ${REQUIRED_PLAYERS} players (roomId = ${room.roomId})`)
+    console.log(`Tournament started with ${REQUIRED_PLAYERS} players (roomId = ${room.roomId})`)
   }
 }
 

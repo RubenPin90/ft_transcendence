@@ -1,4 +1,4 @@
-export type GameMode = 'pve' | '1v1' | 'Customgame'
+export type GameMode = 'pve' | '1v1' | 'Tournament'
 
 interface PlayerState {
   id: string
