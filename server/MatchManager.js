@@ -10,7 +10,7 @@ export class MatchManager {
   /*───────────────────────────
     Static configuration
   ───────────────────────────*/
-<<<<<<< Updated upstream
+
   static GAME_MODES = GAME_MODES
   static MAX_BOUNCE_ANGLE = Math.PI / 4 // 45°
   static TICK_RATE = 60
@@ -21,12 +21,12 @@ export class MatchManager {
     return MatchManager.BOT_PIXELS_PER_SECOND /
            MatchManager.TICK_RATE
   }
-=======
+
   static GAME_MODES           = GAME_MODES
   static MAX_BOUNCE_ANGLE     = Math.PI / 4 // 45°
   static TICK_RATE            = 60
   static MAX_BALL_SPEED       = 0.7
->>>>>>> Stashed changes
+
   // Throttling rules
   static MIN_HITS_AFTER_MAX   = 5          // After reaching max‑speed, wait this many paddle hits …
   static BALL_BROADCAST_FRAMES= 10         // … then show ball for this many frames after each hit
