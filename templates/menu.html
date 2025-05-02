@@ -15,6 +15,26 @@
   <div id="settings-page" style="display: none;">
     <!-- settings form -->
   </div>
+  <!-- just after #settings-page -->
+  <div id="tournament-page" style="display:none; padding:2rem; font-family:sans-serif">
+    <h2 style="text-align:center; margin-bottom:2.5rem;">Tournaments</h2>
+  
+    <div class="tournament-layout">
+      <!-- ░░ Left column ░░ -->
+      <div class="t-left">
+        <input id="t-code-input" class="full-btn"
+               placeholder="Enter a Tournament code here" />
+  
+        <button id="t-create-btn"  class="full-btn">Create a Tournament</button>
+        <button id="t-back-btn"    class="full-btn">Return to the main menu</button>
+      </div>
+  
+      <!-- ░░ Right column ░░ -->
+      <div class="t-right" id="tournament-list">
+        <!-- cards will be injected by JS -->
+      </div>
+    </div>
+  </div>
 
   <!-- 🎯 Добавлено здесь -->
   <div id="game-container" style="display: none;">

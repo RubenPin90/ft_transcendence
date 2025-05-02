@@ -6,7 +6,7 @@ export const GAME_MODES = {
   CUSTOM: 'CUSTOM',
 }
 
-export class MatchManager {
+export class matchManager {
   /*───────────────────────────
     Static configuration
   ───────────────────────────*/
@@ -18,8 +18,8 @@ export class MatchManager {
   static BOT_MIN_REACTION_MS = 100     // Bot reaction delay range (min)
   static BOT_MAX_REACTION_MS = 200     // Bot reaction delay range (max)
   static get BOT_MAX_SPEED () {        // Normalised units per tick
-    return MatchManager.BOT_PIXELS_PER_SECOND /
-           MatchManager.TICK_RATE
+    return matchManager.BOT_PIXELS_PER_SECOND /
+           matchManager.TICK_RATE
   }
 
   static GAME_MODES           = GAME_MODES
@@ -32,8 +32,8 @@ export class MatchManager {
   static BALL_BROADCAST_FRAMES= 10         // … then show ball for this many frames after each hit
 
   static getRandomReactionDelay () {
-    return MatchManager.BOT_MIN_REACTION_MS +
-           Math.random() * (MatchManager.BOT_MAX_REACTION_MS - MatchManager.BOT_MIN_REACTION_MS)
+    return matchManager.BOT_MIN_REACTION_MS +
+           Math.random() * (matchManager.BOT_MAX_REACTION_MS - matchManager.BOT_MIN_REACTION_MS)
   }
 
   /*───────────────────────────
@@ -77,7 +77,7 @@ export class MatchManager {
       status: 'waiting',
       updateInterval: null,
       pauseTimeout: null,
-      FPS: MatchManager.TICK_RATE,
+      FPS: matchManager.TICK_RATE,
       maxScore: 5,
       // throttling trackers
       isMaxSpeedReached: false,
@@ -183,17 +183,17 @@ export class MatchManager {
     const dy = ballY - bot.paddleY
 
     // Move toward the ball at a constant speed (BOT_MAX_SPEED normalised units per tick)
-    if (Math.abs(dy) <= MatchManager.BOT_MAX_SPEED) {
+    if (Math.abs(dy) <= matchManager.BOT_MAX_SPEED) {
       bot.paddleY = ballY
     } else {
-      bot.paddleY += MatchManager.BOT_MAX_SPEED * Math.sign(dy)
+      bot.paddleY += matchManager.BOT_MAX_SPEED * Math.sign(dy)
     }
 
     // Clamp inside arena bounds
     bot.paddleY = Math.max(0, Math.min(1, bot.paddleY))
 
     // Schedule next movement decision after a random reaction delay
-    bot.aiNextMoveTime = now + MatchManager.getRandomReactionDelay()
+    bot.aiNextMoveTime = now + matchManager.getRandomReactionDelay()
   }
 
   _initBall (roomId) {
@@ -221,7 +221,7 @@ export class MatchManager {
     const paddleSize = 0.2
 
     const includeBall = () => {
-      if (!room.isMaxSpeedReached || room.hitsSinceMaxSpeed < MatchManager.MIN_HITS_AFTER_MAX) {
+      if (!room.isMaxSpeedReached || room.hitsSinceMaxSpeed < matchManager.MIN_HITS_AFTER_MAX) {
         return true
       }
       return room.ballBroadcastCountdown > 0
@@ -229,7 +229,7 @@ export class MatchManager {
 
     room.updateInterval = setInterval(() => {
       // 1. AI paddle
-      if (room.mode === MatchManager.GAME_MODES.PVE && room.status === 'running') {
+      if (room.mode === matchManager.GAME_MODES.PVE && room.status === 'running') {
         this._updateBotPaddle(room)
       }
 
@@ -249,27 +249,27 @@ export class MatchManager {
         if (hit && withinY) {
           const incomingAngle = Math.atan2(b.vy, Math.abs(b.vx))
           const relY          = (b.y - p.paddleY) / (paddleSize/2)
-          const deflectAngle  = relY * MatchManager.MAX_BOUNCE_ANGLE
+          const deflectAngle  = relY * matchManager.MAX_BOUNCE_ANGLE
           const spinFactor    = 0.9
           const bounceAngle   = incomingAngle * (1 - spinFactor) + deflectAngle * spinFactor
 
           let speed = Math.hypot(b.vx, b.vy) * 1.03
-          if (speed > MatchManager.MAX_BALL_SPEED) speed = MatchManager.MAX_BALL_SPEED
+          if (speed > matchManager.MAX_BALL_SPEED) speed = matchManager.MAX_BALL_SPEED
 
           const dir = idx === 0 ? 1 : -1
           b.vx = speed * Math.cos(bounceAngle) * dir
           b.vy = speed * Math.sin(bounceAngle)
           b.x  = idx === 0 ? 0.02 : 0.98
 
-          const atMax = Math.abs(speed - MatchManager.MAX_BALL_SPEED) < 1e-6
+          const atMax = Math.abs(speed - matchManager.MAX_BALL_SPEED) < 1e-6
           if (atMax) {
             if (!room.isMaxSpeedReached) {
               room.isMaxSpeedReached = true
               room.hitsSinceMaxSpeed = 0
             }
             room.hitsSinceMaxSpeed++
-            if (room.hitsSinceMaxSpeed >= MatchManager.MIN_HITS_AFTER_MAX) {
-              room.ballBroadcastCountdown = MatchManager.BALL_BROADCAST_FRAMES
+            if (room.hitsSinceMaxSpeed >= matchManager.MIN_HITS_AFTER_MAX) {
+              room.ballBroadcastCountdown = matchManager.BALL_BROADCAST_FRAMES
             }
           }
         }
@@ -277,8 +277,8 @@ export class MatchManager {
 
       // 5. Global speed clamp
       const speed = Math.hypot(b.vx, b.vy)
-      if (speed > MatchManager.MAX_BALL_SPEED) {
-        const scl = MatchManager.MAX_BALL_SPEED / speed
+      if (speed > matchManager.MAX_BALL_SPEED) {
+        const scl = matchManager.MAX_BALL_SPEED / speed
         b.vx *= scl
         b.vy *= scl
       }

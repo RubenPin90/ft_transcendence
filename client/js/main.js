@@ -14,6 +14,11 @@ const navigate = (path) => {
 function route() {
     const path = window.location.pathname;
     hideAllPages();
+    if (path === '/tournament') {
+        document.getElementById('tournament-page').style.display = 'block';
+        renderTournamentList(); // fill right column
+        return; // <- stop here
+    }
     if (path.startsWith('/game')) {
         document.getElementById('game-container').style.display = 'block';
         const mode = path.split('/')[2] || 'pve';
@@ -30,6 +35,14 @@ function route() {
             stopGame();
             alert(`Game over! Player ${winnerId} wins!`);
         });
+        const mapping = {
+            '/profile': 'profile-page', '/settings': 'settings-page'
+        };
+        const pageId = mapping[path];
+        if (pageId)
+            document.getElementById(pageId).style.display = 'block';
+        else
+            document.getElementById('main-menu').style.display = 'block';
         return;
     }
     const mapping = {
@@ -44,18 +57,11 @@ function route() {
         document.getElementById('main-menu').style.display = 'block';
     }
 }
-function hideAllPages() {
-    ['main-menu', 'profile-page', 'settings-page', 'game-container'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el)
-            el.style.display = 'none';
-    });
-}
 document.addEventListener('DOMContentLoaded', () => {
     const btnMap = {
         'sp-vs-pve-btn': '/game/pve',
         'one-vs-one-btn': '/game/1v1',
-        'Tournament-btn': '/game/Tournament'
+        'Tournament-btn': '/tournaments',
     };
     Object.entries(btnMap).forEach(([btnId, routePath]) => {
         var _a;
@@ -64,3 +70,62 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('popstate', route);
     route();
 });
+// ➊ include the new page in hideAllPages()
+function hideAllPages() {
+    ['main-menu', 'profile-page', 'settings-page',
+        'game-container', 'tournament-page' // ← add me
+    ].forEach(id => {
+        const el = document.getElementById(id);
+        if (el)
+            el.style.display = 'none';
+    });
+}
+// ➋ make the router show the lobby
+// ➌ navigation table – Tournament now → /tournament
+const btnMap = {
+    'sp-vs-pve-btn': '/game/pve',
+    'one-vs-one-btn': '/game/1v1',
+    'Tournament-btn': '/tournament', // ← changed
+    'settings-btn': '/settings',
+    'profile-btn': '/profile'
+};
+document.addEventListener('DOMContentLoaded', () => {
+    // existing loop over btnMap
+    Object.entries(btnMap).forEach(([btnId, routePath]) => {
+        var _a;
+        (_a = document.getElementById(btnId)) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => navigate(routePath));
+    });
+    // lobby‑specific buttons
+    document.getElementById('t-back-btn')
+        .addEventListener('click', () => navigate('/'));
+    document.getElementById('t-create-btn')
+        .addEventListener('click', () => alert('TODO: create new tournament'));
+    // clicking a card’s JOIN button will be delegated later
+    window.addEventListener('popstate', route);
+    route();
+});
+// ➍ tiny helper to paint the right column
+function renderTournamentList() {
+    // 📌 replace this with a real API/WebSocket call
+    const demo = [{ name: 'Tournament 1', slots: '6/8', joinable: true },
+        { name: 'Tournament 2', slots: '8/8', joinable: false },
+        { name: 'Tournament 3', slots: '7/8', joinable: true },
+        { name: 'Tournament 4', slots: '1/8', joinable: true }];
+    const list = document.getElementById('tournament-list');
+    list.innerHTML = ''; // clear old
+    demo.forEach(t => {
+        const card = document.createElement('div');
+        card.className = 't-card';
+        card.innerHTML = `
+      <div>
+        <div>${t.name}</div>
+        <div>${t.slots}</div>
+      </div>
+      <button class="join-btn" ${t.joinable ? '' : 'disabled'}>
+        ${t.joinable ? 'JOIN' : 'FULL'}
+      </button>`;
+        card.querySelector('.join-btn')
+            .addEventListener('click', () => navigate('/game/Tournament'));
+        list.appendChild(card);
+    });
+}

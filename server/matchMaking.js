@@ -1,11 +1,11 @@
 // matchMaking.js – matchmaking helpers for ft_transcendence server
 // -------------------------------------------------------------
 // Exports a small set of pure functions that operate on a single
-// *instance* of MatchManager, so there is no accidental shadowing
-// of the exported MatchManager *class* and its static fields.
+// *instance* of matchManager, so there is no accidental shadowing
+// of the exported matchManager *class* and its static fields.
 // -------------------------------------------------------------
 
-import { GAME_MODES } from './MatchManager.js';
+import { GAME_MODES } from './matchManager.js';
 import { v4 as uuidv4 } from 'uuid'
 // import BotClient from './bot.js';
 

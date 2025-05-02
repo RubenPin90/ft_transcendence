@@ -2,7 +2,7 @@
 import WebSocket from 'ws';
 import { createGameAI } from './matchMaking.js';
 import { joinQueue1v1, joinQueueTournament } from './matchMaking.js';
-import { MatchManager } from './MatchManager.js';
+import { matchManager } from './matchManager.js';
 
 
 /**
@@ -34,7 +34,7 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
       break;
 
     case 'joinQueue': {
-      const { mode } = data.payload;
+      const { mode } = data.payload;  
       const userId = data.payload.userId || ws.userId;
       console.log('Incoming joinQueue request - mode:', mode);
       if (mode === 'pve') {

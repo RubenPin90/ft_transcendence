@@ -5,7 +5,7 @@ import fastifyStatic from '@fastify/static'
 import staticJs from '../plugins/static-js.js'
 import { createGameAI } from './matchMaking.js'
 import WebSocket, { WebSocketServer } from 'ws';
-import { MatchManager, GAME_MODES } from './MatchManager.js'
+import { matchManager, GAME_MODES } from './matchManager.js'
 import { handleClientMessage } from './messageHandler.js'
 
 // Helper to get __dirname in ES module
@@ -36,7 +36,7 @@ const server = fastify.server
 const wss = new WebSocketServer({ noServer: true })
 
 // ---- CREATE THE MATCH MANAGER INSTANCE ----
-const matchManager = new MatchManager(wss)
+const MatchManager = new matchManager(wss)
 
 /**
  * For simple matchmaking, we’ll keep arrays of "waiting" users for 1v1 & custom modes.
@@ -70,10 +70,10 @@ wss.on('connection', (ws, request) => {
   ws.inGame        = false;
   ws.currentGameId = null;
 
-  matchManager.userSockets.set(ws.userId, ws);
+  MatchManager.userSockets.set(ws.userId, ws);
 
   ws.on('message', rawMsg => {
-    handleClientMessage(ws, rawMsg, matchManager)
+    handleClientMessage(ws, rawMsg, MatchManager)
   })
 
   ws.on('close', () => {
@@ -82,11 +82,11 @@ wss.on('connection', (ws, request) => {
     removeFromQueue(waiting1v1Players, ws.userId)
 
     removeFromQueue(waitingTournamentPlayers, ws.userId)
-    matchManager.unregisterSocket(ws.userId)
+    MatchManager.unregisterSocket(ws.userId)
 
     if (ws.inGame) {
       console.log(`--> ${ws.userId} disconnected while in a match. Marking as forfeit/disconnect.`)
-      matchManager.leaveRoom(ws.currentGameId, ws.userId)
+      MatchManager.leaveRoom(ws.currentGameId, ws.userId)
       ws.inGame = false
       ws.currentGameId = null
     }
