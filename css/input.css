@@ -22,6 +22,10 @@
     @apply bg-gray-600 w-11/12 max-w-lg rounded-3xl p-6 mx-auto bg-clip-padding backdrop-filter backdrop-blur-xl bg-opacity-30 border-[#ff00d0] border-2 shadow-strong shadow-[#ff00d0]/80
 }
 
+.user_field{
+    @apply bg-gray-600 w-11/12 max-w-5xl rounded-3xl p-6 mx-auto bg-clip-padding backdrop-filter backdrop-blur-xl bg-opacity-30 border-[#ff00d0] border-2 shadow-strong shadow-[#ff00d0]/80
+}
+
 .buttons{
     @apply flex items-center gap-2 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl
 }
@@ -64,4 +68,8 @@
 
 .input_total{
     @apply transition
+}
+
+.label_profile{
+    @apply font-bold text-lg uppercase
 }

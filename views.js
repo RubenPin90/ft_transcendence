@@ -5,6 +5,7 @@ import * as settings_db from './database/db_settings_functions.js';
 import * as users_db from './database/db_users_functions.js';
 import * as mfa_db from './database/db_mfa_functions.js';
 import qrcode from 'qrcode';
+import { json } from 'stream/consumers';
 
 async function login(request, response) {
     const check_login = utils.check_login(request, response);
@@ -378,6 +379,63 @@ async function verify_custom(request, response) {
     return true;
 }
 
+
+async function profile(request, response){
+
+    if (request.method === 'POST'){
+        const replace_data = await utils.get_frontend_content(request);
+        if (!replace_data || replace_data === undefined){
+            return `Error: Invalid data`;
+        }
+
+        const updated = await users_db.update_users_value(decoded.userid, replace_data.username, replace_data.email);
+        if (!updated || updated === undefined) {
+            return `Error updating profile`;
+        }
+
+        response.writeHead(200, { 'Contend-Type': 'application/json' });
+        response.end(JSON.stringify({ Response: 'Profile updated sucessfully' }));
+        return true;
+    }
+
+    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    if (!keys?.includes('token')){ 
+        return send.redirect(response, '/login', 302);
+    }
+
+    const tokenIndex = keys.findIndex((key) => key === 'token');
+    const token = values[tokenIndex];
+    let decoded;
+    try {
+        decoded = await modules.get_jwt(token);
+    } catch (err){
+        return send.redirect(response, '/login', 302);
+    }
+
+    const user = await users_db.get_users_value('self', decoded.userid);
+    if (!user || user === undefined){
+        return send.send_error_page('404.html', response, 404);
+    }
+
+    const settings = await settings_db.get_settings_value('self', decoded.userid);
+    if (!settings || settings === undefined){
+        return send.send_error_page('404.html', response, 404);
+    }
+
+    const status = await send.send_html('profile.html', response, 200, async(data) => {
+        data = data.replace('{{username}}', user.username);
+        data = data.replace('{{email}}', settings.email || 'Not provided');
+        data = data.replace('{{picture}}', settings.pfp || 'public/default_profile.svg');
+        return data;
+    });
+
+    if (!status || status === undefined || status < 0){
+        return `Error rendering profile page: ${status}`;
+    }
+    return true;
+}
+
+
 export {
     login,
     register,
@@ -386,5 +444,6 @@ export {
     verify_email,
     verify_2fa,
     verify_custom,
-    settings_set_prefered_mfa
+    settings_set_prefered_mfa,
+    profile
 }

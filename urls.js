@@ -26,10 +26,16 @@ async function url_pattern(request, response) {
             return await views.verify_2fa(request, response);
         case request.url === '/verify_custom':
             return await views.verify_custom(request, response);
+        case request.url === '/profile':
+            return await views.profile(request, response);
         case request.url.includes(".js"):
             return await mimes.get_js(request.url, response);
         case request.url.includes(".css"):
             return await serveStaticFile(request.url, response, 'text/css');
+        case request.url.includes(".svg"):
+            return await serveStaticFile(request.url, response, 'image/svg+xml');
+        case request.url.includes(".jpg") || request.url.includes(".jpeg"):
+            return await serveStaticFile(request.url, response, 'image/jpeg');
         default:
             return await send.send_error_page("404.html", response, 404);
     }
@@ -44,9 +50,9 @@ async function url_pattern(request, response) {
 async function serveStaticFile(url, response, contentType) {
     try {
         const filePath = path.join(process.cwd(), url); // Resolve the file path
-        const fileContent = await fs.readFile(filePath, 'utf8'); // Read the file
+        const fileContent = await fs.readFile(filePath); // Read the file
         response.writeHead(200, { 'Content-Type': contentType });
-        response.end(fileContent, 'utf8');
+        response.end(fileContent);
         return true;
     } catch (error) {
         console.error(`Error serving static file: ${url}`, error);

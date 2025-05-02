@@ -29,6 +29,7 @@ async function create_db() {
             pfp text,
             MFA INTEGER,
             email TEXT,
+            lang TEXT,
             google TEXT,
             github TEXT,
             self TEXT UNIQUE NOT NULL
@@ -39,6 +40,7 @@ async function create_db() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             role_id INTEGER,
             username TEXT,
+            status INTEGER,
             self TEXT UNIQUE NOT NULL,
             FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
@@ -90,6 +92,23 @@ async function create_db() {
             self TEXT UNIQUE NOT NULL,
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
         );`);
+
+
+
+
+
+        await db.run(`
+        CREATE TABLE IF NOT EXISTS friends (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            friend_id INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE(user_id, friend_id)
+        );`);
+
+
 
         console.log("Alle Tabellen erfolgreich erstellt oder existieren bereits.");
     } catch (err) {
