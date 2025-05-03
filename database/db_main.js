@@ -13,6 +13,7 @@ async function create_db() {
         console.log("Fremdschlüssel aktiviert!");
 
         // Tabellen in richtiger Reihenfolge erstellen
+        // ROLES
         await db.run(`
         CREATE TABLE IF NOT EXISTS roles (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,6 +23,7 @@ async function create_db() {
             change_score INTEGER
         );`);
 
+        // SETTINGS
         await db.run(`
         CREATE TABLE IF NOT EXISTS settings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,17 +37,19 @@ async function create_db() {
             self TEXT UNIQUE NOT NULL
         );`);
 
+        // USERS
         await db.run(`
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             role_id INTEGER,
             username TEXT,
-            status INTEGER,
+            status INTEGER DEFAULT 1,
             self TEXT UNIQUE NOT NULL,
             FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
         );`);
 
+        // MFA
         await db.run(`
         CREATE TABLE IF NOT EXISTS mfa (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,6 +61,7 @@ async function create_db() {
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
         );`);
 
+        // CHATROOMS
         await db.run(`
         CREATE TABLE IF NOT EXISTS chatrooms (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,6 +70,7 @@ async function create_db() {
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
         );`);
 
+        // MESSAGES
         await db.run(`
         CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -76,6 +82,7 @@ async function create_db() {
             FOREIGN KEY (userid) REFERENCES users(id) ON DELETE CASCADE
         );`);
 
+        // SCOREBOARD
         await db.run(`
         CREATE TABLE IF NOT EXISTS scoreboard (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,6 +92,7 @@ async function create_db() {
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
         );`);
 
+        // SCORES
         await db.run(`
         CREATE TABLE IF NOT EXISTS scores (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -93,10 +101,7 @@ async function create_db() {
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
         );`);
 
-
-
-
-
+        // FRIENDS
         await db.run(`
         CREATE TABLE IF NOT EXISTS friends (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
