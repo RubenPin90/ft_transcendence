@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from 'uuid'
 export const GAME_MODES = {
   PVE: 'PVE',     // Player vs AI
   PVP: 'PVP',     // 1v1
-  CUSTOM: 'CUSTOM',
 }
 
 export class matchManager {
@@ -166,6 +165,22 @@ export class matchManager {
 
     // Clean up after a short delay
     setTimeout(() => this.removeRoom(roomId), 500)
+  }
+  _endMatch(roomId, winnerId, reason = 'normal') {
+    const room = this.rooms.get(roomId);
+    if (!room) return;
+
+    clearInterval(room.updateInterval);
+    clearTimeout(room.pauseTimeout);
+    room.status = 'finished';
+
+    this._broadcastFor(roomId)({ roomId, winner: winnerId, status: 'finished' });
+
+    // 🔔 Notify whoever is listening
+    this.emit('matchFinished', { roomId, winnerId, reason });
+
+    // Clean up
+    setTimeout(() => this.removeRoom(roomId), 500);
   }
 
   /*───────────────────────────

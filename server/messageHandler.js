@@ -3,6 +3,8 @@ import WebSocket from 'ws';
 import { createGameAI } from './matchMaking.js';
 import { joinQueue1v1, joinQueueTournament } from './matchMaking.js';
 import { matchManager } from './matchManager.js';
+import { tournamentManager } from './tournamentManager.js';
+
 
 
 /**
@@ -19,7 +21,7 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
     console.error('Invalid JSON message from client:', err);
     return;
   }
-  console.log(`Incoming from ${ws.userId}:`, rawMsg);
+  console.log(`Incoming from ${ws.userId}:`);
   switch (data.type) {
     case 'chat':
       // broadcast to everyone except the sender
@@ -32,7 +34,13 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
         }
       });
       break;
-
+    case 'joinByCode': {
+        console.log('Incoming joinByCode request with data:', data);
+        const { code } = data.payload;
+        const userId = ws.userId;
+        tournamentManager.joinTournament(userId, code, ws);
+        break;
+      }
     case 'joinQueue': {
       const { mode } = data.payload;  
       const userId = data.payload.userId || ws.userId;
@@ -41,8 +49,6 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
         createGameAI(matchManager, userId, ws);
       } else if (mode === '1v1') {
         joinQueue1v1(matchManager, userId, ws);
-      } else if (mode === 'Tournament') {
-        joinQueueTournament(userId, ws);
       }
       break;
     }

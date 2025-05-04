@@ -7,6 +7,7 @@ import { createGameAI } from './matchMaking.js'
 import WebSocket, { WebSocketServer } from 'ws';
 import { matchManager, GAME_MODES } from './matchManager.js'
 import { handleClientMessage } from './messageHandler.js'
+import { tournamentManager } from './tournamentManager.js'
 
 // Helper to get __dirname in ES module
 const __filename = fileURLToPath(import.meta.url)
@@ -37,6 +38,8 @@ const wss = new WebSocketServer({ noServer: true })
 
 // ---- CREATE THE MATCH MANAGER INSTANCE ----
 const MatchManager = new matchManager(wss)
+// ---- CREATE THE TOURNAMENT MANAGER INSTANCE ----
+// const TournamentManager = new tournamentManager(wss)
 
 /**
  * For simple matchmaking, we’ll keep arrays of "waiting" users for 1v1 & custom modes.
