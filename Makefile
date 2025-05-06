@@ -5,7 +5,7 @@ ROOT_DIR := $(shell pwd)
 SRC_DIR := $(ROOT_DIR)/srcs
 COMPOSE_FILE := $(SRC_DIR)/docker-compose.yml
 
-all: detached
+all: compose
 
 compose:
 	@$(CMD) $(FLAG) $(COMPOSE_FILE) up

@@ -1,0 +1,5 @@
+services:
+  auth-service:
+    build: ./authentification
+    ports:
+      - "5000:5000"
