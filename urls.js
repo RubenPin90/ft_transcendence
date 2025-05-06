@@ -4,6 +4,9 @@ import * as send from './responses.js';
 
 async function url_pattern(request, response) {
     switch (true) {
+        case request.url.includes(".js"):
+            // console.log(request.url);
+            return await mimes.get_js(request.url, response);
         case request.url === '/':
             return await views.home(request, response);
         case request.url.includes('?code='):
@@ -12,7 +15,7 @@ async function url_pattern(request, response) {
             return await views.login(request, response);
         case request.url === '/register':
             return await views.register(request, response);
-        case request.url === '/settings':
+        case request.url.startsWith('/settings'):
             return await views.settings(request, response);
         case request.url.includes('/settings?'):
             return await views.settings_set_prefered_mfa(request, response);
@@ -22,8 +25,6 @@ async function url_pattern(request, response) {
             return await views.verify_2fa(request, response);
         case request.url === '/verify_custom':
             return await views.verify_custom(request, response);
-        case request.url.includes(".js"):
-            return await mimes.get_js(request.url, response);
         default:
             return await send.send_error_page("404.html", response, 404);
     }

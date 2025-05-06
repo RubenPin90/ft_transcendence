@@ -2,7 +2,6 @@ import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
-import translate from 'google-translate-api'
 
 dotenv.config();
 
@@ -43,7 +42,9 @@ function get_jwt(token) {
 }
 
 function set_cookie(response, key, value, HttpOnly, Secure, SameSite) {
-	response.setHeader('Set-Cookie', `${key}=${value}`, { httpOnly: HttpOnly, secure: Secure, sameSite: SameSite });
+	const prev = response.getHeader('Set-Cookie') || [];
+	const newC = `${key}=${value}`; 
+	response.setHeader('Set-Cookie', [...prev, newC], { httpOnly: HttpOnly, secure: Secure, sameSite: SameSite });
 }
 
 async function create_encrypted_password(password) {
@@ -119,28 +120,6 @@ async function easyfetch(url, method, header, body) {
 	return token_data;
 }
 
-async function translator(text, lang) {
-	const response = await fetch("https://libretranslate.com/translate", {
-		method: "POST",
-		body: JSON.stringify({
-			q: "Hallo Welt",
-			source: "de",
-			target: "en"
-		}),
-		headers: { "Content-Type": "application/json" }
-	});
-	console.log(await response.json());
-	
-	if (!response.ok)
-		return -1;
-
-	const data = await response.json();
-	if (!data || data === undefined)
-		return -2;
-	console.log(data);
-	return data;
-}
-
 export {
 	get_cookies,
 	set_cookie,
@@ -150,5 +129,4 @@ export {
 	check_encrypted_password,
 	send_email,
 	easyfetch,
-	translator
 }

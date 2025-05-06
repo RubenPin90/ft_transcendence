@@ -45,14 +45,18 @@ async function login(request, response) {
         const token = modules.create_jwt(parsed.settings.self, '1h');
         if (!token || token === undefined || token < 0)
             return `2_${token}`;
-        
+        const lang = modules.create_jwt(parsed.settings.lang, '1h');
+        if (!lang || lang === undefined || lang < 0)
+            return `3_${lang}`;
+
         modules.set_cookie(response, 'token', token, true, true, 'strict');
+        modules.set_cookie(response, 'lang', lang, true, true, 'strict');
         response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
         response.end(JSON.stringify({"Response": 'reload', "Content": null}));
         return true;
     }
     if (!check_login || check_login === undefined || check_login < -1)
-        return `3_${check_login}`;
+        return `4_${check_login}`;
     await send.send_html('login.html', response, 200, async (data) => {
         const google_link = utils.google_input_handler();
         data = data.replace("{{google_login}}", google_link);
@@ -85,17 +89,22 @@ async function register(request, response) {
             await settings_db.delete_settings_value(settings.self);
             return `3_${user}`;
         }
+        console.log(parsed.settings);
         const token = modules.create_jwt(settings.self, '1h');
         if (!token || token === undefined || token < 0)
             return `4_${token}`;
+        const lang = modules.create_jwt(parsed.settings.lang, '1h');
+        if (!lang || lang === undefined || lang < 0)
+            return `5_${lang}`;
         
         modules.set_cookie(response, 'token', token, true, true, 'strict');
+        modules.set_cookie(response, 'lang', lang, true, true, 'strict');
         response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
         response.end(JSON.stringify({"Response": 'reload', "Content": null}));
         return true;
     }
     if (!check_login || check_login === undefined || check_login < -1)
-        return `5_${check_login}`;
+        return `6_${check_login}`;
     const check = await send.send_html('register.html', response, 200, async (data) => {
         const google_link = utils.google_input_handler();
         data = data.replace("{{google_login}}", google_link);
@@ -106,7 +115,6 @@ async function register(request, response) {
 }
 
 async function home(request, response) {
-    console.log(await modules.translator("Das ist ein test", "en"));
     var [keys, values] = modules.get_cookies(request.headers.cookie);
     if (request.url === '/' && !keys?.includes('token'))
         return send.redirect(response, '/login', 302);
@@ -115,45 +123,72 @@ async function home(request, response) {
         if (data < 0) {
             return `1_${data}`;
         }
+        const check_settings = await settings_db.get_settings_value('self', data);
+        if (!check_settings || check_settings === undefined || check_settings < 0)
+            return `2_${check_settings}`;
         const token = modules.create_jwt(data, '1h');
-        
+        if (!token || token === undefined || token < 0)
+            return `3_${token}`
+        const lang = modules.create_jwt(check_settings.lang, '1h');
+        if (!lang || lang === undefined || lang < 0)
+            return `4_${lang}`;
+
         modules.set_cookie(response, 'token', token, true, true, 'strict');
+        modules.set_cookie(response, 'lang', lang, true, true, 'strict');
 		send.redirect(response, '/', 302);
         return true;
     } else if (request.url !== '/') {
         const data = await utils.encrypt_github(request, response);
         if (data < 0) {
-            return `2_${data}`;
+            return `5_${data}`;
         }
         const token = modules.create_jwt(data, '1h');
+        if (!token || token === undefined || token < 0)
+            return `6_${token}`
+        const lang = modules.create_jwt(check_settings.lang, '1h');
+        if (!lang || lang === undefined || lang < 0)
+            return `7_${lang}`;
         
         modules.set_cookie(response, 'token', token, true, true, 'strict');
+        modules.set_cookie(response, 'lang', lang, true, true, 'strict');
 		send.redirect(response, '/', 302);
         return true;
     }
     const check = await send.send_html('home.html', response, 200, async (data) => {
-        const tokenIndex = keys?.find((key) => key === 'token');
-        if (!tokenIndex || tokenIndex === undefined || tokenIndex == false)
+        var [keys, values] = modules.get_cookies(request.headers.cookie);
+        console.log(keys, values);
+        const token_check = keys?.find((key) => key === 'token');
+        if (!token_check || token_check === undefined || token_check == false)
             return false;
-        const token = values?.at(tokenIndex);
-        if (!token || token === undefined || token == false)
+        const lang_check = keys?.find((key) => key === 'lang');
+        if (!lang_check || lang_check === undefined || lang_check == false)
             return false;
+        const tokenIndex = keys.indexOf('token');
+        const token = values[tokenIndex];
+        const langIndex = keys.indexOf('lang');
+        const lang = values[langIndex];
         try {
-            var decoded = await modules.get_jwt(token);
+            var decoded_token = modules.get_jwt(token);
+            var decoded_lang = modules.get_jwt(lang);
         } catch (err) {
             return false;
         }
-        const replace_data = await users_db.get_users_value('self', decoded.userid);
+        const replace_data = await users_db.get_users_value('self', decoded_token.userid);
         if (!replace_data)
             return false;
-        return data.replace("{{userid}}", replace_data.username);
+        if (decoded_lang !== 'en') {
+            data = data.replace("{{userid}}", "{{{{}}}}");
+            // data = await modules.translator(data, decoded_lang);
+        }
+        console.log(replace_data.username);
+        return data.replace("{{{{}}}}", replace_data.username);
     });
     if (!check || check === undefined || check == false)
-        return `3_${check}`
+        return `6_${check}`
     return true;
 }
 
-async function settings(request, response) {
+async function mfa(request, response) {
     var [keys, values] = modules.get_cookies(request.headers.cookie);
     if (!keys?.includes('token'))
         return send.redirect(response, '/login', 302);
@@ -186,6 +221,7 @@ async function settings(request, response) {
                 response.end(JSON.stringify({"Response": "Failed"}));
             return true;
         } else if (replace_data.Function == 'create_custom') {
+            console.log("LOL");
             return await utils.create_custom_code(userid, response, replace_data);
         } else if (replace_data.Function == 'verify_function') {
             return await utils.verify_custom_code(userid, response, replace_data);
@@ -223,7 +259,7 @@ async function settings(request, response) {
             return data.replace("{{mfa-button}}", '<button onclick="create_otc()">Create OTC</button> <br></br>\
                 <button onclick="create_custom_code()">Create custom 6 diggit code</button> <br></br>\
                 <button onclick="create_email()">Enable email authentication</button> <br></br>\
-                <button onclick="window.location.href = \'http://localhost:8080\'">Back</button>\
+                <button onclick="window.location.href = \'http://localhost:8080/settings\'">Back</button>\
                 <button onclick="logout()">Logout</button>');
         var replace_string = "";
         var select_number = 0;
@@ -263,7 +299,7 @@ async function settings(request, response) {
             <button type="submit">Submit</button>
         </form>
         <br>`;
-        return data.replace("{{mfa-button}}", `${replace_string} ${select_menu} <button onclick="window.location.href = \'http://localhost:8080\'">Back</button> \
+        return data.replace("{{mfa-button}}", `${replace_string} ${select_menu} <button onclick="window.location.href = \'http://localhost:8080/settings\'">Back</button> \
         <button onclick="logout()">Logout</button>`);
     });
     if (!status || status === undefined || status < 0 || status == false)
@@ -271,24 +307,45 @@ async function settings(request, response) {
     return true;
 }
 
+async function settings(request, response) {
+    var [keys, values] = modules.get_cookies(request.headers.cookie);
+    if (!keys?.includes('token'))
+        return send.redirect(response, '/login', 302);
+    const request_url = request.url.slice(9);
+    if (request_url == "/mfa")
+        return await mfa(request, response);
+    // if (request.method === 'POST') {
+
+    // }
+    const status = await send.send_html('settings.html', response, 200, async  (data) => {
+        var replace_string = '<button onclick="window.location.href = \'http://localhost:8080/settings/mfa\'">mfa</button><br></br>';
+        replace_string += '<button onclick="window.location.href = \'http://localhost:8080\'">back</button> \
+        <button onclick="logout()">Logout</button>';
+        return data.replace('{{mfa-button}}', replace_string);
+    });
+    if (!status || status === undefined || status < 0)
+        return `_${status}`
+    return true;
+}
+
 async function settings_set_prefered_mfa(request, response) {
     if (request.url.length < 11)
-        return send.redirect(response, '/settings', 302);
+        return send.redirect(response, '/settings/mfa', 302);
     const location = request.url.slice(10);
     if (!location.indexOf('='))
-        return send.redirect(response, '/settings', 302);
+        return send.redirect(response, '/settings/mfa', 302);
     const pos = location.indexOf('=') + 1;
     if (location.length === pos)
-        return send.redirect(response, '/settings', 302);
+        return send.redirect(response, '/settings/mfa', 302);
     const method = location.slice(pos);
     const {keys, values} = utils.get_cookie('token', request);
     if ((!keys && !values) || (keys === undefined && values === undefined))
-        return send.redirect(response, '/settings', 302);
+        return send.redirect(response, '/settings/mfa', 302);
     const decrypted_user =  modules.get_jwt(values[0]);
     const userid = decrypted_user.userid;
     const check_mfa = await mfa_db.get_mfa_value('self', userid);
     if (!check_mfa || check_mfa === undefined)
-        return send.redirect(response, '/settings', 302);
+        return send.redirect(response, '/settings/mfa', 302);
     if (method === 'email') {
         await mfa_db.update_mfa_value('prefered', 1, userid);
     } else if (method === 'otc') {
@@ -296,7 +353,7 @@ async function settings_set_prefered_mfa(request, response) {
     } else if (method === 'custom') {
         await mfa_db.update_mfa_value('prefered', 3, userid);
     }
-    return send.redirect(response, '/settings', 302);    
+    return send.redirect(response, '/settings/mfa', 302);    
 }
 
 async function verify_email(request, response) {
@@ -368,6 +425,7 @@ export {
     login,
     register,
     settings,
+    mfa,
     home,
     verify_email,
     verify_2fa,

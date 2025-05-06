@@ -269,10 +269,16 @@ function get_decrypted_userid(request, response) {
 	const {keys, values, token} = get_cookie('token', request);
 	if (keys === null && values === null && token === null)
 		return -1;
+	var pos = 0;
+	for (var i = 0; i < keys.length; i++, pos++) {
+		if (keys[i] == 'token')
+			break;
+	}
 	try {
-		var self_decoded = modules.get_jwt(token);
+		var self_decoded = modules.get_jwt(values[0]);
 	} catch (err) {
 		const err_string = String(err);
+		console.log(err_string);
 		if (err_string.includes("jwt expired")) {
 			response.writeHead(302, {
 				'Set-Cookie': 'token=; HttpOnly; Secure; SameSite=Strict; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
@@ -517,6 +523,72 @@ async function clear_settings_mfa(userid, search_value, response) {
 	return true;
 }
 
+
+// Ignore. dont know where to put tbh
+function DOM_text(row) {
+	var open_tag;
+	var open_tag_name;
+	var closing_tag;
+	var text;
+	var tag_count;
+	var indent = 0;
+
+	for (var i = 0; i < row.length; i++) {
+		if (!(row[i] == ' ' || row[i] == '	')) {
+			row = row.slice(i);
+			break;
+		}
+		if (row[i] == ' ')
+			indent += 1;
+		else
+			indent += 4;
+	}
+	var pos = row.indexOf('>') + 1;
+	open_tag = row.slice(0, pos);
+	row = row.slice(pos);
+	if (open_tag.length == 0)
+		return null;
+	open_tag_name = open_tag;
+	open_tag_name = open_tag_name.slice(1);
+	for (var i = 0; i < open_tag_name.length; i++) {
+		if (open_tag_name[i] == '>' || open_tag_name[i] == ' ' || open_tag_name[i] == '	') {
+			open_tag_name = open_tag_name.slice(0, i);
+			break;
+		}
+	}
+	closing_tag = `</${open_tag_name}>`;
+	tag_count = row.split(closing_tag).length - 1;
+	var last_index;
+	for (var i = 0; i < tag_count; i++)
+		last_index = row.indexOf(closing_tag, last_index + 1);
+	text = row.slice(0, last_index);
+	return {indent, open_tag, text, closing_tag};
+}
+
+function split_DOM_elemets(row) {
+    var indent = [];
+    var open_tag = [];
+    var text = [];
+    var closing_tag = [];
+    var stopper = false;
+    var autobreaker = 999999999;
+    var start = 0;
+
+    while (!stopper && start < autobreaker) {
+        const returned = DOM_text(row);
+        if (!returned || returned == undefined) {
+            text.push(row);
+            break;
+        }
+        indent.push(returned.indent);
+        open_tag.push(returned.open_tag);
+        closing_tag.push(returned.closing_tag);
+        row = returned.text;
+        start++;
+    }
+    return {indent, open_tag, text, closing_tag};
+}
+
 export {
 	google_input_handler,
 	github_input_handler,
@@ -535,5 +607,7 @@ export {
 	verify_custom_code,
 	create_email_code,
 	verify_email_code,
-	clear_settings_mfa
+	clear_settings_mfa,
+	DOM_text,
+	split_DOM_elemets
 }

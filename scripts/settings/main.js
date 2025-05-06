@@ -1,6 +1,6 @@
 async function create_otc() {
     try {
-        const response = await fetch('/settings', {
+        const response = await fetch('/settings/mfa', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -39,7 +39,7 @@ async function verify_code() {
         return;
     }
     console.log(code.value);
-    const response = await fetch('/settings', {
+    const response = await fetch('/settings/mfa', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -56,7 +56,7 @@ async function verify_code() {
         if (data.Response !== "Success")
             alert("Error: 2FA code invalid");
         else
-            window.location.href = 'http://localhost:8080/settings';
+            window.location.href = 'http://localhost:8080/settings/mfa';
         //     clear window and replace with nice UI Box. Client success
     } catch (jsonError) {
         throw new Error('Fehler beim Parsen der JSON-Antwort');
@@ -85,7 +85,7 @@ async function verify_custom_code() {
     console.log("Sende Code zur Verifizierung:", codeValue);
 
     try {
-        const response = await fetch('/settings', {
+        const response = await fetch('/settings/mfa', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -100,7 +100,7 @@ async function verify_custom_code() {
         
         if (data.Response === "Success") {
             alert("Code successfully registered!");
-            window.location.href = 'http://localhost:8080/settings';
+            window.location.href = 'http://localhost:8080/settings/mfa';
             return;
         } else {
             alert("Incorrect code. Please retry!");
@@ -142,7 +142,7 @@ async function create_custom_code() {
             console.log("Sende Code:", codeValue);
 
             try {
-                const response = await fetch('/settings', {
+                const response = await fetch('/settings/mfa', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -176,7 +176,7 @@ async function verifyEmail() {
     console.log("Verification code:", code);
     
     try {
-        const response = await fetch("/settings", {
+        const response = await fetch("/settings/mfa", {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ "Function": "verify_email", "Code": code })
@@ -189,7 +189,7 @@ async function verifyEmail() {
         const data = await response.json();
         if (data.Response === "Success") {
             alert("Email successfully verified!");
-            window.location.href = 'http://localhost:8080/settings';
+            window.location.href = 'http://localhost:8080/settings/mfa';
         } else {
             alert("Verification failed. Wrong password");
         }
@@ -200,7 +200,7 @@ async function verifyEmail() {
 }
 
 async function create_email() {
-    const response = await fetch("/settings", {
+    const response = await fetch("/settings/mfa", {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({"Function": "create_email"})
@@ -231,7 +231,7 @@ async function create_email() {
 }
 
 async function remove_custom_code() {
-    const response = await fetch('/settings', {
+    const response = await fetch('/settings/mfa', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({"Function": "remove_custom_code"})
@@ -244,14 +244,14 @@ async function remove_custom_code() {
     try {
         data = await response.json();
         if (data.Response === 'Success')
-            window.location.href = 'http://localhost:8080/settings';
+            window.location.href = 'http://localhost:8080/settings/mfa';
     } catch (err) {
         console.log(`Error in removing custom code: ${err}`)
     }
 }
 
 async function remove_otc() {
-    const response = await fetch('/settings', {
+    const response = await fetch('/settings/mfa', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({"Function": "remove_otc"})
@@ -264,14 +264,14 @@ async function remove_otc() {
     try {
         data = await response.json();
         if (data.Response === 'Success')
-            window.location.href = 'http://localhost:8080/settings';
+            window.location.href = 'http://localhost:8080/settings/mfa';
     } catch (err) {
         console.log(`Error in removing custom code: ${err}`)
     }
 }
 
 async function remove_email() {
-    const response = await fetch('/settings', {
+    const response = await fetch('/settings/mfa', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({"Function": "remove_email"})
@@ -284,11 +284,13 @@ async function remove_email() {
     try {
         data = await response.json();
         if (data.Response === 'Success')
-            window.location.href = 'http://localhost:8080/settings';
+            window.location.href = 'http://localhost:8080/settings/mfa';
     } catch (err) {
         console.log(`Error in removing custom code: ${err}`)
     }
 }
+
+async function change_language() {}
 
 async function logout() {
     delete_cookie("token");
