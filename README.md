@@ -8,7 +8,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/RubenPin90/ft_transcendence">
-    <img src="resources/transcendence_logo.png" alt="Logo" width="80" height="80">
+    <img src="resources/transcendence_logo.png" alt="Logo" width="300" height="300">
   </a>
 
   <h3 align="center">ft_transcendence</h3>
