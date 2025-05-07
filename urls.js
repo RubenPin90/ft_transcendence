@@ -26,8 +26,12 @@ async function url_pattern(request, response) {
             return await views.verify_2fa(request, response);
         case request.url === '/verify_custom':
             return await views.verify_custom(request, response);
-        case request.url === '/profile':
+        case request.url === '/profile': //writen by me EC check later
             return await views.profile(request, response);
+        case request.url === '/logout': //writen by me EC check later
+            return await views.logout(request, response);
+        case request.url === '/settings/user_settings' || request.url === '/settings/change_user' || request.url === '/settings/change_login' || request.url === '/settings/change_avatar':
+            return await views.user_settings(request, response);
         case request.url.includes(".js"):
             return await mimes.get_js(request.url, response);
         case request.url.includes(".css"):

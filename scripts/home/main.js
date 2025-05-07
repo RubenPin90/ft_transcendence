@@ -1,4 +1,17 @@
 async function logout() {
+    console.log("In Logout function");
+    
+    try{
+        await fetch('/logout',{
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+    } catch (err){
+        console.error("Error on logout:", err);
+    }
+
     delete_cookie("token");
     location.reload();
 }

@@ -102,6 +102,11 @@ async function create_db() {
         );`);
 
         // FRIENDS
+        /**
+         * user_id integer -> where the id of user is stored
+         * friend_id integer -> where the id of the friend user is stored
+         * foreign key will set userid and friend_id to the id of the user after searching for it in the user database
+         */
         await db.run(`
         CREATE TABLE IF NOT EXISTS friends (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -113,6 +118,22 @@ async function create_db() {
             UNIQUE(user_id, friend_id)
         );`);
 
+
+        //FRIEND REQUEST
+        /**
+         * all the friends requests are stored in this database.
+         * status TEXT with pending will switch between 'pending' and after accepting 'accepted'
+         */
+        await db.run(`
+        CREATE TABLE IF NOT EXIST friend_request (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender_id INTEGER NOT NULL,
+            receiver_id INTEGER NOT NULL,
+            status TEXT DEFAULT 'pending',
+            created_at DATATIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (sender_id) REFERENCE users(id) ON DELETE CASCADE,
+            FOREIGN KEY (receiver_id) REFERENCE users(id) ON DELETE CASCADE
+        );`);
 
 
         console.log("Alle Tabellen erfolgreich erstellt oder existieren bereits.");
