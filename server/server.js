@@ -3,8 +3,10 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import fastifyStatic from '@fastify/static'
 import staticJs from '../plugins/static-js.js'
-import { createGameAI } from './matchMaking.js'
 import WebSocket, { WebSocketServer } from 'ws';
+
+
+import { createGameAI } from './matchMaking.js'
 import { matchManager, GAME_MODES } from './matchManager.js'
 import { handleClientMessage } from './messageHandler.js'
 import { tournamentManager } from './tournamentManager.js'
@@ -38,8 +40,8 @@ const wss = new WebSocketServer({ noServer: true })
 
 // ---- CREATE THE MATCH MANAGER INSTANCE ----
 const MatchManager = new matchManager(wss)
-// ---- CREATE THE TOURNAMENT MANAGER INSTANCE ----
-// const TournamentManager = new tournamentManager(wss)
+
+tournamentManager.setSocketServer(wss);
 
 /**
  * For simple matchmaking, we’ll keep arrays of "waiting" users for 1v1 & custom modes.
@@ -47,6 +49,12 @@ const MatchManager = new matchManager(wss)
  */
 const waiting1v1Players = []
 const waitingTournamentPlayers = []
+
+const initialTournaments = [];
+for (let i = 0; i < 3; i++) {
+  const tourney = tournamentManager.createTournament(null, 'SERVER');
+  // console.log(`🌟 Auto-created tournament ${tourney.id} (code: ${tourney.code})`);
+}
 
 function removeFromQueue(queue, userId) {
   const idx = queue.findIndex((p) => p.userId === userId)
@@ -64,6 +72,10 @@ server.on('upgrade', (request, socket, head) => {
     socket.destroy()
   }
 })
+
+setInterval(() => {
+  +  tournamentManager.broadcastTournamentUpdate();
+}, 1000);
 
 // ---- MAIN WEBSOCKET CONNECTION HANDLER ----
 wss.on('connection', (ws, request) => {

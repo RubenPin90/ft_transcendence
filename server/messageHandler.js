@@ -41,6 +41,17 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
         tournamentManager.joinTournament(userId, code, ws);
         break;
       }
+    case 'createTournament': {
+      console.log('Incoming createTournament request with data:', data);
+      const tournamentId = tournamentManager.createTournament(ws, ws.userId);
+      ws.send(JSON.stringify({
+        type:  'tournamentCreated',
+        payload: tournamentId,
+      }));
+      break;
+    
+    }
+
     case 'joinQueue': {
       const { mode } = data.payload;  
       const userId = data.payload.userId || ws.userId;

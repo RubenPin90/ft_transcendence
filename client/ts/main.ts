@@ -5,35 +5,99 @@ import {
   setOnGameEnd
 } from './game.js'
 import type { GameMode } from './game.js'
+import {
+  renderTournamentList,
+  joinByCode,
+  TourneySummary
+} from './tournament.js'
 
-/*****************************************************************
- * GLOBAL STATE & WS                                               
- *****************************************************************/
 let currentMode: string | null = null
-let currentRoomId: string | null = null
+let tournaments: TourneySummary[] = []
+// initialize from storage so we remember across reloads
+let myId: string = localStorage.getItem('playerId') ?? ''
 
-// persistent lobby‑level socket (same origin as HTTP)
-const lobbySocket = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/game`)
+const lobbySocket = new WebSocket(
+  `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/game`
+)
 
-lobbySocket.addEventListener('open', () => console.log('[WS] lobby socket open'))
-lobbySocket.addEventListener('error', err => console.error('[WS] lobby error', err))
-lobbySocket.addEventListener('message', ev => {
-  const data = JSON.parse(ev.data);
-  if (data.type === 'error') {
-    // simple: pop up an alert
-    alert(`Error: ${data.payload.message}`);
-    
-    // or better: inject into a dedicated error-banner div:
-    // const banner = document.getElementById('error-banner');
-    // banner!.textContent = data.payload.message;
-    // banner!.style.display = 'block';
-  }
+interface LobbyState {
+  id: string
+  code: string
+  slots: number
+  players: { id: string; name: string; ready: boolean }[]
+  hostId: string
+}
+let currentLobby: LobbyState | null = null
 
-  // …handle other message types: 'tournamentList', 'joined', etc.
-});
+/**
+ * Helper that binds the socket so UI code does not need to know about the WS.
+ */
+function joinByCodeWithSocket(code?: string) {
+  joinByCode(lobbySocket, code)
+}
 
 /*****************************************************************
- * GENERIC SPA NAVIGATION                                          
+ * LOBBY → WEBSOCKET HANDLERS
+ *****************************************************************/
+lobbySocket.addEventListener('open', () =>
+  console.log('[WS] lobby socket open')
+)
+lobbySocket.addEventListener('error', err =>
+  console.error('[WS] lobby error', err)
+)
+lobbySocket.addEventListener('message', ev => {
+  const data = JSON.parse(ev.data)
+
+  switch (data.type) {
+    case 'error': {
+      const banner = document.getElementById('error-banner')!
+      banner.textContent = data.payload.message
+      banner.style.display = 'block'
+      break
+    }
+
+    case 'joinedLobby': {
+      const { playerId, lobby } = data.payload         // ← expect both fields
+           myId = playerId
+      localStorage.setItem('playerId', myId)
+           // If the server also included the lobby snapshot, show it immediately.
+      // (Most back‑ends do; if yours does not, this is a harmless no‑op and
+      // the next “tournamentUpdated” will still refresh the screen.)
+      if (lobby) {
+        currentLobby = lobby
+        history.pushState({}, '', `/tournament/${lobby.code}`)
+        renderLobby(lobby)
+      }
+      break
+       }
+
+    case 'tournamentCreated': {
+      const lobby: LobbyState = data.payload
+      myId = lobby.hostId
+      localStorage.setItem('playerId', myId)
+      history.pushState({}, '', `/tournament/${lobby.code}`)
+      renderLobby(lobby)          // render picks the right page now
+      break
+    }
+
+    case 'tournamentUpdated': {
+      console.log('received data12', data)
+      renderLobby(data.payload as LobbyState)
+      break
+    }
+
+    case 'tournamentList': {
+      tournaments = data.payload as TourneySummary[]
+      if (window.location.pathname === '/tournament') {
+        renderTournamentList(tournaments, joinByCodeWithSocket)
+      }
+      break
+    }
+  }
+})
+
+/*****************************************************************
+ * GENERIC SPA NAVIGATION
  *****************************************************************/
 setOnGameEnd((winnerId: string) => {
   alert(`Player ${winnerId} wins!`)
@@ -47,12 +111,14 @@ const navigate = (path: string) => {
 
 // hide all “pages” then display the one we need
 function hideAllPages() {
-  ;[
+  [
     'main-menu',
     'profile-page',
     'settings-page',
     'game-container',
-    'tournament-page'
+    'tournament-page',
+    't-lobby-page',
+    't-guest-lobby-page' 
   ].forEach(id => {
     const el = document.getElementById(id)
     if (el) el.style.display = 'none'
@@ -60,20 +126,18 @@ function hideAllPages() {
 }
 
 /*****************************************************************
- * ROUTER                                                          
+ * ROUTER
  *****************************************************************/
 function route() {
   const path = window.location.pathname
   hideAllPages()
 
-  // ——— TOURNAMENT LOBBY ———————————————————————————
   if (path === '/tournament') {
     document.getElementById('tournament-page')!.style.display = 'block'
-    renderTournamentList(dummyList) // TODO: replace with real data
+    renderTournamentList(tournaments, joinByCodeWithSocket)
     return
   }
 
-  // ——— ACTUAL GAME —————————————————————————————————
   if (path.startsWith('/game')) {
     document.getElementById('game-container')!.style.display = 'block'
 
@@ -85,7 +149,7 @@ function route() {
     currentMode = mode
 
     initGameCanvas()
-    if (['pve', '1v1',].includes(mode)) startGame(mode as GameMode)
+    if (['pve', '1v1'].includes(mode)) startGame(mode as GameMode)
 
     setOnGameEnd(winnerId => {
       stopGame()
@@ -94,7 +158,12 @@ function route() {
     return
   }
 
-  // ——— STATIC PAGES (profile, settings) —————————————
+  if (path.startsWith('/tournament/')) {
+    document.getElementById('t-lobby-page')!.style.display = 'block'
+    // optionally fetch latest state here if needed
+    return
+  }
+
   const mapping: Record<string, string> = {
     '/profile': 'profile-page',
     '/settings': 'settings-page'
@@ -105,10 +174,9 @@ function route() {
 }
 
 /*****************************************************************
- * DOMContentLoaded: wire top‑level buttons                       
+ * DOMContentLoaded: wire top-level buttons
  *****************************************************************/
 document.addEventListener('DOMContentLoaded', () => {
-  // mapping main‑menu buttons → routes
   const btnMap: Record<string, string> = {
     'sp-vs-pve-btn': '/game/pve',
     'one-vs-one-btn': '/game/1v1',
@@ -118,27 +186,47 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   Object.entries(btnMap).forEach(([btnId, routePath]) => {
-    document.getElementById(btnId)?.addEventListener('click', () => navigate(routePath))
-  })
-
-  // tournament lobby buttons (these elements exist only on that page)
-  document.getElementById('t-back-btn')?.addEventListener('click', () => navigate('/'))
-  document.getElementById('t-create-btn')?.addEventListener('click', () => {
-    lobbySocket.send(
-      JSON.stringify({
-        type: 'createTournament'
-      })
+    document.getElementById(btnId)?.addEventListener('click', () =>
+      navigate(routePath)
     )
   })
 
-  // join‑by‑code helpers (input + small button)
+  // tournament lobby buttons
+  document.getElementById('t-back-btn')?.addEventListener('click', () =>
+    navigate('/')
+  )
+  document.getElementById('t-create-btn')?.addEventListener('click', () => {
+    lobbySocket.send(JSON.stringify({ type: 'createTournament' }))
+  })
+  document.getElementById('t-copy-code-btn')?.addEventListener('click', () => {
+    navigator.clipboard.writeText('#' + (currentLobby?.code ?? ''))
+  })
+
+  document.getElementById('t-leave-btn')?.addEventListener('click', () => {
+    lobbySocket.send(JSON.stringify({ type: 'leaveTournament' }))
+    navigate('/tournament')
+  })
+
+  document.getElementById('t-ready-btn')?.addEventListener('click', () => {
+    lobbySocket.send(JSON.stringify({ type: 'toggleReady' }))
+  })
+
+  document.getElementById('t-start-btn')?.addEventListener('click', () => {
+    if (currentLobby) {
+      lobbySocket.send(
+        JSON.stringify({ type: 'startTournament', payload: { id: currentLobby.id } })
+      )
+    }
+  })
+
+  // join-by-code helpers
   const codeInput = document.getElementById('t-code-input') as HTMLInputElement | null
   const codeBtn = document.getElementById('t-code-btn') as HTMLButtonElement | null
 
   if (codeInput && codeBtn) {
-    codeBtn.addEventListener('click', () => joinByCode())
+    codeBtn.addEventListener('click', () => joinByCodeWithSocket())
     codeInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') joinByCode()
+      if (e.key === 'Enter') joinByCodeWithSocket()
     })
   }
 
@@ -147,90 +235,60 @@ document.addEventListener('DOMContentLoaded', () => {
 })
 
 /*****************************************************************
- * joinByCode() — used by both manual entry *and* list buttons     
+ * RENDERS THE LOBBY UI
  *****************************************************************/
-function joinByCode(codeFromBtn?: string) {
-  const codeInput = document.getElementById('t-code-input') as HTMLInputElement | null
-  const code = (codeFromBtn ?? codeInput?.value ?? '').trim()
+function renderLobby(lobby: LobbyState) {
+  currentLobby = lobby
+  console.log('rendering lobby', lobby)
 
-  if (!code) {
-    alert('Please enter a tournament code')
+  const amHost = lobby.hostId === myId
+  const me = lobby.players.find(p => p.id === myId)
+  const safePlayers = Array.isArray(lobby.players) ? lobby.players : []
+
+  // Check if everyone is ready
+  const allReady =
+    safePlayers.length === lobby.slots && safePlayers.every(p => p.ready)
+
+  // --- Show only the correct page ---
+  hideAllPages()
+  const pageId = amHost ? 't-lobby-page' : 't-guest-lobby-page'
+  document.getElementById(pageId)!.style.display = 'block'
+
+  // --- Render player table ---
+  const table = document.getElementById(amHost ? 't-lobby-table' : 't-guest-table')!
+  table.innerHTML = ''
+  for (let idx = 0; idx < lobby.slots; idx++) {
+    const p = safePlayers[idx]
+    const row = document.createElement('div')
+    row.className = 'lobby-row'
+    row.innerHTML = `
+      <span>${p?.name ?? '— empty —'}</span>
+      ${p ? `<span class="${p.ready ? 'green-dot' : 'red-dot'}"></span>` : '<span></span>'}
+    `
+    table.appendChild(row)
+  }
+
+  // --- Host view ---
+  if (amHost) {
+    const shareInput = document.getElementById('t-share-code') as HTMLInputElement
+    shareInput.value = '#' + (lobby.code ?? '----')
+
+    const startBtn = document.getElementById('t-start-btn') as HTMLButtonElement
+    startBtn.disabled = !allReady
     return
   }
 
-  lobbySocket.send(
-    JSON.stringify({
-      type: 'joinByCode',
-      payload: { code }
-    })
-  )
-}
+  // --- Guest view ---
+  const shareInput = document.getElementById('t-guest-share-code') as HTMLInputElement
+  shareInput.value = '#' + (lobby.code ?? '----')
 
-/*****************************************************************
- * TOURNAMENT LIST RENDERING                                      
- *****************************************************************/
-interface TourneySummary {
-  id: string
-  code: string
-  name: string
-  slots: string
-  joinable: boolean
-}
+  const readyDot = document.getElementById('t-my-ready-dot') as HTMLSpanElement
+  if (me) readyDot.className = me.ready ? 'green-dot' : 'red-dot'
 
-// temporary stub until backend broadcast is ready
-type Dummy = TourneySummary
-const dummyList: Dummy[] = [
-  {
-    id: 'abc123',
-    code: 'ABC123',
-    name: 'Tournament 1',
-    slots: '6/8',
-    joinable: true
-  },
-  {
-    id: 'def456',
-    code: 'DEF456',
-    name: 'Tournament 2',
-    slots: '8/8',
-    joinable: false
-  },
-  {
-    id: 'ghi789',
-    code: 'GHI789',
-    name: 'Tournament 3',
-    slots: '7/8',
-    joinable: true
-  },
-  {
-    id: 'jkl012',
-    code: 'JKL012',
-    name: 'Tournament 4',
-    slots: '1/8',
-    joinable: true
+  const status = document.getElementById('t-guest-status')!
+  if (!allReady) {
+    status.textContent = 'Waiting for players…'
+  } else {
+    status.textContent = 'Waiting for host to start…'
   }
-]
-
-function renderTournamentList(list: TourneySummary[]) {
-  const box = document.getElementById('tournament-list')!
-  box.innerHTML = ''
-
-  list.forEach(t => {
-    const card = document.createElement('div')
-    card.className = 't-card'
-    card.innerHTML = `
-      <div>
-        <div>${t.name}</div>
-        <div>${t.slots}</div>
-      </div>
-      <button class="join-btn" ${t.joinable ? '' : 'disabled'} data-code="${t.code}">
-        ${t.joinable ? 'JOIN' : 'FULL'}
-      </button>`
-
-    card.querySelector('.join-btn')?.addEventListener('click', e => {
-      const btn = e.currentTarget as HTMLButtonElement
-      joinByCode(btn.dataset.code!)
-    })
-
-    box.appendChild(card)
-  })
 }

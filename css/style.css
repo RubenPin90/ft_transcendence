@@ -1,0 +1,36 @@
+/* reusable */
+.full-btn   { border:2px solid #000; background:#fff; cursor:pointer; }
+.square-btn { border:2px solid #000; background:#fff; width:140px; height:70px; cursor:pointer; }
+.square-btn:hover,
+.full-btn:hover   { background:#f1f1f1; }
+.green-dot, .red-dot {
+  width:24px; height:24px; border-radius:50%;
+  display:inline-block; margin-left:auto; margin-right:8px;
+}
+.green-dot { background:#46c34b; }
+.red-dot   { background:#e43f3f; position:relative; }
+.red-dot::after {
+  content:"✕"; color:#fff; font-size:14px; font-weight:bold;
+  position:absolute; inset:0; display:grid; place-items:center;
+}
+.lobby-table {
+  max-width:620px; margin:0 auto 2rem; border:2px solid #000;
+}
+.lobby-row {
+  display:flex; justify-content:space-between; align-items:center;
+  border-top:2px solid #000; padding:12px 18px;
+  font-weight:600; text-transform:uppercase;
+}
+.lobby-row:first-child { border-top:none; }
+.code-box {
+  max-width:380px; height:70px; margin:0 auto; display:flex;
+  border:2px solid #000;
+}
+.code-box input {
+  flex:1; border:none; font-size:1.4rem; padding:0 1rem; outline:none;
+  text-transform:uppercase;
+}
+.code-box button {
+  width:70px; border-left:2px solid #000; background:url('/copy.svg') center/28px no-repeat;
+  cursor:pointer;
+}

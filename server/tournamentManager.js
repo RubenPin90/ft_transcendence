@@ -11,29 +11,69 @@ export class TournamentManager {
     this.tournaments = {};
     this.rooms = {};
   }
+  setSocketServer(wss) {
+    this.wss = wss;
+  }
 
-  createTournament(ws) {
+  userAlreadyInTournament(userId) {
+    return Object.values(this.tournaments).some(t => t.host === userId ||  t.players.includes(userId));
+  }
+
+
+  createTournament(ws = null, userId) {
+    // forbid двойное участие (кроме системного аккаунта SERVER)
+    if (userId !== 'SERVER' && this.userAlreadyInTournament(userId)) {
+      if (ws?.readyState === 1) {
+        ws.send(JSON.stringify({
+          type: 'error',
+          payload: { message: 'You are already in a tournament' },
+        }));
+      }
+      return;
+    }
+  
     const tournamentId = uuidv4();
-    const code = uuidv4().slice(0, 6).toUpperCase();
+    const code        = uuidv4().slice(0, 6).toUpperCase();
+  
     const tournament = {
-      id: tournamentId,
-      code: code,
-      players: [],
-      status: 'waiting', // 'waiting', 'in_progress', 'finished'
-      rooms: [],
-      matches: [],
-      winner: null,
+      id:        tournamentId,
+      code:      code,
+      players:   userId === 'SERVER'
+                 ? []
+                 : [{
+                     id:    userId,
+                     name:  `Player ${userId.slice(0, 4)}`,
+                     ready: false,
+                   }],
+      host:      userId,
+      status:    'waiting',
+      rooms:     [],
+      matches:   [],
+      winner:    null,
       createdAt: Date.now(),
     };
+  
     this.tournaments[tournamentId] = tournament;
-
-    ws.send(JSON.stringify({
-      type: 'tournamentCreated',
-      payload: { tournamentId, code },
-    }));
-
-    return tournamentId;
+  
+    if (ws?.readyState === 1) {
+      ws.send(JSON.stringify({
+        type: 'tournamentCreated',
+        payload: {
+          id:      tournament.id,
+          code:    tournament.code,
+          slots:   this.MAX_PLAYERS,
+          hostId:  tournament.host,
+          players: tournament.players,
+        },
+      }));
+    }
+  
+    // а теперь всем остальным разошлём обновлённый список
+    this.broadcastTournamentUpdate();
+  
+    return tournament;
   }
+  
 
   joinTournament(userId, code, ws) {
     const tournament = Object.values(this.tournaments).find(t => t.code === code);
@@ -46,6 +86,22 @@ export class TournamentManager {
       }));
       return;
     }
+    if (userId !== 'SERVER' && this.userAlreadyInTournament(userId)) {
+      console.error(`User ${userId} is already in a tournament`);
+      ws?.send(JSON.stringify({
+        type: 'error',
+        payload: { message: 'You are already in a tournament' },
+      }));
+      return;
+    }
+
+    if (tournament.players.includes(userId)) {
+        ws.send(JSON.stringify({
+          type: 'error',
+          payload: { message: 'You are already in this tournament' },
+        }));
+        return;
+      }
 
     if (tournament.players.length >= this.MAX_PLAYERS) {
       ws.send(JSON.stringify({
@@ -57,10 +113,16 @@ export class TournamentManager {
 
     tournament.players.push(userId);
 
+    if (tournament.host === 'SERVER') {
+        tournament.host = userId;
+    }
+
     ws.send(JSON.stringify({
       type: 'joinedTournament',
-      payload: { tournamentId: tournament.id, players: tournament.players },
+      payload: { tournamentId: tournament.id, players: tournament.players, host: tournament.host },
     }));
+    
+    this.broadcastTournamentUpdate();
   }
 
   startTournament(tournamentId) {
@@ -103,9 +165,8 @@ export class TournamentManager {
       players: [player1, player2],
       status: 'waiting',
     };
-
     this.rooms[matchId] = room;
-    this.notifyPlayers(room); // Реализуйте это отдельно
+    this.notifyPlayers(room);
   }
 
   leaveTournament(userId) {
@@ -121,11 +182,38 @@ export class TournamentManager {
       delete this.tournaments[tournament.id];
     }
   }
+  
+  broadcastTournamentUpdate() {
+    if (!this.wss) return;
+  
+    const message = JSON.stringify({
+      type: 'tournamentList',
+      payload: Object.values(this.tournaments).map(t => ({
+        id:       t.id,
+        code:     t.code,
+        name:     t.name ?? `Tournament ${t.code}`,
+        slots:    `${t.players.length}/${this.MAX_PLAYERS}`,
+        joinable: t.players.length < this.MAX_PLAYERS && t.status === 'waiting',
+        hostId:   t.host,
+        players:  t.players,
+        status:   t.status,
+        createdAt:t.createdAt,
+      })),
+    });
+  
+    for (const client of this.wss.clients) {
+      if (client.readyState === 1) {
+        client.send(message);
+      }
+    }
+  }
 
   notifyPlayers(room) {
-    // заглушка — реализуй сам логику оповещения, если нужно
+    // зtodo btw
     console.log(`Room created: ${room.matchId} with players ${room.players.join(', ')}`);
   }
+
+
 }
 
 const tournamentManager = new TournamentManager();

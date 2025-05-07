@@ -18,6 +18,8 @@
   <!-- just after #settings-page -->
   <div id="tournament-page" style="display:none; padding:2rem; font-family:sans-serif">
     <h2 style="text-align:center; margin-bottom:2.5rem;">Tournaments</h2>
+        <!-- ░░ Create Tournament ░░ -->
+
   
     <div class="tournament-layout">
       <!-- ░░ Left column ░░ -->
@@ -28,6 +30,13 @@
         <button id="t-code-btn" class="full-btn"
                 style="width:180px; height:100px;">Join<br>by code</button>
       </div>
+      <div style="margin-bottom:2rem; text-align:center;">
+        <button id="t-create-btn"
+                class="full-btn"
+                style="width:240px; height:60px; font-size:1.2rem;">
+           Create Tournament
+        </button>
+      </div>
   
       <!-- ░░ Right column ░░ -->
       <div class="t-right" id="tournament-list">
@@ -35,13 +44,69 @@
       </div>
     </div>
   </div>
+  <div id="t-lobby-page" style="display:none;padding:2rem;font-family:sans-serif">
+    <h2 style="text-align:center;margin-bottom:1.5rem;">PLAYERS</h2>
+  
+    <!-- players table ------------------------------------------------------->
+    <div id="t-lobby-table" class="lobby-table">
+      <!-- rows injected by JS -->
+    </div>
+  
+    <!-- share‑code box ------------------------------------------------------->
+    <div class="code-box">
+      <input id="t-share-code" readonly />
+      <button id="t-copy-code-btn" title="Copy code to clipboard"></button>
+    </div>
+  
+    <!-- main buttons --------------------------------------------------------->
+    <div style="text-align:center;margin:2rem 0;">
+      <button id="t-start-btn" class="full-btn" style="width:320px;height:80px;font-size:1.5rem;" disabled>
+        START
+      </button>
+    </div>
+  
+    <!-- footer actions ------------------------------------------------------->
+    <div style="display:flex;justify-content:space-between;">
+      <button id="t-leave-btn" class="square-btn">Leave</button>
+      <button id="t-custom-btn" class="square-btn">Customization</button>
+    </div>
+  </div>
+  <!-- ▸ PLAYER (non‑host) LOBBY PAGE ─────────────────────────────────────── -->
+  <div id="t-guest-lobby-page" style="display:none;padding:2rem;font-family:sans-serif">
+    <h2 id="t-guest-status" style="text-align:center;margin-bottom:1.5rem;">
+      Waiting for players…
+    </h2>
 
-  <!-- 🎯 Добавлено здесь -->
+    <!-- two‑column player table -->
+    <div id="t-guest-table" class="lobby-table"><!-- rows injected by JS --></div>
+
+    <!-- share code (read‑only) -->
+    <div class="code-box">
+      <input id="t-guest-share-code" readonly />
+      <button id="t-copy-code-btn-guest" title="Copy code to clipboard"></button>
+    </div>
+
+    <!-- READY button + personal dot -->
+    <div style="text-align:center;margin:2rem 0;">
+      <button id="t-ready-btn" class="full-btn" style="width:320px;height:80px;font-size:1.5rem;">
+        READY <span id="t-my-ready-dot" class="green-dot"></span>
+      </button>
+    </div>
+
+    <!-- footer -->
+    <div style="display:flex;justify-content:space-between;">
+      <button id="t-leave-btn-guest" class="square-btn">Leave</button>
+      <button id="t-custom-btn-guest" class="square-btn">Customization</button>
+    </div>
+  </div>
+  
   <div id="game-container" style="display: none;">
     <h2 id="game-mode-title"></h2>
     <canvas id="game" width="800" height="600"
     style="background:#000; display:block; margin:0 auto"></canvas>
   </div>
+  <div id="error-banner" style="display:none;color:red;padding:8px;"></div>
+
 
   <script type="module" src="/client/js/main.js"></script>
 </body>
