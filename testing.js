@@ -30,19 +30,23 @@ function break_html_into_pieces(content) {
 function split_translate_combine(content) {
     var origins = [];
     var parts = [];
-    // var pos = 0;
+    var pos = 0;
 
     var returned = break_html_into_pieces(content);
     for (var fail_safe = 0; fail_safe < 999999999; fail_safe++) {
         var test = break_html_into_pieces(returned[0].text);
         console.log(test.length);
-        if (!test[0] || test[0] === undefined || test[0].text.length < 1) {
-            parts.push(returned[0].text);
-            break;
-        // } else {
-        //     pos++;
+        if (test[pos] === undefined || test[pos].text.length < 1) {
+            parts.push(returned[pos].text);
+            pos++;
+            console.log();
+            console.log(pos);
+            console.log(returned.length);
+            if (pos == returned.length)
+                break;
+        } else {
+            returned = break_html_into_pieces(returned[0].text);
         }
-        returned = break_html_into_pieces(returned[0].text);
         origins.push(returned);
     }
     console.log(parts);
