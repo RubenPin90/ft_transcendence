@@ -556,12 +556,22 @@ function DOM_text(row) {
 			break;
 		}
 	}
+	if (open_tag_name == '!DOCTYPE')
+		open_tag_name = "html";
 	closing_tag = `</${open_tag_name}>`;
 	tag_count = row.split(closing_tag).length - 1;
 	var last_index;
 	for (var i = 0; i < tag_count; i++)
 		last_index = row.indexOf(closing_tag, last_index + 1);
 	text = row.slice(0, last_index);
+	if (text[0] === '\r')
+		text = text.slice(1);
+	if (text[0] === '\n')
+		text = text.slice(1);
+	if (text[0] === '\r')
+		text = text.slice(1);
+	if (text[0] === '\n')
+		text = text.slice(1);
 	return {indent, open_tag, text, closing_tag};
 }
 
