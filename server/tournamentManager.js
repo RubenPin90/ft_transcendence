@@ -213,7 +213,38 @@ export class TournamentManager {
     console.log(`Room created: ${room.matchId} with players ${room.players.join(', ')}`);
   }
 
+  leaveTournament(userId, tournamentId) {
+    const tournament = this.tournaments[tournamentId];
 
+    if (!tournament) {
+      console.error(`leaveTournament: tournament ${tournamentId} not found`);
+      return;                                    // or throw, depending on style
+    }
+
+    const idx = tournament.players.indexOf(userId);
+    if (idx === -1) {
+      console.error(
+        `leaveTournament: user ${userId} is not in tournament ${tournamentId}`
+      );
+      return;                                    // or throw
+    }
+
+    // 1. remove the player
+    tournament.players.splice(idx, 1);
+
+    // 2. re‑assign host if the host left and others remain
+    if (tournament.host === userId && tournament.players.length > 0) {
+      tournament.host = tournament.players[0];   // simple: promote first player
+    }
+
+    // 3. delete the tournament if empty
+    if (tournament.players.length === 0) {
+      delete this.tournaments[tournamentId];
+    }
+
+    // 4. let everyone know the list changed
+    this.broadcastTournamentUpdate();
+  }
 }
 
 const tournamentManager = new TournamentManager();

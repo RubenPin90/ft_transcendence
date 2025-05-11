@@ -22,6 +22,7 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
     return;
   }
   console.log(`Incoming from ${ws.userId}:`);
+  console.log(data);
   switch (data.type) {
     case 'chat':
       // broadcast to everyone except the sender
@@ -50,6 +51,13 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
       }));
       break;
     
+    }
+    case 'leaveTournament': {
+      console.log('Incoming leaveTournament request with data:', data);
+      const { tournamentId } = data.payload ?? {};
+      const userId = ws.userId;
+      tournamentManager.leaveTournament(userId, tournamentId);
+      break;
     }
 
     case 'joinQueue': {
