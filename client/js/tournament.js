@@ -1,7 +1,5 @@
-/**
- * Send a joinByCode message to the server using the provided WebSocket.
- * If `codeFromBtn` is omitted we read the value from #t-code-input.
- */
+import { getMyId, setCurrentLobby } from './state.js';
+import { hideAllPages } from './helpers.js';
 export function joinByCode(socket, codeFromBtn) {
     var _a;
     const codeInput = document.getElementById('t-code-input');
@@ -15,11 +13,6 @@ export function joinByCode(socket, codeFromBtn) {
         payload: { code }
     }));
 }
-/**
- * Render the given tournament summaries into the DOM.
- * The `onJoin` callback is invoked with the tournament code when the
- * user clicks a JOIN button.
- */
 export function renderTournamentList(list, onJoin) {
     if (!Array.isArray(list))
         return;
@@ -45,4 +38,59 @@ export function renderTournamentList(list, onJoin) {
         });
         box.appendChild(card);
     });
+}
+export function renderLobby(lobby) {
+    var _a, _b, _c;
+    setCurrentLobby(lobby);
+    console.log('rendering lobby', lobby);
+    const myId = getMyId();
+    const amHost = lobby.hostId === myId;
+    console.log('amHost', amHost);
+    console.log('myId', myId);
+    console.log('lobby', lobby);
+    const me = lobby.players.find(p => p.id === myId);
+    setCurrentLobby(lobby);
+    const safePlayers = Array.isArray(lobby.players) ? lobby.players : [];
+    // Check if everyone is ready
+    const allReady = safePlayers.length === lobby.slots && safePlayers.every(p => p.ready);
+    // --- Show only the correct page ---
+    hideAllPages();
+    const pageId = amHost ? 't-lobby-page' : 't-guest-lobby-page';
+    document.getElementById(pageId).style.display = 'block';
+    // --- Render player table ---
+    const table = document.getElementById(amHost ? 't-lobby-table' : 't-guest-table');
+    table.innerHTML = '';
+    for (let idx = 0; idx < lobby.slots; idx++) {
+        const p = safePlayers[idx];
+        const row = document.createElement('div');
+        row.className = 'lobby-row';
+        row.innerHTML = `
+        <span>${(_a = p === null || p === void 0 ? void 0 : p.name) !== null && _a !== void 0 ? _a : '— empty —'}</span>
+        ${p ? `<span class="${p.ready ? 'green-dot' : 'red-dot'}"></span>` : '<span></span>'}
+      `;
+        table.appendChild(row);
+    }
+    // --- Host view ---
+    if (amHost === true) {
+        const shareInput = document.getElementById('t-share-code');
+        shareInput.value = '#' + ((_b = lobby.code) !== null && _b !== void 0 ? _b : '----');
+        const startBtn = document.getElementById('t-start-btn');
+        startBtn.disabled = !allReady;
+        return;
+    }
+    else {
+        // --- Guest view ---
+        const shareInput = document.getElementById('t-guest-share-code');
+        shareInput.value = '#' + ((_c = lobby.code) !== null && _c !== void 0 ? _c : '----');
+        const readyDot = document.getElementById('t-my-ready-dot');
+        if (me)
+            readyDot.className = me.ready ? 'green-dot' : 'red-dot';
+        const status = document.getElementById('t-guest-status');
+        if (!allReady) {
+            status.textContent = 'Waiting for players…';
+        }
+        else {
+            status.textContent = 'Waiting for host to start…';
+        }
+    }
 }

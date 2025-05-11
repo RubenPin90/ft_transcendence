@@ -118,8 +118,18 @@ export class TournamentManager {
     }
 
     ws.send(JSON.stringify({
-      type: 'joinedTournament',
-      payload: { tournamentId: tournament.id, players: tournament.players, host: tournament.host },
+      type: 'joinedLobby',
+      payload: {
+        playerId: userId,
+        lobby: {
+          id:       tournament.id,
+          code:     tournament.code,
+          players:  tournament.players,
+          hostId:   tournament.host,
+          status:   tournament.status,
+          createdAt:tournament.createdAt
+        }
+      }
     }));
     
     this.broadcastTournamentUpdate();
