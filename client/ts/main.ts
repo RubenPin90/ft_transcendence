@@ -10,33 +10,33 @@ import {
   renderTournamentList,
   joinByCode,
   TourneySummary,
-  renderLobby
+  renderTLobby
 } from './tournament.js'
 
 import { setupButtons } from './buttons.js'
-import type { LobbyState } from './types.js'
+import type { TLobbyState } from './types.js'
 
-import { setMyId, setCurrentLobby } from './state.js'
+import { setMyId, setCurrentTLobby, getCurrentTLobby } from './state.js'
 import { hideAllPages } from './helpers.js'
 
 let currentMode: string | null = null
 let tournaments: TourneySummary[] = []
 let myId: string = localStorage.getItem('playerId') ?? ''
-let currentLobby: LobbyState | null = null
 
-const lobbySocket = new WebSocket(
+
+const TLobbySocket = new WebSocket(
   `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/game`
 )
 
 function joinByCodeWithSocket(code?: string) {
-  joinByCode(lobbySocket, code)
+  joinByCode(TLobbySocket, code)
 }
 function handleOpen() {
-  console.log('[WS] lobby socket open')
+  console.log('[WS] TLobby socket open')
 }
 
 function handleError(err: Event) {
-  console.error('[WS] lobby error', err)
+  console.error('[WS] TLobby error', err)
 }
 
 function handleMessage(ev: MessageEvent) {
@@ -49,28 +49,28 @@ function handleMessage(ev: MessageEvent) {
       banner.style.display = 'block'
       break
     }
-    case 'joinedLobby': {
-      const { playerId, lobby } = data.payload
+    case 'joinedTLobby': {
+      const { playerId, TLobby } = data.payload
       setMyId(playerId)
       localStorage.setItem('playerId', playerId)
-      if (lobby) {
-        setCurrentLobby(lobby)
-        history.pushState({}, '', `/tournament/${lobby.code}`)
-        renderLobby(lobby)
+      if (TLobby) {
+        setCurrentTLobby(TLobby)
+        history.pushState({}, '', `/tournament/${TLobby.code}`)
+        renderTLobby(TLobby)
       }
       break
     }
     case 'tournamentCreated': {
-      const lobby: LobbyState = data.payload
-      setMyId(lobby.hostId)
-      localStorage.setItem('playerId', lobby.hostId)
-      history.pushState({}, '', `/tournament/${lobby.code}`)
-      renderLobby(lobby)
+      const TLobby: TLobbyState = data.payload
+      setMyId(TLobby.hostId)
+      localStorage.setItem('playerId', TLobby.hostId)
+      history.pushState({}, '', `/tournament/${TLobby.code}`)
+      renderTLobby(TLobby)
       break
     }
     case 'tournamentUpdated': {
       console.log('received data12', data)
-      renderLobby(data.payload as LobbyState)
+      renderTLobby(data.payload as TLobbyState)
       break
     }
     case 'tournamentList': {
@@ -83,9 +83,9 @@ function handleMessage(ev: MessageEvent) {
   }
 }
 
-lobbySocket.addEventListener('open', handleOpen)
-lobbySocket.addEventListener('error', handleError)
-lobbySocket.addEventListener('message', handleMessage)
+TLobbySocket.addEventListener('open', handleOpen)
+TLobbySocket.addEventListener('error', handleError)
+TLobbySocket.addEventListener('message', handleMessage)
 
 
 setOnGameEnd((winnerId: string) => {
@@ -123,9 +123,8 @@ function route() {
     return
   }
   if (path.startsWith('/tournament/')) {
-    
-    document.getElementById('t-lobby-page')!.style.display = 'block'
-    return
+       document.getElementById('t-lobby-page')!.style.display = 'block';
+       return;
   }
   const mapping: Record<string, string> = {
     '/profile': 'profile-page',
@@ -145,7 +144,7 @@ function route() {
 document.addEventListener('DOMContentLoaded', () => {
   setupNavigationButtons()
   setupCodeJoinHandlers()
-  setupButtons(navigate, lobbySocket, () => currentLobby)
+  setupButtons(navigate, TLobbySocket, getCurrentTLobby)
   window.addEventListener('popstate', route)
   route()
 })

@@ -52,6 +52,14 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
       break;
     
     }
+    case 'toggleReady':{
+      console.log('Incoming toggleReady request with data:', data);
+      const { tournamentId } = data.payload;
+      const userId = ws.userId;
+      tournamentManager.toggleReady(userId, tournamentId);
+      break;
+    }
+
     case 'leaveTournament': {
       console.log('Incoming leaveTournament request with data:', data);
       const { tournamentId } = data.payload ?? {};

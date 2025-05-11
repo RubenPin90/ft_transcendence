@@ -1,13 +1,5 @@
 export function hideAllPages() {
-    const pageIds = [
-      'main-menu',
-      'profile-page',
-      'settings-page',
-      'game-container',
-      'tournament-page',
-      't-lobby-page',
-      't-guest-lobby-page'
-    ]
+    const pageIds = [ 'main-menu', 'profile-page', 'settings-page', 'game-container', 'tournament-page', 't-lobby-page' ]
   
     for (const id of pageIds) {
       const el = document.getElementById(id)

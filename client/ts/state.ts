@@ -1,14 +1,14 @@
-import type { LobbyState } from './types.js'
+import type { TLobbyState } from './types.js'
 
-let _currentLobby: LobbyState | null = null
+let _currentTLobby: TLobbyState | null = null
 let _myId: string = localStorage.getItem('playerId') ?? ''
 
-export function getCurrentLobby() {
-  return _currentLobby
+export function getCurrentTLobby() {
+  return _currentTLobby
 }
 
-export function setCurrentLobby(lobby: LobbyState | null) {
-  _currentLobby = lobby
+export function setCurrentTLobby(TLobby: TLobbyState | null) {
+  _currentTLobby = TLobby
 }
 
 export function getMyId() {

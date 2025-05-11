@@ -1,4 +1,4 @@
-export interface LobbyState {
+export interface TLobbyState {
     id: string
     code: string
     slots: number

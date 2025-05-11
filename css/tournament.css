@@ -31,3 +31,23 @@
     cursor:pointer;
   }
   
+  .TLobby-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid #ddd;
+  }
+  .t-name   { flex: 1; }
+  .t-status { width: 14px; height: 14px; border-radius: 50%; }
+  .green-dot { background: #4caf50; }
+  .red-dot   { background: #e53935; }
+  .kick-btn  {
+    padding: 0.15rem 0.6rem;
+    border: 1px solid #c33;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+  }
+  .kick-btn:hover { background: #ffecec; }

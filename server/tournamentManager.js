@@ -1,8 +1,16 @@
 // tournamentManager.js
-import { matchManager }   from './matchManager.js';   // <-- your existing singleton/export
+import { matchManager }   from './matchManager.js';
 
 
 import { v4 as uuidv4 } from 'uuid';
+
+const getPlayerId = p => (typeof p === 'string' ? p : p.id);
+
+const hasUser = (playerArr, userId) =>
+  playerArr.some(p => getPlayerId(p) === userId);
+
+const removeUser = (playerArr, userId) =>
+  playerArr.filter(p => getPlayerId(p) !== userId);
 
 export class TournamentManager {
   constructor() {
@@ -11,17 +19,18 @@ export class TournamentManager {
     this.tournaments = {};
     this.rooms = {};
   }
+  
+
   setSocketServer(wss) {
     this.wss = wss;
   }
 
   userAlreadyInTournament(userId) {
-    return Object.values(this.tournaments).some(t => t.host === userId ||  t.players.includes(userId));
+    return Object.values(this.tournaments).some(t => t.host === userId || hasUser(t.players, userId));
   }
 
 
   createTournament(ws = null, userId) {
-    // forbid двойное участие (кроме системного аккаунта SERVER)
     if (userId !== 'SERVER' && this.userAlreadyInTournament(userId)) {
       if (ws?.readyState === 1) {
         ws.send(JSON.stringify({
@@ -67,8 +76,6 @@ export class TournamentManager {
         },
       }));
     }
-  
-    // а теперь всем остальным разошлём обновлённый список
     this.broadcastTournamentUpdate();
   
     return tournament;
@@ -87,7 +94,7 @@ export class TournamentManager {
       return;
     }
     if (userId !== 'SERVER' && this.userAlreadyInTournament(userId)) {
-      console.error(`User ${userId} is already in a tournament`);
+      console.error(`User ${userId} is already in a tournament : ${tournament.id}`);
       ws?.send(JSON.stringify({
         type: 'error',
         payload: { message: 'You are already in a tournament' },
@@ -111,17 +118,21 @@ export class TournamentManager {
       return;
     }
 
-    tournament.players.push(userId);
+    tournament.players.push({
+         id:    userId,
+         name:  `Player ${userId.slice(0, 4)}`,
+         ready: false,
+       });
 
     if (tournament.host === 'SERVER') {
         tournament.host = userId;
     }
 
     ws.send(JSON.stringify({
-      type: 'joinedLobby',
+      type: 'joinedTLobby',
       payload: {
         playerId: userId,
-        lobby: {
+        TLobby: {
           id:       tournament.id,
           code:     tournament.code,
           players:  tournament.players,
@@ -222,39 +233,64 @@ export class TournamentManager {
     // зtodo btw
     console.log(`Room created: ${room.matchId} with players ${room.players.join(', ')}`);
   }
-
-  leaveTournament(userId, tournamentId) {
+  toggleReady(userId, tournamentId) {
     const tournament = this.tournaments[tournamentId];
 
+    // ── basic guards ────────────────────────────────────────────────────────────
     if (!tournament) {
-      console.error(`leaveTournament: tournament ${tournamentId} not found`);
-      return;                                    // or throw, depending on style
+      console.error(`toggleReady: tournament ${tournamentId} not found`);
+      return;
     }
 
-    const idx = tournament.players.indexOf(userId);
-    if (idx === -1) {
-      console.error(
-        `leaveTournament: user ${userId} is not in tournament ${tournamentId}`
-      );
-      return;                                    // or throw
+    const player = tournament.players.find(p => getPlayerId(p) === userId);
+    if (!player) {
+      console.error(`toggleReady: user ${userId} not in tournament ${tournamentId}`);
+      return;
     }
 
-    // 1. remove the player
-    tournament.players.splice(idx, 1);
+    // ── flip flag ───────────────────────────────────────────────────────────────
+    player.ready = !player.ready;
 
-    // 2. re‑assign host if the host left and others remain
-    if (tournament.host === userId && tournament.players.length > 0) {
-      tournament.host = tournament.players[0];   // simple: promote first player
-    }
-
-    // 3. delete the tournament if empty
-    if (tournament.players.length === 0) {
-      delete this.tournaments[tournamentId];
-    }
-
-    // 4. let everyone know the list changed
+    // ── let everyone in every lobby know the roster changed ────────────────────
     this.broadcastTournamentUpdate();
+
+    // ── auto‑start if every slot is filled & all are ready ─────────────────────
+    const enoughPlayers = tournament.players.length >= 2 &&
+                          tournament.players.length === this.requiredPlayers;
+    const allReady      = tournament.players.every(p => p.ready);
+
+    if (tournament.status === 'waiting' && enoughPlayers && allReady) {
+      try {
+        this.startTournament(tournamentId);
+        this.broadcastTournamentUpdate();   // push new “in_progress” status
+      } catch (err) {
+        console.error(`toggleReady→startTournament failed: ${err.message}`);
+      }
+    }
   }
+
+  leaveTournament(userId, tournamentId) {
+    const tournament = tournamentId
+      ? this.tournaments[tournamentId]
+      : Object.values(this.tournaments).find(t => hasUser(t.players, userId));
+  
+    if (!tournament) {
+      console.error(`leaveTournament: user ${userId} not found`);
+      return;
+    }
+  
+    tournament.players = removeUser(tournament.players, userId);
+  
+    if (tournament.host === userId && tournament.players.length > 0) {
+      tournament.host = getPlayerId(tournament.players[0]);   // promote first
+    }
+  
+    if (tournament.players.length === 0) {
+      delete this.tournaments[tournament.id];
+    }
+  
+    this.broadcastTournamentUpdate();
+  }  
 }
 
 const tournamentManager = new TournamentManager();

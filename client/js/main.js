@@ -1,22 +1,21 @@
 var _a;
 import { initGameCanvas, startGame, stopGame, setOnGameEnd } from './game.js';
-import { renderTournamentList, joinByCode, renderLobby } from './tournament.js';
+import { renderTournamentList, joinByCode, renderTLobby } from './tournament.js';
 import { setupButtons } from './buttons.js';
-import { setMyId, setCurrentLobby } from './state.js';
+import { setMyId, setCurrentTLobby, getCurrentTLobby } from './state.js';
 import { hideAllPages } from './helpers.js';
 let currentMode = null;
 let tournaments = [];
 let myId = (_a = localStorage.getItem('playerId')) !== null && _a !== void 0 ? _a : '';
-let currentLobby = null;
-const lobbySocket = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/game`);
+const TLobbySocket = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/game`);
 function joinByCodeWithSocket(code) {
-    joinByCode(lobbySocket, code);
+    joinByCode(TLobbySocket, code);
 }
 function handleOpen() {
-    console.log('[WS] lobby socket open');
+    console.log('[WS] TLobby socket open');
 }
 function handleError(err) {
-    console.error('[WS] lobby error', err);
+    console.error('[WS] TLobby error', err);
 }
 function handleMessage(ev) {
     const data = JSON.parse(ev.data);
@@ -27,28 +26,28 @@ function handleMessage(ev) {
             banner.style.display = 'block';
             break;
         }
-        case 'joinedLobby': {
-            const { playerId, lobby } = data.payload;
+        case 'joinedTLobby': {
+            const { playerId, TLobby } = data.payload;
             setMyId(playerId);
             localStorage.setItem('playerId', playerId);
-            if (lobby) {
-                setCurrentLobby(lobby);
-                history.pushState({}, '', `/tournament/${lobby.code}`);
-                renderLobby(lobby);
+            if (TLobby) {
+                setCurrentTLobby(TLobby);
+                history.pushState({}, '', `/tournament/${TLobby.code}`);
+                renderTLobby(TLobby);
             }
             break;
         }
         case 'tournamentCreated': {
-            const lobby = data.payload;
-            setMyId(lobby.hostId);
-            localStorage.setItem('playerId', lobby.hostId);
-            history.pushState({}, '', `/tournament/${lobby.code}`);
-            renderLobby(lobby);
+            const TLobby = data.payload;
+            setMyId(TLobby.hostId);
+            localStorage.setItem('playerId', TLobby.hostId);
+            history.pushState({}, '', `/tournament/${TLobby.code}`);
+            renderTLobby(TLobby);
             break;
         }
         case 'tournamentUpdated': {
             console.log('received data12', data);
-            renderLobby(data.payload);
+            renderTLobby(data.payload);
             break;
         }
         case 'tournamentList': {
@@ -60,9 +59,9 @@ function handleMessage(ev) {
         }
     }
 }
-lobbySocket.addEventListener('open', handleOpen);
-lobbySocket.addEventListener('error', handleError);
-lobbySocket.addEventListener('message', handleMessage);
+TLobbySocket.addEventListener('open', handleOpen);
+TLobbySocket.addEventListener('error', handleError);
+TLobbySocket.addEventListener('message', handleMessage);
 setOnGameEnd((winnerId) => {
     alert(`Player ${winnerId} wins!`);
 });
@@ -118,7 +117,7 @@ function route() {
 document.addEventListener('DOMContentLoaded', () => {
     setupNavigationButtons();
     setupCodeJoinHandlers();
-    setupButtons(navigate, lobbySocket, () => currentLobby);
+    setupButtons(navigate, TLobbySocket, getCurrentTLobby);
     window.addEventListener('popstate', route);
     route();
 });
