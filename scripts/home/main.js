@@ -1,5 +1,6 @@
 async function logout() {
     delete_cookie("token");
+    delete_cookie("lang");
     location.reload();
 }
 

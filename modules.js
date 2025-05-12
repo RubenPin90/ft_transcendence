@@ -41,10 +41,20 @@ function get_jwt(token) {
 	return token;
 }
 
-function set_cookie(response, key, value, HttpOnly, Secure, SameSite) {
+function set_cookie(response, key, value, HttpOnly = false, Secure = false, SameSite = null, path = '/') {
 	const prev = response.getHeader('Set-Cookie') || [];
-	const newC = `${key}=${value}`; 
-	response.setHeader('Set-Cookie', [...prev, newC], { httpOnly: HttpOnly, secure: Secure, sameSite: SameSite });
+	let cookie = `${key}=${value}; Path=${path}`;
+	// if (HttpOnly) cookie += '; HttpOnly';
+	// if (Secure) cookie += '; Secure';
+	// if (SameSite) cookie += `; SameSite=${SameSite}`; // e.g., 'Lax', 'Strict', 'None'
+
+	response.setHeader('Set-Cookie', [...prev, cookie]);
+}
+
+function delete_cookie(response, key) {
+	const prev = response.getHeader('Set-Cookie') || [];
+	const cookie = `${key}=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/`;
+	response.setHeader('Set-Cookie', [...prev, cookie]);
 }
 
 async function create_encrypted_password(password) {
@@ -123,6 +133,7 @@ async function easyfetch(url, method, header, body) {
 export {
 	get_cookies,
 	set_cookie,
+	delete_cookie,
 	create_jwt,
 	get_jwt,
 	create_encrypted_password,

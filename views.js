@@ -1,6 +1,7 @@
 import * as modules from './modules.js';
 import * as utils from './utils.js';
 import * as send from './responses.js';
+import * as translator from './translate.js'
 import * as settings_db from './database/db_settings_functions.js';
 import * as users_db from './database/db_users_functions.js';
 import * as mfa_db from './database/db_mfa_functions.js';
@@ -8,6 +9,7 @@ import qrcode from 'qrcode';
 
 async function login(request, response) {
     const check_login = utils.check_login(request, response);
+    console.log(check_login);
     if (check_login === true)
         return true;
     if (request.method === "POST") {
@@ -176,12 +178,11 @@ async function home(request, response) {
         const replace_data = await users_db.get_users_value('self', decoded_token.userid);
         if (!replace_data)
             return false;
-        if (decoded_lang !== 'en') {
-            data = data.replace("{{userid}}", "{{{{}}}}");
-            // data = await modules.translator(data, decoded_lang);
+        console.log(decoded_lang);
+        if (decoded_lang.userid !== 'en') {
+            data = data.replace("Welcome home user {{userid}}", await translator.find_translation("Welcome home user {{userid}}", decoded_lang.userid));
         }
-        console.log(replace_data.username);
-        return data.replace("{{{{}}}}", replace_data.username);
+        return data.replace("{{userid}}", replace_data.username);
     });
     if (!check || check === undefined || check == false)
         return `6_${check}`
@@ -189,9 +190,6 @@ async function home(request, response) {
 }
 
 async function mfa(request, response) {
-    var [keys, values] = modules.get_cookies(request.headers.cookie);
-    if (!keys?.includes('token'))
-        return send.redirect(response, '/login', 302);
     if (request.method === "POST") {
         var replace_data = await utils.get_frontend_content(request);
         if (!replace_data || replace_data === undefined)
@@ -307,18 +305,148 @@ async function mfa(request, response) {
     return true;
 }
 
+async function user(request, response) {
+    if (request.method == 'POST') {
+        console.log("Here");
+
+    }
+    const status = await send.send_html('settings.html', response, 200, async (data) => {
+        var replace_string = '<button onclick="change_language()">Change language</button><br></br>';
+        replace_string += `
+        <form id="language">
+            <select name="lang" id="lang">
+                <option value="" selected disabled hidden>Choose your main language</option>
+                <option value="af">Afrikaans</option>
+                <option value="az">Azərbaycanca</option>
+                <option value="id">Bahasa Indonesia</option>
+                <option value="ms">Bahasa Melayu</option>
+                <option value="jw">Basa Jawa</option>
+                <option value="su">Basa Sunda</option>
+                <option value="bs">Bosanski</option>
+                <option value="ca">Català</option>
+                <option value="ceb">Cebuano</option>
+                <option value="sn">ChiShona</option>
+                <option value="ny">Chichewa</option>
+                <option value="co">Corsu</option>
+                <option value="cy">Cymraeg</option>
+                <option value="da">Dansk</option>
+                <option value="de">Deutsch</option>
+                <option value="et">Eesti</option>
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="eo">Esperanto</option>
+                <option value="eu">Euskara</option>
+                <option value="fr">Français</option>
+                <option value="fy">Frysk</option>
+                <option value="ga">Gaeilge</option>
+                <option value="sm">Gagana Samoa</option>
+                <option value="gl">Galego</option>
+                <option value="gd">Gàidhlig</option>
+                <option value="ha">Hausa</option>
+                <option value="hmn">Hmoob</option>
+                <option value="hr">Hrvatski</option>
+                <option value="ig">Igbo</option>
+                <option value="it">Italiano</option>
+                <option value="sw">Kiswahili</option>
+                <option value="ht">Kreyòl Ayisyen</option>
+                <option value="ku">Kurdî</option>
+                <option value="la">Latina</option>
+                <option value="lv">Latviešu</option>
+                <option value="lt">Lietuvių</option>
+                <option value="lb">Lëtzebuergesch</option>
+                <option value="hu">Magyar</option>
+                <option value="mg">Malagasy</option>
+                <option value="mt">Malti</option>
+                <option value="mi">Māori</option>
+                <option value="nl">Nederlands</option>
+                <option value="no">Norsk</option>
+                <option value="uz">Oʻzbekcha</option>
+                <option value="pl">Polski</option>
+                <option value="pt">Português</option>
+                <option value="ro">Română</option>
+                <option value="st">Sesotho</option>
+                <option value="sq">Shqip</option>
+                <option value="sk">Slovenčina</option>
+                <option value="sl">Slovenščina</option>
+                <option value="so">Soomaali</option>
+                <option value="fi">Suomi</option>
+                <option value="sv">Svenska</option>
+                <option value="tl">Tagalog</option>
+                <option value="vi">Tiếng Việt</option>
+                <option value="tr">Türkçe</option>
+                <option value="yo">Yorùbá</option>
+                <option value="xh">isiXhosa</option>
+                <option value="zu">isiZulu</option>
+                <option value="is">Íslenska</option>
+                <option value="cs">Čeština</option>
+                <option value="haw">ʻŌlelo Hawaiʻi</option>
+                <option value="el">Ελληνικά</option>
+                <option value="be">Беларуская</option>
+                <option value="bg">Български</option>
+                <option value="ky">Кыргызча</option>
+                <option value="mk">Македонски</option>
+                <option value="mn">Монгол</option>
+                <option value="ru">Русский</option>
+                <option value="sr">Српски</option>
+                <option value="tg">Тоҷикӣ</option>
+                <option value="uk">Українська</option>
+                <option value="kk">Қазақша</option>
+                <option value="hy">Հայերեն</option>
+                <option value="yi">ייִדיש</option>
+                <option value="iw">עברית</option>
+                <option value="ur">اردو</option>
+                <option value="ar">العربية</option>
+                <option value="sd">سنڌي</option>
+                <option value="fa">فارسی</option>
+                <option value="ps">پښتو</option>
+                <option value="ne">नेपाली</option>
+                <option value="mr">मराठी</option>
+                <option value="hi">हिन्दी</option>
+                <option value="bn">বাংলা</option>
+                <option value="gu">ગુજરાતી</option>
+                <option value="ta">தமிழ்</option>
+                <option value="te">తెలుగు</option>
+                <option value="kn">ಕನ್ನಡ</option>
+                <option value="ml">മലയാളം</option>
+                <option value="si">සිංහල</option>
+                <option value="th">ไทย</option>
+                <option value="lo">ລາວ</option>
+                <option value="my">မြန်မာ</option>
+                <option value="ka">ქართული</option>
+                <option value="km">ភាសាខ្មែរ</option>
+                <option value="ja">日本語</option>
+                <option value="zh-cn">简体中文</option>
+                <option value="zh-tw">繁體中文</option>
+                <option value="ko">한국어</option>
+            </select>
+            <button type="submit">Submit</button>
+        </form>`
+        replace_string += '<button onclick="window.location.href = \'http://localhost:8080/settings\'">back</button> \
+        <button onclick="logout()">Logout</button>';
+        return data.replace('{{mfa-button}}', replace_string);
+    });
+    return true;
+}
+
 async function settings(request, response) {
     var [keys, values] = modules.get_cookies(request.headers.cookie);
     if (!keys?.includes('token'))
         return send.redirect(response, '/login', 302);
     const request_url = request.url.slice(9);
+    if (request_url.startsWith("/mfa?"))
+        return await settings_set_prefered_mfa(request, response);
     if (request_url == "/mfa")
         return await mfa(request, response);
+    if (request_url.startsWith("/user?"))
+        return await settings_prefered_language(request, response);
+    if (request_url == "/user")
+        return await user(request, response);
     // if (request.method === 'POST') {
 
     // }
     const status = await send.send_html('settings.html', response, 200, async  (data) => {
         var replace_string = '<button onclick="window.location.href = \'http://localhost:8080/settings/mfa\'">mfa</button><br></br>';
+        replace_string += '<button onclick="window.location.href = \'http://localhost:8080/settings/user\'">user</button><br></br>';
         replace_string += '<button onclick="window.location.href = \'http://localhost:8080\'">back</button> \
         <button onclick="logout()">Logout</button>';
         return data.replace('{{mfa-button}}', replace_string);
@@ -354,6 +482,39 @@ async function settings_set_prefered_mfa(request, response) {
         await mfa_db.update_mfa_value('prefered', 3, userid);
     }
     return send.redirect(response, '/settings/mfa', 302);    
+}
+
+async function settings_prefered_language(request, response) {
+    if (request.url.length < 11)
+        return send.redirect(response, '/settings/user', 302);
+    const location = request.url.slice(10);
+    if (!location.indexOf('='))
+        return send.redirect(response, '/settings/user', 302);
+    const pos = location.indexOf('=') + 1;
+    if (location.length === pos)
+        return send.redirect(response, '/settings/user', 302);
+    const method = location.slice(pos);
+    var [keys, values] = modules.get_cookies(request.headers.cookie);
+    const user_check = keys?.find((key) => key === 'token');
+    if (!user_check || user_check === undefined || user_check == false)
+        return false;
+    const userIndex = keys.indexOf('token');
+    const user = modules.get_jwt(userIndex);
+    const lang_check = keys?.find((key) => key === 'lang');
+    if (!lang_check || lang_check === undefined || lang_check == false)
+        return false;
+    const langIndex = keys.indexOf('lang');
+    var lang = values[langIndex];
+    lang = await modules.get_jwt(lang);
+    if (lang.userid == method)
+        return send.redirect(response, '/settings/user', 302);
+    const lang_jwt = modules.create_jwt(method, '1h');
+    if (!lang_jwt || lang_jwt == undefined || lang_jwt < 0)
+        return send.redirect(response, '/settings/user', 302);
+    modules.delete_cookie(response, 'lang');
+    modules.set_cookie(response, 'lang', lang_jwt);
+    await settings_db.update_settings_value('lang', method, user.userid);
+    return send.redirect(response, '/settings/user', 302);
 }
 
 async function verify_email(request, response) {
@@ -430,5 +591,6 @@ export {
     verify_email,
     verify_2fa,
     verify_custom,
-    settings_set_prefered_mfa
+    settings_set_prefered_mfa,
+    settings_prefered_language
 }

@@ -238,7 +238,8 @@ async function get_frontend_content(request) {
     });
 }
 
-function get_cookie(search, request) {	
+function get_cookie(search, request) {
+	console.log(request.headers.cookie);	
 	var [keys, values] = modules.get_cookies(request.headers.cookie);
 	const tokenIndex = keys?.find((key) => key === search);
 	if (!(keys && tokenIndex))
@@ -251,6 +252,7 @@ function get_cookie(search, request) {
 
 function check_login(request, response) {
 	const {keys, values, token} = get_cookie('token', request);
+	console.log(keys, values, token);
 	if (keys === null && values === null && token === null)
 		return -1;
 	try {
