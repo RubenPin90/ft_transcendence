@@ -25,7 +25,6 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
   console.log(data);
   switch (data.type) {
     case 'chat':
-      // broadcast to everyone except the sender
       wss.clients.forEach(client => {
         if (client !== ws && client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({

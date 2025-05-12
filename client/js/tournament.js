@@ -1,12 +1,11 @@
 // tournaments.ts
 // -------------------------------------------------------------------
-// Handles tournament lobby UI + wiring.
-// Now shows full player data in the lobby and lets the host kick players.
+// Handles tournament lobby UI
 // -------------------------------------------------------------------
 import { getMyId, setCurrentTLobby } from './state.js';
 import { hideAllPages } from './helpers.js';
-function send(msg) {
-    (socket === null || socket === void 0 ? void 0 : socket.readyState) === WebSocket.OPEN && socket.send(JSON.stringify(msg));
+function send(sock, msg) {
+    sock.readyState === WebSocket.OPEN && sock.send(JSON.stringify(msg));
 }
 /** Join a tournament via its 4‑letter invitation code. */
 export function joinByCode(socket, codeFromBtn) {
@@ -52,7 +51,7 @@ export function renderTournamentList(list, onJoin) {
 /* ------------------------------------------------------------------ *
  * Lobby rendering – called whenever the server pushes a new TLobbyState
  * ------------------------------------------------------------------ */
-export function renderTLobby(TLobby) {
+export function renderTLobby(TLobby, sock) {
     var _a;
     // cache latest lobby in global state
     setCurrentTLobby(TLobby);
@@ -60,6 +59,9 @@ export function renderTLobby(TLobby) {
     const myId = getMyId();
     const amHost = TLobby.hostId === myId;
     const players = Array.isArray(TLobby.players) ? TLobby.players : [];
+    if (amHost) {
+        console.log('testing amHost', TLobby.hostId, myId);
+    }
     /* ---------- show page & hide others -------------------------------- */
     hideAllPages();
     document.getElementById('t-lobby-page').style.display = 'block';
@@ -79,14 +81,14 @@ export function renderTLobby(TLobby) {
     }
     /* ----- attach kick events (host only) ------------------------------ */
     if (amHost) {
-        table.querySelectorAll('.kick-btn').forEach((btn) => {
+        table.querySelectorAll('.kick-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const pid = btn.dataset.id;
                 if (!pid)
                     return;
                 if (!confirm('Kick this player from the lobby?'))
                     return;
-                send({ type: 'kickPlayer', payload: { playerId: pid } });
+                send(sock, { type: 'kickPlayer', payload: { playerId: pid } });
             });
         });
     }
@@ -102,15 +104,14 @@ export function renderTLobby(TLobby) {
     const startBtn = document.getElementById('t-start-btn');
     startBtn.disabled = !allReady;
     if (amHost && !startBtn.onclick) {
-        startBtn.onclick = () => send({ type: 'startTournament' });
+        startBtn.onclick = () => send(sock, { type: 'startTournament' });
     }
-    // READY button (players)
     const readyBtn = document.getElementById('t-ready-btn');
     const myReadyDot = document.getElementById('t-my-ready-dot');
     const me = players.find((p) => p.id === myId);
     myReadyDot.className = (me === null || me === void 0 ? void 0 : me.ready) ? 'green-dot' : 'red-dot';
     if (!amHost && !readyBtn.onclick) {
-        readyBtn.onclick = () => send({ type: 'toggleReady' });
+        readyBtn.onclick = () => send(sock, { type: 'toggleReady', payload: { tournamentId: TLobby.id } });
     }
     /* ---------- headline status ---------------------------------------- */
     const status = document.getElementById('t-lobby-status');

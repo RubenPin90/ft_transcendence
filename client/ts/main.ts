@@ -50,13 +50,14 @@ function handleMessage(ev: MessageEvent) {
       break
     }
     case 'joinedTLobby': {
+      console.log('received data', data)
       const { playerId, TLobby } = data.payload
       setMyId(playerId)
       localStorage.setItem('playerId', playerId)
       if (TLobby) {
         setCurrentTLobby(TLobby)
         history.pushState({}, '', `/tournament/${TLobby.code}`)
-        renderTLobby(TLobby)
+        renderTLobby(TLobby, TLobbySocket)
       }
       break
     }
@@ -65,12 +66,12 @@ function handleMessage(ev: MessageEvent) {
       setMyId(TLobby.hostId)
       localStorage.setItem('playerId', TLobby.hostId)
       history.pushState({}, '', `/tournament/${TLobby.code}`)
-      renderTLobby(TLobby)
+      renderTLobby(TLobby, TLobbySocket)
       break
     }
     case 'tournamentUpdated': {
       console.log('received data12', data)
-      renderTLobby(data.payload as TLobbyState)
+      renderTLobby(data.payload as TLobbyState, TLobbySocket)
       break
     }
     case 'tournamentList': {

@@ -230,13 +230,12 @@ export class TournamentManager {
   }
 
   notifyPlayers(room) {
-    // зtodo btw
     console.log(`Room created: ${room.matchId} with players ${room.players.join(', ')}`);
   }
+  
   toggleReady(userId, tournamentId) {
     const tournament = this.tournaments[tournamentId];
 
-    // ── basic guards ────────────────────────────────────────────────────────────
     if (!tournament) {
       console.error(`toggleReady: tournament ${tournamentId} not found`);
       return;
@@ -248,13 +247,10 @@ export class TournamentManager {
       return;
     }
 
-    // ── flip flag ───────────────────────────────────────────────────────────────
     player.ready = !player.ready;
 
-    // ── let everyone in every lobby know the roster changed ────────────────────
     this.broadcastTournamentUpdate();
 
-    // ── auto‑start if every slot is filled & all are ready ─────────────────────
     const enoughPlayers = tournament.players.length >= 2 &&
                           tournament.players.length === this.requiredPlayers;
     const allReady      = tournament.players.every(p => p.ready);
@@ -262,7 +258,7 @@ export class TournamentManager {
     if (tournament.status === 'waiting' && enoughPlayers && allReady) {
       try {
         this.startTournament(tournamentId);
-        this.broadcastTournamentUpdate();   // push new “in_progress” status
+        this.broadcastTournamentUpdate();
       } catch (err) {
         console.error(`toggleReady→startTournament failed: ${err.message}`);
       }
@@ -282,7 +278,7 @@ export class TournamentManager {
     tournament.players = removeUser(tournament.players, userId);
   
     if (tournament.host === userId && tournament.players.length > 0) {
-      tournament.host = getPlayerId(tournament.players[0]);   // promote first
+      tournament.host = getPlayerId(tournament.players[0]);
     }
   
     if (tournament.players.length === 0) {

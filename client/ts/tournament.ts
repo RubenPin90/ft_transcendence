@@ -1,30 +1,16 @@
 // tournaments.ts
 // -------------------------------------------------------------------
-// Handles tournament lobby UI + wiring.
-// Now shows full player data in the lobby and lets the host kick players.
+// Handles tournament lobby UI
 // -------------------------------------------------------------------
 
 import type { TLobbyState } from './types.js';
 import { getMyId, setCurrentTLobby } from './state.js';
 import { hideAllPages } from './helpers.js';
-
-/* ------------------------------------------------------------------ *
- * Utility helpers
- * ------------------------------------------------------------------ */
-
-/**
- * Convenience wrapper around the global socket exposed by main.ts.
- * Feel free to replace with an explicit parameter if you prefer.
- */
 declare const socket: WebSocket | undefined;
 
-function send<T extends object>(msg: T) {
-  socket?.readyState === WebSocket.OPEN && socket.send(JSON.stringify(msg));
+function send<T extends object>(sock: WebSocket, msg: T) {
+  sock.readyState === WebSocket.OPEN && sock.send(JSON.stringify(msg));
 }
-
-/* ------------------------------------------------------------------ *
- * Public API (called by other modules)
- * ------------------------------------------------------------------ */
 
 export interface TourneySummary {
   id: string;
@@ -84,7 +70,7 @@ export function renderTournamentList(list: TourneySummary[], onJoin: (code: stri
  * Lobby rendering – called whenever the server pushes a new TLobbyState
  * ------------------------------------------------------------------ */
 
-export function renderTLobby(TLobby: TLobbyState) {
+export function renderTLobby(TLobby: TLobbyState, sock: WebSocket) {
   // cache latest lobby in global state
   setCurrentTLobby(TLobby);
 
@@ -92,6 +78,9 @@ export function renderTLobby(TLobby: TLobbyState) {
   const myId = getMyId();
   const amHost = TLobby.hostId === myId;
   const players = Array.isArray(TLobby.players) ? TLobby.players : [];
+  if (amHost) {
+    console.log('testing amHost', TLobby.hostId, myId);
+  }
 
   /* ---------- show page & hide others -------------------------------- */
   hideAllPages();
@@ -119,12 +108,12 @@ export function renderTLobby(TLobby: TLobbyState) {
 
   /* ----- attach kick events (host only) ------------------------------ */
   if (amHost) {
-    table.querySelectorAll<HTMLButtonElement>('.kick-btn').forEach((btn) => {
+    table.querySelectorAll<HTMLButtonElement>('.kick-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const pid = btn.dataset.id!;
         if (!pid) return;
         if (!confirm('Kick this player from the lobby?')) return;
-        send({ type: 'kickPlayer', payload: { playerId: pid } });
+        send(sock, { type: 'kickPlayer', payload: { playerId: pid } });
       });
     });
   }
@@ -142,17 +131,18 @@ export function renderTLobby(TLobby: TLobbyState) {
   // START button (host)
   const startBtn = document.getElementById('t-start-btn') as HTMLButtonElement;
   startBtn.disabled = !allReady;
+
   if (amHost && !startBtn.onclick) {
-    startBtn.onclick = () => send({ type: 'startTournament' });
+    startBtn.onclick = () => send(sock, { type: 'startTournament' });
   }
 
-  // READY button (players)
   const readyBtn = document.getElementById('t-ready-btn') as HTMLButtonElement;
   const myReadyDot = document.getElementById('t-my-ready-dot') as HTMLSpanElement;
   const me = players.find((p) => p.id === myId);
   myReadyDot.className = me?.ready ? 'green-dot' : 'red-dot';
+
   if (!amHost && !readyBtn.onclick) {
-    readyBtn.onclick = () => send({ type: 'toggleReady' });
+    readyBtn.onclick = () => send(sock, { type: 'toggleReady', payload: { tournamentId: TLobby.id } });
   }
 
   /* ---------- headline status ---------------------------------------- */
