@@ -9,7 +9,6 @@ import qrcode from 'qrcode';
 
 async function login(request, response) {
     const check_login = utils.check_login(request, response);
-    console.log(check_login);
     if (check_login === true)
         return true;
     if (request.method === "POST") {
@@ -499,7 +498,8 @@ async function settings_prefered_language(request, response) {
     if (!user_check || user_check === undefined || user_check == false)
         return false;
     const userIndex = keys.indexOf('token');
-    const user = modules.get_jwt(userIndex);
+    var user = values[userIndex];
+    user = modules.get_jwt(user);
     const lang_check = keys?.find((key) => key === 'lang');
     if (!lang_check || lang_check === undefined || lang_check == false)
         return false;
@@ -513,7 +513,9 @@ async function settings_prefered_language(request, response) {
         return send.redirect(response, '/settings/user', 302);
     modules.delete_cookie(response, 'lang');
     modules.set_cookie(response, 'lang', lang_jwt);
-    await settings_db.update_settings_value('lang', method, user.userid);
+    console.log(user);
+    const wow = await settings_db.update_settings_value('lang', method, user.userid);
+    console.log(wow);
     return send.redirect(response, '/settings/user', 302);
 }
 
