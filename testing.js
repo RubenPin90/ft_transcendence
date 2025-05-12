@@ -7,10 +7,10 @@ import * as translator from './translate.js'
 function break_html_into_pieces(content) {
     var html_obj = [];
     var html_content = content;
-    var check_beginning = html_content.slice(0, html_content.indexOf('\r\n'));
+    var check_beginning = html_content.slice(0, html_content.indexOf('\n'));
     check_beginning = check_beginning.trim();
     if (check_beginning == '<!DOCTYPE html>' || check_beginning.startsWith("<meta"))
-        html_content = html_content.slice(html_content.indexOf('\r\n') + 2);
+        html_content = html_content.slice(html_content.indexOf('\n') + 1);
     
     var origin = {'indent': 0, 'open_tag': '', 'text': html_content, 'closing_tag': ''};
     for (var fail_safe = 0; fail_safe < 999999999; fail_safe++) {
@@ -19,21 +19,39 @@ function break_html_into_pieces(content) {
             break;
         const pos = html_content.indexOf(returned.closing_tag);
         html_obj.push(returned);
-        if (pos == html_content.indexOf(origin.closing_tag) - 2 - origin.closing_tag.length)
+        if (pos == html_content.indexOf(origin.closing_tag) - 1 - origin.closing_tag.length)
             break;
-        html_content = html_content.slice(pos + returned.closing_tag.length + 2);
+        html_content = html_content.slice(pos + returned.closing_tag.length + 1);
         origin.text = html_content;
     }
     return html_obj;
 }
 
 function split_translate_combine(content) {
-    var parts = []
+    var origins = [];
+    var parts = [];
+    var pos = 0;
 
-
-    // const parts = break_html_into_pieces(data);
-    // // console.log(parts);
-
+    var returned = break_html_into_pieces(content);
+    for (var fail_safe = 0; fail_safe < 999999999; fail_safe++) {
+        var test = break_html_into_pieces(returned[0].text);
+        console.log(test.length);
+        if (test[pos] === undefined || test[pos].text.length < 1) {
+            parts.push(returned[pos].text);
+            pos++;
+            console.log();
+            console.log(pos);
+            console.log(returned.length);
+            if (pos == returned.length)
+                break;
+        } else {
+            returned = break_html_into_pieces(returned[0].text);
+        }
+        origins.push(returned);
+    }
+    console.log(parts);
+    // console.log(origins);
+        
     // // const first = break_html_into_pieces2(parts[1].text);
     // const first = break_html_into_pieces(parts[0].text);
     // // console.log(first);
@@ -46,7 +64,7 @@ function split_translate_combine(content) {
     // console.log(kkk[0]);
 }
 
-var data = await fs.readFile(`./templates/home.html`, 'utf-8');
+var data = await fs.readFile(`./templates/crap.html`, 'utf-8');
 split_translate_combine(data);
 
 // console.log(utils.split_DOM_elemets(html_content));
