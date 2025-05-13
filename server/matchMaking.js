@@ -9,7 +9,6 @@ import { GAME_MODES } from './matchManager.js';
 import { v4 as uuidv4 } from 'uuid'
 // import BotClient from './bot.js';
 
-const waiting1v1 = [];
 
 
 
@@ -112,11 +111,7 @@ export function joinQueue1v1(matchManager, userId, ws) {
 }
 
 
-export function dropFrom1v1Queue(userId) {
-  const idx = waiting1v1.findIndex(entry => entry.userId === userId);
-  if (idx !== -1) waiting1v1.splice(idx, 1);
-}
-
+export const dropFrom1v1Queue = (mgr, uid) => mgr.removeFromQueue(uid);
 
 export function _debug_getWaitingQueue() {
   return [...waiting1v1];

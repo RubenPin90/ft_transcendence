@@ -13,16 +13,18 @@ import {
   renderTLobby
 } from './tournament.js'
 
-import { setupMatchmakingHandlers } from './matchmaking.js'
 import { setupButtons } from './buttons.js'
 import type { TLobbyState } from './types.js'
 
 import { setMyId, setCurrentTLobby, getCurrentTLobby } from './state.js'
 import { hideAllPages } from './helpers.js'
+import { setupMatchmakingHandlers } from './matchmaking.js'
 
+let markQueued: (v: boolean) => void;
 let currentMode: string | null = null
 let tournaments: TourneySummary[] = []
 let myId: string = localStorage.getItem('playerId') ?? ''
+let queued = false;  
 
 
 const TLobbySocket = new WebSocket(
@@ -109,9 +111,10 @@ function route() {
     return
   }
   if (path === '/matchmaking') {
-    // show the waiting screen
-    document.getElementById('matchmaking-page')!.style.display = 'block'
-    return
+    enterMatchmaking();           // sends joinQueue
+    markQueued(true);             // <‑‑ tell matchmaking.ts we're queued
+    document.getElementById('matchmaking-page')!.style.display = 'block';
+    return;
   }
   if (path.startsWith('/game')) {
     document.getElementById('game-container')!.style.display = 'block'
@@ -151,11 +154,36 @@ function route() {
 document.addEventListener('DOMContentLoaded', () => {
   setupNavigationButtons()
   setupCodeJoinHandlers()
-  setupButtons(navigate, TLobbySocket, getCurrentTLobby)
-  setupMatchmakingHandlers(navigate, TLobbySocket)
+  setupButtons(navigate, TLobbySocket, getCurrentTLobby);
+  ({ markQueued } = setupMatchmakingHandlers(navigate, TLobbySocket)); // already closed )
   window.addEventListener('popstate', route)
   route()
 })
+
+function enterMatchmaking() {
+  // Helper that always sends joinQueue once the socket is open
+  console.log('entering matchmaking')
+  const sendJoin = () =>
+    TLobbySocket.send(JSON.stringify({
+      type: 'joinQueue',
+      payload: { mode: '1v1' }
+    }));
+
+  if (TLobbySocket.readyState === WebSocket.OPEN) {
+    sendJoin();
+  } else {
+    TLobbySocket.addEventListener('open', function once() {
+      TLobbySocket.removeEventListener('open', once);
+      sendJoin();
+    });
+  }
+}
+
+function leaveMatchmaking() {
+  if (TLobbySocket.readyState === WebSocket.OPEN) {
+    TLobbySocket.send(JSON.stringify({ type: 'leaveQueue' }));
+  }
+}
 
 function setupNavigationButtons() {
   const btnMap: Record<string, string> = {

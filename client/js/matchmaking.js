@@ -1,11 +1,8 @@
-// matchmaking.ts
+let queued = false;
 export function setupMatchmakingHandlers(navigate, socket) {
     const cancelBtn = document.getElementById('cancel-matchmaking-btn');
-    let queued = false;
-    // every time the route changes, check if we're on /matchmaking
+    // popstate still lets us queue again when user clicks browser Back
     window.addEventListener('popstate', tryQueue);
-    // also run once on initial load (hard‑refresh on /matchmaking)
-    tryQueue();
     function tryQueue() {
         if (window.location.pathname === '/matchmaking' && !queued) {
             socket.send(JSON.stringify({
@@ -21,4 +18,8 @@ export function setupMatchmakingHandlers(navigate, socket) {
         queued = false;
         navigate('/');
     });
+    // expose a way for main.ts to mark that we already queued
+    return {
+        markQueued: (v) => { queued = v; }
+    };
 }
