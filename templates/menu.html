@@ -9,20 +9,36 @@
   </div>
 
   <div id="profile-page" style="display: none;">
-    <!-- user profile info here -->
   </div>
 
   <div id="settings-page" style="display: none;">
-    <!-- settings form -->
   </div>
-  <!-- just after #settings-page -->
+  <div id="game-container" style="display: none;">
+    <h2 id="game-mode-title"></h2>
+    <canvas id="game" width="800" height="600"
+    style="background:#000; display:block; margin:0 auto"></canvas>
+  </div>
+  <div id="matchmaking-page" style="display: none; padding: 2rem; font-family: sans-serif; text-align: center;">
+    <h2>Searching for an opponent…</h2>
+    <div id="matchmaking-spinner"
+         style="margin: 1.5rem auto; width: 50px; height: 50px; background: #666; border-radius: 50%; animation: spin 1s linear infinite;">
+    </div>
+    <button id="cancel-matchmaking-btn" class="full-btn"
+            style="width: 200px; height: 60px; font-size: 1.2rem;">
+      Cancel Search
+    </button>
+  </div>
+
+  <style>
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
   <div id="tournament-page" style="display:none; padding:2rem; font-family:sans-serif">
     <h2 style="text-align:center; margin-bottom:2.5rem;">Tournaments</h2>
-        <!-- ░░ Create Tournament ░░ -->
 
   
     <div class="tournament-layout">
-      <!-- ░░ Left column ░░ -->
       <div style="display:flex; gap:1rem; margin-bottom:2rem;">
         <input id="t-code-input" class="full-btn"
                placeholder="Enter a Tournament code here"
@@ -37,10 +53,7 @@
            Create Tournament
         </button>
       </div>
-  
-      <!-- ░░ Right column ░░ -->
       <div class="t-right" id="tournament-list">
-        <!-- cards will be injected by JS -->
       </div>
     </div>
   </div>    
@@ -52,13 +65,11 @@
 
     <div id="t-lobby-table" class="TLobby-table"></div>
 
-    <!-- share code ------------------------------------------------------ -->
     <div class="code-box">
       <input id="t-share-code" readonly />
       <button id="t-copy-code-btn" title="Copy code to clipboard"></button>
     </div>
 
-    <!-- role blocks ----------------------------------------------------- -->
     <div id="host-controls">
       <button id="t-start-btn" class="full-btn" style="width:320px;height:80px;font-size:1.5rem;">
         START
@@ -71,7 +82,6 @@
       </button>
     </div>
 
-    <!-- footer ---------------------------------------------------------- -->
     <div style="display:flex;justify-content:space-between;">
       <button id="t-leave-btn" class="square-btn">Leave</button>
       <button id="t-custom-btn" class="square-btn">Customization</button>

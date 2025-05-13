@@ -13,6 +13,7 @@ import {
   renderTLobby
 } from './tournament.js'
 
+import { setupMatchmakingHandlers } from './matchmaking.js'
 import { setupButtons } from './buttons.js'
 import type { TLobbyState } from './types.js'
 
@@ -107,6 +108,11 @@ function route() {
     renderTournamentList(tournaments, joinByCodeWithSocket)
     return
   }
+  if (path === '/matchmaking') {
+    // show the waiting screen
+    document.getElementById('matchmaking-page')!.style.display = 'block'
+    return
+  }
   if (path.startsWith('/game')) {
     document.getElementById('game-container')!.style.display = 'block'
     const mode = path.split('/')[2] || 'pve'
@@ -146,6 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupNavigationButtons()
   setupCodeJoinHandlers()
   setupButtons(navigate, TLobbySocket, getCurrentTLobby)
+  setupMatchmakingHandlers(navigate, TLobbySocket)
   window.addEventListener('popstate', route)
   route()
 })
@@ -153,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupNavigationButtons() {
   const btnMap: Record<string, string> = {
     'sp-vs-pve-btn': '/game/pve',
-    'one-vs-one-btn': '/game/1v1',
+    'one-vs-one-btn': '/matchmaking',
     'Tournament-btn': '/tournament',
     'settings-btn': '/settings',
     'profile-btn': '/profile'

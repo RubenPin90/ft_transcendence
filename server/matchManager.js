@@ -42,6 +42,9 @@ export class matchManager {
     this.wss         = wss
     this.rooms       = new Map()
     this.userSockets = new Map()
+    this.queues = {
+      [matchManager.GAME_MODES.PVP]: []
+    }
   }
 
   registerSocket   (id, ws) { this.userSockets.set(id, ws) }
@@ -117,6 +120,20 @@ export class matchManager {
       this._mainLoop(roomId)
     }
     return room
+  }
+
+  removeFromQueue(userId) {
+    // filter out any entries matching this user
+    const q      = this.queues[matchManager.GAME_MODES.PVP];
+    const before = q.length;
+    this.queues[matchManager.GAME_MODES.PVP] =
+    q.filter(entry => entry.userId !== userId);
+    const after  = this.queues[matchManager.GAME_MODES.PVP].length;
+
+    console.log(
+      `Removed user ${userId} from queue. ` +
+      `Queue size: ${before} → ${after}`
+    );
   }
 
   leaveRoom (roomId, playerId) {

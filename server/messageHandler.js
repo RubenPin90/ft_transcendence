@@ -78,6 +78,12 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
       }
       break;
     }
+    case 'leaveQueue': {
+      console.log('Incoming leaveQueue request');
+      // remove this ws.userId from whatever queue you pushed them into
+      matchManager.removeFromQueue(ws.userId);
+      break;
+    }
     case 'movePaddle': {
         console.log('Incoming movePaddle request')
         console.log('data received:', data.payload)

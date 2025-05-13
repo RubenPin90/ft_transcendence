@@ -72,40 +72,41 @@ export function joinQueueTournament(userId, ws) {
 }
 
 export function joinQueue1v1(matchManager, userId, ws) {
-  if (waiting1v1.length > 0) {
-    const other = waiting1v1.shift();
+  const queue = matchManager.queues[GAME_MODES.PVP];
+
+  // already waiting?  do nothing
+  if (queue.some(e => e.userId === userId)) return null;
+
+  if (queue.length > 0) {
+    const rival = queue.shift();                 // first waiting player
 
     const room = matchManager.createRoom({
       mode:       GAME_MODES.PVP,
       maxPlayers: 2,
     });
 
-    matchManager.joinRoom(room.roomId, other.userId);
+    matchManager.joinRoom(room.roomId, rival.userId);
     matchManager.joinRoom(room.roomId, userId);
 
-    [ws, other.ws].forEach(s => {
+    [ws, rival.ws].forEach(s => {
       s.inGame        = true;
       s.currentGameId = room.roomId;
     });
 
-    const notify = (socket, selfId, opponentId) => socket.send(JSON.stringify({
-      type: 'matchFound',
-      payload: {
-        gameId:     room.roomId,
-        mode:       '1v1',
-        userId:     selfId,      // <-- tell each client who *they* are
-        opponentId,              //    …and who they’ll face
-      },
-    }));
-    
-    notify(ws,        userId,     other.userId);
-    notify(other.ws,  other.userId, userId);
-    
+    const notify = (sock, selfId, oppId) =>
+      sock.send(JSON.stringify({
+        type: 'matchFound',
+        payload: { gameId: room.roomId, mode: '1v1', userId: selfId, opponentId: oppId }
+      }));
+
+    notify(ws,        userId,     rival.userId);
+    notify(rival.ws,  rival.userId, userId);
 
     return room;
   }
 
-  waiting1v1.push({ userId, ws });
+  // no rival yet → enqueue and wait
+  queue.push({ userId, ws });
   console.log(`${userId} is now waiting for a 1‑v‑1 opponent…`);
   return null;
 }
