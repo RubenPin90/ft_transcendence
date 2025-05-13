@@ -11,6 +11,6 @@
     "rootDirs": ["./ts", "./scripts/login"],
     "removeComments": true,
   },
-  "include": ["./ts/**/*", "./scripts/**/*"],
+  "include": ["./ts/**/*", "./scripts/**/*", "./ts/**/*.ts"],
   "exclude": ["./js"]
 }
