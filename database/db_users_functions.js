@@ -78,8 +78,8 @@ async function create_users_value(role_id, username, self) {
 }
 
 // tested: all working
-async function update_users_value(search_value, value) {
-    const valid_values = ['id', 'role_id', 'username', 'self'];
+async function update_users_value(search_value, value, self) {
+    const valid_values = ['id', 'role_id', 'username', 'status', 'self'];
     if (!valid_values.includes(search_value))
         return null;
     const db = await open({

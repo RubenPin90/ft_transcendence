@@ -6,6 +6,7 @@ import * as settings_db from './database/db_settings_functions.js';
 import * as users_db from './database/db_users_functions.js';
 import * as mfa_db from './database/db_mfa_functions.js';
 import qrcode from 'qrcode';
+import { json } from 'stream/consumers';
 
 async function login(request, response) {
     const check_login = utils.check_login(request, response);
@@ -181,6 +182,9 @@ async function home(request, response) {
         if (decoded_lang.userid !== 'en') {
             data = data.replace("Welcome home user {{userid}}", await translator.find_translation("Welcome home user {{userid}}", decoded_lang.userid));
         }
+        // EC sets the user status to online
+        // await users_db.update_users_value('status', 1, decoded.userid);
+
         return data.replace("{{userid}}", replace_data.username);
     });
     if (!check || check === undefined || check == false)
@@ -253,11 +257,25 @@ async function mfa(request, response) {
             return true;
         const check_mfa = await mfa_db.get_mfa_value('self', userid);
         if (check_mfa === undefined || check_mfa === null)
-            return data.replace("{{mfa-button}}", '<button onclick="create_otc()">Create OTC</button> <br></br>\
-                <button onclick="create_custom_code()">Create custom 6 diggit code</button> <br></br>\
-                <button onclick="create_email()">Enable email authentication</button> <br></br>\
-                <button onclick="window.location.href = \'http://localhost:8080/settings\'">Back</button>\
-                <button onclick="logout()">Logout</button>');
+            return data.replace("{{mfa-button}}", '<div class="buttons mb-6" onclick="create_otc()"><button class="block w-full mb-6 mt-6" "><span class="button_text">Create OTC</span></button></div>\
+                <div class="buttons mb-6" onclick="create_custom_code()"><button class="block w-full mb-6 mt-6""><span class="button_text">Create custom 6 diggit code</span></button></div>\
+                <div class="buttons mb-6" onclick="create_email()"><button class="block w-full mb-6 mt-6""><span class="button_text">Enable email authentication</span></button></div>\
+                <a class="buttons mb-6" href="/settings/user_settings"><button class="block w-full mb-6 mt-6"><span class="button_text">Change User Information</span></button></a>\
+                <a class="buttons mb-6" onclick="change_game()"><button class="block w-full mb-6 mt-6"><span class="button_text">Change Game settings</span></button></a>\
+                <div class="flex mt-12 gap-4 w-full">\
+                <a class="flex-1">\
+                    <button onclick="window.location.href=\'http://localhost:8080/settings\'" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">\
+                        <span class="font-bold text-lg">Back</span>\
+                    </button>\
+                </a>\
+                <a class="flex-1">\
+                    <button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">\
+                        <span class="font-bold text-lg">Logout</span>\
+                    </button>\
+                    </a>\
+                </div>'
+            );
+        // <button onclick="window.location.reload()" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">\
         var replace_string = "";
         var select_number = 0;
         var select_menu = "";
@@ -267,23 +285,25 @@ async function mfa(request, response) {
             select_number++;
             select_menu += '<option value="otc">Otc</option>';
         } else
-            replace_string += '<button onclick="create_otc()">Create OTC</button> ';
-        replace_string += '<br></br>'
+            replace_string += '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="create_otc()"><span class="button_text">Create OTC</span></button></div> ';
+        // replace_string += '<br></br>'
         if (check_mfa.custom.length !== 0 && !check_mfa.custom.endsWith('_temp')) {
             replace_string += '<button onclick="create_custom_code()">Recreate custom 6 diggit code</button> ';
             replace_string += '<button onclick="remove_custom_code()">Remove custom 6 digit code</button> ';
             select_number++;
             select_menu += '<option value="custom">Custom</option>';
         } else
-            replace_string += '<button onclick="create_custom_code()">Create custom 6 diggit code</button> ';
-        replace_string += '<br></br>'
+            replace_string += '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="create_custom_code()"><span class="button_text">Create custom 6 diggit code</span></button></div> ';
+        // replace_string += '<br></br>'
         if (check_mfa.email.length !== 0 && !check_mfa.email.endsWith('_temp')) {
-            replace_string += '<button onclick="remove_email()">Disable email authentication</button> ';
+            console.log("WOW");
+            replace_string += '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="remove_email()"><span class="button_text">Disable email authentication</span></button></div> ';
             select_number++;
             select_menu += '<option value="email">Email</option>';
         } else
-            replace_string += '<button onclick="create_email()">Enable email authentication</button> ';
-        replace_string += '<br></br>'
+            replace_string += '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="create_email()"><span class="button_text">Enable email authentication</span></button></div> ';
+        // replace_string += '<br></br>'
+        replace_string += '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="change_info()"><span class="button_text">Change User Information</span></button></div> ';
         if (select_number < 2)
             return data.replace("{{mfa-button}}", `${replace_string} <button onclick="window.location.href = \'http://localhost:8080\'">Back</button> \
                 <button onclick="logout()">Logout</button>`);
@@ -584,6 +604,224 @@ async function verify_custom(request, response) {
     return true;
 }
 
+
+//was generated by chatgpt rewrite later for better use and understanding
+async function profile(request, response){
+
+    // if (request.method === 'POST'){
+    //     const replace_data = await utils.get_frontend_content(request);
+    //     if (!replace_data || replace_data === undefined){
+    //         return `Error: Invalid data`;
+    //     }
+
+    //     const updated = await users_db.update_users_value(decoded.userid, replace_data.username, replace_data.email);
+    //     if (!updated || updated === undefined) {
+    //         return `Error updating profile`;
+    //     }
+
+    //     response.writeHead(200, { 'Contend-Type': 'application/json' });
+    //     response.end(JSON.stringify({ Response: 'Profile updated sucessfully' }));
+    //     return true;
+    // }
+
+    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    if (!keys?.includes('token')){ 
+        return send.redirect(response, '/login', 302);
+    }
+
+    const tokenIndex = keys.findIndex((key) => key === 'token');
+    const token = values[tokenIndex];
+    let decoded;
+    try {
+        decoded = await modules.get_jwt(token);
+    } catch (err){
+        return send.redirect(response, '/login', 302);
+    }
+
+    const user = await users_db.get_users_value('self', decoded.userid);
+    if (!user || user === undefined){
+        return send.send_error_page('404.html', response, 404);
+    }
+
+    const settings = await settings_db.get_settings_value('self', decoded.userid);
+    if (!settings || settings === undefined){
+        return send.send_error_page('404.html', response, 404);
+    }
+
+    const status = await send.send_html('profile.html', response, 200, async(data) => {
+        data = data.replace('{{username}}', user.username);
+        data = data.replace('{{email}}', settings.email || 'Not provided');
+        data = data.replace('{{picture}}', settings.pfp || 'public/default_profile.svg');
+        data = data.replace('{{status}}', ()=> {if (user.status === 1) return 'online'; else return 'offline'});
+        return data;
+    });
+
+    if (!status || status === undefined || status < 0){
+        return `Error rendering profile page: ${status}`;
+    }
+    return true;
+}
+
+
+//was generated by chatgpt rewrite later for better use and understanding
+async function logout(request, response) {
+    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    if (!keys?.includes('token')) {
+        return send.redirect(response, '/login', 302);
+    }
+
+    const tokenIndex = keys.findIndex((key) => key === 'token');
+    const token = values[tokenIndex];
+    let decoded;
+    try {
+        decoded = await modules.get_jwt(token); // Decode the JWT to get the user ID
+    } catch (err) {
+        return send.redirect(response, '/login', 302);
+    }
+
+    const user = await users_db.get_users_value('self', decoded.userid);
+    if (!user || user === undefined){
+        return send.send_error_page('404.html', response, 404);
+    }
+
+    await users_db.update_users_value('status', 0, decoded.userid);
+
+    response.writeHead(200, { 'Content-Type': 'application/json' });
+    response.end(JSON.stringify({ message: 'Logged out successfully' }));
+}
+
+
+async function user_settings(request, response) {
+    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    if (!keys?.includes('token')) {
+        return send.redirect(response, '/login', 302);
+    }
+
+    const tokenIndex = keys.findIndex((key) => key === 'token');
+    const token = values[tokenIndex];
+    let decoded;
+    try {
+        decoded = await modules.get_jwt(token);
+    } catch (err) {
+        return send.redirect(response, '/login', 302);
+    }
+
+    const status = await send.send_html('user_settings.html', response, 200);
+    if (!status || status === undefined){
+        return `Error rendering user settings page: ${status}`;
+    }
+    return true;
+}
+
+
+
+
+
+// fix later dont know where to put it exactly
+async function update_settings(request, response) {
+    if (request.method !== 'POST'){
+        return send.send_error_page('404.html', response, 404);
+    }
+
+    const data = await utils.get_frontend_content(request);
+    if (!data || data === undefined){
+        response.writeHead(400, {'Content-Type': 'application/json'});
+        response.end(JSON.stringify({ message: 'Invalid data' }));
+        return ;
+    }
+    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    if (!keys?.includes('token')) {
+        return send.redirect(response, '/login', 302);
+    }
+
+    const { email, password } = data;
+
+
+    const tokenIndex = keys.findIndex((key) => key === 'token');
+    const token = values[tokenIndex];
+    let decoded;
+    try {
+        decoded = await modules.get_jwt(token);
+    }
+    catch (err) {
+        return send.redirect(response, '/login', 302);
+    }
+    const userid = decoded.userid;
+
+
+    try {
+        let result = await settings_db.update_settings_value('email', email, userid);
+        result = await settings_db.update_settings_value('password', password, userid);
+        if (result) {
+            response.writeHead(200, {'Content-Type': 'application/json'});
+            response.end(JSON.stringify({message: 'Successfully updated Username'}));
+        }
+        else{
+            response.writeHead(500, {'Content-Type': 'application/json'});
+            response.end(JSON.stringify({message: 'Failed to update Username'}));
+        }
+    }
+    catch (err){
+        console.log("Error regarding updating user: " + err);
+        response.writeHead(500, {'Content-Type': 'application/json'});
+        response.end(JSON.stringify({message: 'Server error'}));
+    }
+
+
+    // const settings_db = decoded.settings;
+    // console.log("DB: SETTINGS_EMAIL: " + settings_db.email);
+    // console.log("DB: SETTINGS_PW: " + settings_db.password);
+    return;
+}
+
+async function update_user(request, response) {
+    if (request.method !== 'POST') {
+        return send.send_error_page('404.html', response, 404);
+    }
+
+    const data = await utils.get_frontend_content(request);
+    if (data === null || data === undefined){
+        response.writeHead(400, { 'Content-Type ': 'application/json' });
+        response.end(JSON.stringify({ message: 'Invalid data' }));
+        return ;
+    }
+    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    if (!keys?.includes('token')) {
+        return send.redirect(response, '/login', 302);
+    }
+
+    const tokenIndex = keys.findIndex((key) => key === 'token');
+    const token = values[tokenIndex];
+    let decoded;
+    try {
+        decoded = await modules.get_jwt(token);
+    }
+    catch (err) {
+        return send.redirect(response, '/login', 302);
+    }
+
+    const userid = decoded.userid;
+
+    try {
+        const result = await users_db.update_users_value('username', data.usernameValue, userid);
+        if (result) {
+            response.writeHead(200, {'Content-Type': 'application/json'});
+            response.end(JSON.stringify({message: 'Successfully updated Username'}));
+        }
+        else{
+            response.writeHead(500, {'Content-Type': 'application/json'});
+            response.end(JSON.stringify({message: 'Failed to update Username'}));
+        }
+    }
+    catch (err){
+        console.log("Error regarding updating user: " + err);
+        response.writeHead(500, {'Content-Type': 'application/json'});
+        response.end(JSON.stringify({message: 'Server error'}));
+    }
+}
+
+
+
 export {
     login,
     register,
@@ -594,5 +832,9 @@ export {
     verify_2fa,
     verify_custom,
     settings_set_prefered_mfa,
-    settings_prefered_language
+    profile,
+    logout,
+    user_settings,
+    update_user,
+    update_settings
 }

@@ -13,6 +13,7 @@ async function create_db() {
         console.log("Fremdschlüssel aktiviert!");
 
         // Tabellen in richtiger Reihenfolge erstellen
+        // ROLES
         await db.run(`
         CREATE TABLE IF NOT EXISTS roles (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,6 +23,7 @@ async function create_db() {
             change_score INTEGER
         );`);
 
+        // SETTINGS
         await db.run(`
         CREATE TABLE IF NOT EXISTS settings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,16 +37,19 @@ async function create_db() {
             self TEXT UNIQUE NOT NULL
         );`);
 
+        // USERS
         await db.run(`
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             role_id INTEGER,
             username TEXT,
+            status INTEGER DEFAULT 1,
             self TEXT UNIQUE NOT NULL,
             FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
         );`);
 
+        // MFA
         await db.run(`
         CREATE TABLE IF NOT EXISTS mfa (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,6 +61,7 @@ async function create_db() {
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
         );`);
 
+        // CHATROOMS
         await db.run(`
         CREATE TABLE IF NOT EXISTS chatrooms (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,6 +70,7 @@ async function create_db() {
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
         );`);
 
+        // MESSAGES
         await db.run(`
         CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,6 +82,7 @@ async function create_db() {
             FOREIGN KEY (userid) REFERENCES users(id) ON DELETE CASCADE
         );`);
 
+        // SCOREBOARD
         await db.run(`
         CREATE TABLE IF NOT EXISTS scoreboard (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -84,6 +92,7 @@ async function create_db() {
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
         );`);
 
+        // SCORES
         await db.run(`
         CREATE TABLE IF NOT EXISTS scores (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -91,6 +100,41 @@ async function create_db() {
             self TEXT UNIQUE NOT NULL,
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
         );`);
+
+        // FRIENDS
+        /**
+         * user_id integer -> where the id of user is stored
+         * friend_id integer -> where the id of the friend user is stored
+         * foreign key will set userid and friend_id to the id of the user after searching for it in the user database
+         */
+        await db.run(`
+        CREATE TABLE IF NOT EXISTS friends (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            friend_id INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE(user_id, friend_id)
+        );`);
+
+
+        //FRIEND REQUEST
+        /**
+         * all the friends requests are stored in this database.
+         * status TEXT with pending will switch between 'pending' and after accepting 'accepted'
+         */
+        await db.run(`
+        CREATE TABLE IF NOT EXIST friend_request (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender_id INTEGER NOT NULL,
+            receiver_id INTEGER NOT NULL,
+            status TEXT DEFAULT 'pending',
+            created_at DATATIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (sender_id) REFERENCE users(id) ON DELETE CASCADE,
+            FOREIGN KEY (receiver_id) REFERENCE users(id) ON DELETE CASCADE
+        );`);
+
 
         console.log("Alle Tabellen erfolgreich erstellt oder existieren bereits.");
     } catch (err) {
