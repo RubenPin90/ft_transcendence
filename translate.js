@@ -73,7 +73,6 @@ async function find_translation(to_find, lang) {
 	return response.content[lang];
 }
 
-console.log(await find_translation("Login", 'de'));
 
 export {
 	translator,
