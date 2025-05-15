@@ -19,6 +19,7 @@ import type { TLobbyState } from './types.js'
 import { setMyId, setCurrentTLobby, getCurrentTLobby } from './state.js'
 import { hideAllPages } from './helpers.js'
 import { setupMatchmakingHandlers } from './matchmaking.js'
+import { getSocket } from './socket.js';
 
 let markQueued: (v: boolean) => void;
 let currentMode: string | null = null
@@ -27,12 +28,14 @@ let myId: string = localStorage.getItem('playerId') ?? ''
 let queued = false;  
 
 
-const TLobbySocket = new WebSocket(
-  `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/game`
-)
+const socket = getSocket();   
+
+socket.addEventListener('open', handleOpen);
+socket.addEventListener('error', handleError);
+socket.addEventListener('message', handleMessage);
 
 function joinByCodeWithSocket(code?: string) {
-  joinByCode(TLobbySocket, code)
+  joinByCode(getSocket(), code)
 }
 function handleOpen() {
   console.log('[WS] TLobby socket open')
@@ -60,7 +63,7 @@ function handleMessage(ev: MessageEvent) {
       if (TLobby) {
         setCurrentTLobby(TLobby)
         history.pushState({}, '', `/tournament/${TLobby.code}`)
-        renderTLobby(TLobby, TLobbySocket)
+        renderTLobby(TLobby, getSocket())
       }
       break
     }
@@ -69,12 +72,12 @@ function handleMessage(ev: MessageEvent) {
       setMyId(TLobby.hostId)
       localStorage.setItem('playerId', TLobby.hostId)
       history.pushState({}, '', `/tournament/${TLobby.code}`)
-      renderTLobby(TLobby, TLobbySocket)
+      renderTLobby(TLobby, getSocket())
       break
     }
     case 'tournamentUpdated': {
       console.log('received data12', data)
-      renderTLobby(data.payload as TLobbyState, TLobbySocket)
+      renderTLobby(data.payload as TLobbyState, getSocket())
       break
     }
     case 'tournamentList': {
@@ -84,12 +87,16 @@ function handleMessage(ev: MessageEvent) {
       }
       break
     }
+    default: {
+      console.warn('[WS] Unhandled message', data);   // 👈 leave this in permanently
+      break;
+    }
   }
 }
 
-TLobbySocket.addEventListener('open', handleOpen)
-TLobbySocket.addEventListener('error', handleError)
-TLobbySocket.addEventListener('message', handleMessage)
+getSocket().addEventListener('open', handleOpen)
+getSocket().addEventListener('error', handleError)
+getSocket().addEventListener('message', handleMessage)
 
 
 setOnGameEnd((winnerId: string) => {
@@ -154,34 +161,38 @@ function route() {
 document.addEventListener('DOMContentLoaded', () => {
   setupNavigationButtons()
   setupCodeJoinHandlers()
-  setupButtons(navigate, TLobbySocket, getCurrentTLobby);
-  ({ markQueued } = setupMatchmakingHandlers(navigate, TLobbySocket)); // already closed )
+  setupButtons(navigate, getSocket(), getCurrentTLobby);
+  ({ markQueued } = setupMatchmakingHandlers(navigate, getSocket())); // already closed )
   window.addEventListener('popstate', route)
   route()
 })
 
 function enterMatchmaking() {
+  if (queued) return;                // <- guard
+  queued = true;
   // Helper that always sends joinQueue once the socket is open
   console.log('entering matchmaking')
   const sendJoin = () =>
-    TLobbySocket.send(JSON.stringify({
+    getSocket().send(JSON.stringify({
       type: 'joinQueue',
       payload: { mode: '1v1' }
     }));
 
-  if (TLobbySocket.readyState === WebSocket.OPEN) {
+  if (getSocket().readyState === WebSocket.OPEN) {
     sendJoin();
   } else {
-    TLobbySocket.addEventListener('open', function once() {
-      TLobbySocket.removeEventListener('open', once);
+    getSocket().addEventListener('open', function once() {
+      getSocket().removeEventListener('open', once);
       sendJoin();
     });
   }
 }
 
 function leaveMatchmaking() {
-  if (TLobbySocket.readyState === WebSocket.OPEN) {
-    TLobbySocket.send(JSON.stringify({ type: 'leaveQueue' }));
+  if (!queued) return;
+  queued = false;
+  if (getSocket().readyState === WebSocket.OPEN) {
+    getSocket().send(JSON.stringify({ type: 'leaveQueue' }));
   }
 }
 

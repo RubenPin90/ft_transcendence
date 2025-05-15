@@ -1,3 +1,4 @@
+import { getSocket } from './socket.js';
 let socket = null;
 let ctx = null;
 let userId = null;
@@ -14,17 +15,19 @@ export function initGameCanvas() {
     ctx = canvas.getContext('2d');
 }
 export function startGame(mode) {
-    if (socket && socket.readyState === WebSocket.OPEN)
-        return;
-    socket = new WebSocket(`ws://${location.host}/ws/game`);
-    socket.addEventListener('open', () => {
-        socket.send(JSON.stringify({
-            type: 'joinQueue',
-            payload: { mode }
-        }));
-        setupInputHandlers();
-    });
-    socket.addEventListener('message', (ev) => {
+    socket = getSocket();
+    // Send joinQueue exactly once
+    const sendJoinQueue = () => socket.send(JSON.stringify({
+        type: 'joinQueue',
+        payload: { mode }
+    }));
+    if (socket.readyState === WebSocket.OPEN) {
+        sendJoinQueue();
+    }
+    else {
+        socket.addEventListener('open', sendJoinQueue, { once: true });
+    }
+    const handleMessage = (ev) => {
         const msg = JSON.parse(ev.data);
         if (msg.type === 'matchFound') {
             currentRoomId = msg.payload.gameId;
@@ -36,13 +39,16 @@ export function startGame(mode) {
             if (msg.state.status === 'finished') {
                 console.log('Game finished! Winner =', msg.state.winner);
                 stopGame();
-                if (onGameEndCallback && msg.state.winner) {
-                    onGameEndCallback(msg.state.winner);
-                }
+                onGameEndCallback === null || onGameEndCallback === void 0 ? void 0 : onGameEndCallback(msg.state.winner);
             }
         }
-    });
-    socket.addEventListener('close', () => console.log('Socket closed'));
+    };
+    socket.addEventListener('message', handleMessage);
+    // Make sure we clean up when the game page is left
+    function stopGame() {
+        socket === null || socket === void 0 ? void 0 : socket.removeEventListener('message', handleMessage);
+        // …whatever else stopGame used to do…
+    }
 }
 export function stopGame() {
     if (socket && socket.readyState === WebSocket.OPEN) {

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url'
 import fastifyStatic from '@fastify/static'
 import staticJs from '../plugins/static-js.js'
 import WebSocket, { WebSocketServer } from 'ws';
+import ejs from 'ejs'
 
 
 import { createGameAI } from './matchMaking.js'
@@ -79,11 +80,11 @@ setInterval(() => {
 
 // ---- MAIN WEBSOCKET CONNECTION HANDLER ----
 wss.on('connection', (ws, request) => {
-  console.log('🔌 New WebSocket connection');
-
+  
   ws.userId        = 'user_' + Math.floor(Math.random() * 10000);
   ws.inGame        = false;
   ws.currentGameId = null;
+  console.log('🔌 New WebSocket connection with userId:', ws.userId);
 
   MatchManager.userSockets.set(ws.userId, ws);
 

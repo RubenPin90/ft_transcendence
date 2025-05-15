@@ -1,3 +1,4 @@
+import { getSocket } from './socket.js';
 export type GameMode = 'pve' | '1v1' | 'Tournament'
 
 interface PlayerState {
@@ -34,41 +35,46 @@ export function initGameCanvas(): void {
 }
 
 export function startGame(mode: GameMode): void {
-  if (socket && socket.readyState === WebSocket.OPEN) return
+  socket = getSocket();
 
-  socket = new WebSocket(`ws://${location.host}/ws/game`)
+  // Send joinQueue exactly once
+  const sendJoinQueue = () => socket!.send(JSON.stringify({
+    type: 'joinQueue',
+    payload: { mode }
+  }));
 
-  socket.addEventListener('open', () => {
-    socket!.send(JSON.stringify({
-      type: 'joinQueue',
-      payload: { mode }
-    }))
-    setupInputHandlers()
-  })
+  if (socket.readyState === WebSocket.OPEN) {
+    sendJoinQueue();
+  } else {
+    socket.addEventListener('open', sendJoinQueue, { once: true });
+  }
 
-  socket.addEventListener('message', (ev) => {
+  const handleMessage = (ev: MessageEvent) => {
     const msg = JSON.parse(ev.data) as
       | { type: 'matchFound'; payload: { gameId: string; mode: string; userId: string } }
-      | { type: 'state'; state: GameState }
+      | { type: 'state'; state: GameState };
 
     if (msg.type === 'matchFound') {
-      currentRoomId = msg.payload.gameId
-      userId = msg.payload.userId
-      console.log(`Match ready: room=${currentRoomId}, user=${userId}`)
+      currentRoomId = msg.payload.gameId;
+      userId       = msg.payload.userId;
+      console.log(`Match ready: room=${currentRoomId}, user=${userId}`);
     } else if (msg.type === 'state') {
-      drawFrame(msg.state)
-
+      drawFrame(msg.state);
       if (msg.state.status === 'finished') {
-        console.log('Game finished! Winner =', msg.state.winner)
-        stopGame()
-        if (onGameEndCallback && msg.state.winner) {
-          onGameEndCallback(msg.state.winner)
-        }
+        console.log('Game finished! Winner =', msg.state.winner);
+        stopGame();
+        onGameEndCallback?.(msg.state.winner!);
       }
     }
-  })
+  };
 
-  socket.addEventListener('close', () => console.log('Socket closed'))
+  socket.addEventListener('message', handleMessage);
+
+  // Make sure we clean up when the game page is left
+  function stopGame() {
+    socket?.removeEventListener('message', handleMessage);
+    // …whatever else stopGame used to do…
+  }
 }
 
 export function stopGame(): void {
