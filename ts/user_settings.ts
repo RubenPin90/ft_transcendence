@@ -252,15 +252,31 @@ async function change_logindata(){
     const passValue = passField.value;
     const repValue = repField.value;
 
-    console.log(emailValue);
-    console.log(passValue);
-    console.log(repValue);
+    
+    const value_struct = {
+        email: emailValue,
+        password: passValue
+    }
+    
     if (passValue !== repValue){
         alert("password is not equal to repeat password");
         return;
     }
     if (parse_email(emailValue) === false){
         return;
+    }
+    
+    try{
+        const response = await fetch('/update_settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type' : 'application/json'
+            },
+            body: JSON.stringify(value_struct)
+        });
+    }
+    catch(err){
+        console.error('Error updating logindata: ', err);
     }
 }
 

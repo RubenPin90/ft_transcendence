@@ -111,9 +111,7 @@ async function home(request, response) {
     if (request.url === '/' && !keys?.includes('token'))
         return send.redirect(response, '/login', 302);
     if (request.url !== '/' && !request.url.includes('&state=')) {
-        console.log("First await");
         const data = await utils.encrypt_google(request);
-        console.log("First await");
         if (data < 0) {
             return `1_${data}`;
         }
@@ -123,9 +121,7 @@ async function home(request, response) {
 		send.redirect(response, '/', 302);
         return true;
     } else if (request.url !== '/') {
-        console.log("second await")
         const data = await utils.encrypt_github(request, response);
-        console.log("second await")
         if (data < 0) {
             return `2_${data}`;
         }
@@ -135,7 +131,6 @@ async function home(request, response) {
 		send.redirect(response, '/', 302);
         return true;
     }
-    console.log("third await");
     const check = await send.send_html('home.html', response, 200, async (data) => {
         const tokenIndex = keys?.find((key) => key === 'token');
         if (!tokenIndex || tokenIndex === undefined || tokenIndex == false)
@@ -144,15 +139,11 @@ async function home(request, response) {
         if (!token || token === undefined || token == false)
             return false;
         try {
-            console.log("fourth await");
             var decoded = await modules.get_jwt(token);
-            console.log("fourth await");
         } catch (err) {
             return false;
         }
-        console.log("fifth await");
         const replace_data = await users_db.get_users_value('self', decoded.userid);
-        console.log("fifth await");
         if (!replace_data)
             return false;
         // EC sets the user status to online
@@ -160,10 +151,8 @@ async function home(request, response) {
 
         return data.replace("{{userid}}", replace_data.username);
     });
-    console.log("sixth await");
     if (!check || check === undefined || check == false)
         return `3_${check}`
-    console.log("sixth await");
     return true;
 }
 
@@ -524,6 +513,9 @@ async function update_settings(request, response) {
         return send.redirect(response, '/login', 302);
     }
 
+    const { email, password } = data;
+
+
     const tokenIndex = keys.findIndex((key) => key === 'token');
     const token = values[tokenIndex];
     let decoded;
@@ -533,10 +525,31 @@ async function update_settings(request, response) {
     catch (err) {
         return send.redirect(response, '/login', 302);
     }
+    const userid = decoded.userid;
 
-    const settings_db = decoded.settings;
-    console.log("DB: SETTINGS_EMAIL: " + settings_db.email);
-    console.log("DB: SETTINGS_PW: " + settings_db.password);
+
+    try {
+        let result = await settings_db.update_settings_value('email', email, userid);
+        result = await settings_db.update_settings_value('password', password, userid);
+        if (result) {
+            response.writeHead(200, {'Content-Type': 'application/json'});
+            response.end(JSON.stringify({message: 'Successfully updated Username'}));
+        }
+        else{
+            response.writeHead(500, {'Content-Type': 'application/json'});
+            response.end(JSON.stringify({message: 'Failed to update Username'}));
+        }
+    }
+    catch (err){
+        console.log("Error regarding updating user: " + err);
+        response.writeHead(500, {'Content-Type': 'application/json'});
+        response.end(JSON.stringify({message: 'Server error'}));
+    }
+
+
+    // const settings_db = decoded.settings;
+    // console.log("DB: SETTINGS_EMAIL: " + settings_db.email);
+    // console.log("DB: SETTINGS_PW: " + settings_db.password);
     return;
 }
 

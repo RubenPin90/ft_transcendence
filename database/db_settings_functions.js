@@ -1,5 +1,6 @@
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
+import * as modules from '../modules.js';
 
 const max_loop_size = 1000000000;
 
@@ -119,6 +120,9 @@ async function update_settings_value(search_value, value, self) {
         driver: sqlite3.Database
     });
 
+    if (search_value === 'password'){
+        value = await modules.create_encrypted_password(value);
+    }
     try {
         const check = await db.get(`
             SELECT * FROM settings
