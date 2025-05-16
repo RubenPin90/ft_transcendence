@@ -197,7 +197,7 @@ function return_change_avatar() : string {
     </div>
     <div class="flex mt-12 gap-4 w-full">
         <a class="flex-1">
-            <button onclick="submit()" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
+            <button onclick="change_avatar()" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
                 <span class="font-bold text-lg">Submit</span>
             </button>
         </a>
@@ -209,8 +209,6 @@ function return_change_avatar() : string {
     </div>
     `;
 }
-
-
 
 async function change_user(){
     const usernameField = document.getElementById('username') as HTMLInputElement;
@@ -240,7 +238,6 @@ async function change_user(){
     };
 };
 
-
 //TODO parse email
 //TODO compare password and repeat password
 async function change_logindata(){
@@ -255,11 +252,12 @@ async function change_logindata(){
     
     const value_struct = {
         email: emailValue,
-        password: passValue
+        password: passValue,
+        avatar: null
     }
     
     if (passValue !== repValue){
-        alert("password is not equal to repeat password");
+        alert("password is not equal to repeat password"); //todo add css visual
         return;
     }
     if (parse_email(emailValue) === false){
@@ -280,7 +278,34 @@ async function change_logindata(){
     }
 }
 
+async function change_avatar(){
+    const avatar_field = document.getElementById("file_input") as HTMLInputElement;
 
+    if (!avatar_field){
+        return;
+    }
+    const avatar_value = avatar_field.value;
+
+    const value_struct = {
+        email: null,
+        password: null,
+        avatar: avatar_value
+    }
+
+    
+    try{
+        const response = await fetch('/update_settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type' : 'application/json'
+            },
+            body: JSON.stringify(value_struct)
+        });
+    }
+    catch(err){
+        console.error('Error updating logindata: ', err);
+    }
+}
 
 
 

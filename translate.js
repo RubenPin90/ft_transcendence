@@ -83,6 +83,7 @@ async function cycle_translations(text, lang) {
 	return text;
 }
 
+
 export {
 	translator,
 	translate_text_from_index,

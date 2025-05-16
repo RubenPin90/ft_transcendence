@@ -200,7 +200,7 @@ function return_change_avatar() {
     </div>
     <div class="flex mt-12 gap-4 w-full">
         <a class="flex-1">
-            <button onclick="submit()" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
+            <button onclick="change_avatar()" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
                 <span class="font-bold text-lg">Submit</span>
             </button>
         </a>
@@ -254,7 +254,8 @@ function change_logindata() {
         const repValue = repField.value;
         const value_struct = {
             email: emailValue,
-            password: passValue
+            password: passValue,
+            avatar: null
         };
         if (passValue !== repValue) {
             alert("password is not equal to repeat password");
@@ -263,6 +264,32 @@ function change_logindata() {
         if (parse_email(emailValue) === false) {
             return;
         }
+        try {
+            const response = yield fetch('/update_settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(value_struct)
+            });
+        }
+        catch (err) {
+            console.error('Error updating logindata: ', err);
+        }
+    });
+}
+function change_avatar() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const avatar_field = document.getElementById("file_input");
+        if (!avatar_field) {
+            return;
+        }
+        const avatar_value = avatar_field.value;
+        const value_struct = {
+            email: null,
+            password: null,
+            avatar: avatar_value
+        };
         try {
             const response = yield fetch('/update_settings', {
                 method: 'POST',
