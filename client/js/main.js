@@ -1,79 +1,72 @@
-var _a;
+// main.ts – UI + routing wired to the central message bus
 import { initGameCanvas, startGame, stopGame, setOnGameEnd } from './game.js';
 import { renderTournamentList, joinByCode, renderTLobby } from './tournament.js';
 import { setupButtons } from './buttons.js';
 import { setMyId, setCurrentTLobby, getCurrentTLobby } from './state.js';
 import { hideAllPages } from './helpers.js';
 import { setupMatchmakingHandlers } from './matchmaking.js';
-import { getSocket } from './socket.js';
+import { on, send, getSocket } from './socket.js';
+//------------------------------------------------------------------
+// ─── Real-time subscriptions via the message bus ──────────────────
+//------------------------------------------------------------------
+on('error', (msg) => {
+    const banner = document.getElementById('error-banner');
+    banner.textContent = msg.payload.message;
+    banner.style.display = 'block';
+});
+on('joinedTLobby', (msg) => {
+    const { playerId, TLobby } = msg.payload;
+    setMyId(playerId);
+    localStorage.setItem('playerId', playerId);
+    if (TLobby) {
+        setCurrentTLobby(TLobby);
+        history.pushState({}, '', `/tournament/${TLobby.code}`);
+        renderTLobby(TLobby, getSocket());
+    }
+});
+on('tournamentCreated', (msg) => {
+    const TLobby = msg.payload;
+    setMyId(TLobby.hostId);
+    localStorage.setItem('playerId', TLobby.hostId);
+    history.pushState({}, '', `/tournament/${TLobby.code}`);
+    renderTLobby(TLobby, getSocket());
+});
+on('tournamentUpdated', (msg) => {
+    renderTLobby(msg.payload, getSocket());
+});
+let tournaments = [];
+on('tournamentList', (msg) => {
+    tournaments = msg.payload;
+    if (window.location.pathname === '/tournament') {
+        renderTournamentList(tournaments, joinByCodeWithSocket);
+    }
+});
+on('matchFound', (msg) => {
+    const { gameId, mode, userId } = msg.payload;
+    // 1️⃣  we are no longer queued
+    queued = false;
+    markQueued === null || markQueued === void 0 ? void 0 : markQueued(false);
+    // 2️⃣  remember IDs for later (optional, but handy for reconnects)
+    localStorage.setItem('currentGameId', gameId);
+    localStorage.setItem('playerId', userId);
+    // 3️⃣  swap the UI – this triggers startGame() via route()
+    navigate(`/game/${mode === 'PVP' || mode === '1v1' ? '1v1' : 'pve'}`);
+});
+//------------------------------------------------------------------
+// ─── State for routing / UI ───────────────────────────────────────
+//------------------------------------------------------------------
 let markQueued;
 let currentMode = null;
-let tournaments = [];
-let myId = (_a = localStorage.getItem('playerId')) !== null && _a !== void 0 ? _a : '';
 let queued = false;
-const socket = getSocket();
-socket.addEventListener('open', handleOpen);
-socket.addEventListener('error', handleError);
-socket.addEventListener('message', handleMessage);
+//------------------------------------------------------------------
+// ─── Helpers that still need the raw socket ───────────────────────
+//------------------------------------------------------------------
 function joinByCodeWithSocket(code) {
     joinByCode(getSocket(), code);
 }
-function handleOpen() {
-    console.log('[WS] TLobby socket open');
-}
-function handleError(err) {
-    console.error('[WS] TLobby error', err);
-}
-function handleMessage(ev) {
-    const data = JSON.parse(ev.data);
-    switch (data.type) {
-        case 'error': {
-            const banner = document.getElementById('error-banner');
-            banner.textContent = data.payload.message;
-            banner.style.display = 'block';
-            break;
-        }
-        case 'joinedTLobby': {
-            console.log('received data', data);
-            const { playerId, TLobby } = data.payload;
-            setMyId(playerId);
-            localStorage.setItem('playerId', playerId);
-            if (TLobby) {
-                setCurrentTLobby(TLobby);
-                history.pushState({}, '', `/tournament/${TLobby.code}`);
-                renderTLobby(TLobby, getSocket());
-            }
-            break;
-        }
-        case 'tournamentCreated': {
-            const TLobby = data.payload;
-            setMyId(TLobby.hostId);
-            localStorage.setItem('playerId', TLobby.hostId);
-            history.pushState({}, '', `/tournament/${TLobby.code}`);
-            renderTLobby(TLobby, getSocket());
-            break;
-        }
-        case 'tournamentUpdated': {
-            console.log('received data12', data);
-            renderTLobby(data.payload, getSocket());
-            break;
-        }
-        case 'tournamentList': {
-            tournaments = data.payload;
-            if (window.location.pathname === '/tournament') {
-                renderTournamentList(tournaments, joinByCodeWithSocket);
-            }
-            break;
-        }
-        default: {
-            console.warn('[WS] Unhandled message', data); // 👈 leave this in permanently
-            break;
-        }
-    }
-}
-getSocket().addEventListener('open', handleOpen);
-getSocket().addEventListener('error', handleError);
-getSocket().addEventListener('message', handleMessage);
+//------------------------------------------------------------------
+// ─── Routing & Navigation ────────────────────────────────────────
+//------------------------------------------------------------------
 setOnGameEnd((winnerId) => {
     alert(`Player ${winnerId} wins!`);
 });
@@ -92,8 +85,8 @@ function route() {
         return;
     }
     if (path === '/matchmaking') {
-        enterMatchmaking(); // sends joinQueue
-        markQueued(true); // <‑‑ tell matchmaking.ts we're queued
+        enterMatchmaking(); // sends joinQueue via message bus
+        markQueued(true);
         document.getElementById('matchmaking-page').style.display = 'block';
         return;
     }
@@ -108,7 +101,7 @@ function route() {
         initGameCanvas();
         if (['pve', '1v1'].includes(mode))
             startGame(mode);
-        setOnGameEnd(winnerId => {
+        setOnGameEnd((winnerId) => {
             stopGame();
             alert(`Game over! Player ${winnerId} wins!`);
         });
@@ -124,50 +117,41 @@ function route() {
     };
     const pageId = mapping[path];
     if (pageId) {
-        console.log('showing page:', pageId, document.getElementById(pageId));
         document.getElementById(pageId).style.display = 'block';
     }
     else {
-        console.log('showing page:', pageId, document.getElementById(pageId));
         document.getElementById('main-menu').style.display = 'block';
     }
 }
+//------------------------------------------------------------------
+// ─── App bootstrapping ────────────────────────────────────────────
+//------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
     setupNavigationButtons();
     setupCodeJoinHandlers();
     setupButtons(navigate, getSocket(), getCurrentTLobby);
-    ({ markQueued } = setupMatchmakingHandlers(navigate, getSocket())); // already closed )
+    ({ markQueued } = setupMatchmakingHandlers(navigate, getSocket()));
     window.addEventListener('popstate', route);
     route();
 });
+//------------------------------------------------------------------
+// ─── Matchmaking helpers (now using message bus) ──────────────────
+//------------------------------------------------------------------
 function enterMatchmaking() {
     if (queued)
-        return; // <- guard
+        return;
     queued = true;
-    // Helper that always sends joinQueue once the socket is open
-    console.log('entering matchmaking');
-    const sendJoin = () => getSocket().send(JSON.stringify({
-        type: 'joinQueue',
-        payload: { mode: '1v1' }
-    }));
-    if (getSocket().readyState === WebSocket.OPEN) {
-        sendJoin();
-    }
-    else {
-        getSocket().addEventListener('open', function once() {
-            getSocket().removeEventListener('open', once);
-            sendJoin();
-        });
-    }
+    send({ type: 'joinQueue', payload: { mode: '1v1' } });
 }
 function leaveMatchmaking() {
     if (!queued)
         return;
     queued = false;
-    if (getSocket().readyState === WebSocket.OPEN) {
-        getSocket().send(JSON.stringify({ type: 'leaveQueue' }));
-    }
+    send({ type: 'leaveQueue' });
 }
+//------------------------------------------------------------------
+// ─── UI wiring helpers ────────────────────────────────────────────
+//------------------------------------------------------------------
 function setupNavigationButtons() {
     var _a;
     const btnMap = {
@@ -187,7 +171,7 @@ function setupCodeJoinHandlers() {
     if (!codeInput || !codeBtn)
         return;
     codeBtn.addEventListener('click', () => joinByCodeWithSocket());
-    codeInput.addEventListener('keydown', e => {
+    codeInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter')
             joinByCodeWithSocket();
     });

@@ -1,8 +1,9 @@
 import { getSocket } from './socket.js';
-let socket = null;
 let ctx = null;
 let userId = null;
 let currentRoomId = null;
+let ws = null; // Declare ws globally
+let inputHandlersRegistered = false;
 let onGameEndCallback = null;
 const keysPressed = {};
 export function setOnGameEnd(cb) {
@@ -15,17 +16,25 @@ export function initGameCanvas() {
     ctx = canvas.getContext('2d');
 }
 export function startGame(mode) {
-    socket = getSocket();
-    // Send joinQueue exactly once
-    const sendJoinQueue = () => socket.send(JSON.stringify({
-        type: 'joinQueue',
-        payload: { mode }
-    }));
-    if (socket.readyState === WebSocket.OPEN) {
-        sendJoinQueue();
+    ws = getSocket();
+    /* 🆕 ────────────────────────────────────────────── */
+    // If the IDs were stashed by main.ts, pull them back now
+    if (!currentRoomId) {
+        currentRoomId = localStorage.getItem('currentGameId');
     }
-    else {
-        socket.addEventListener('open', sendJoinQueue, { once: true });
+    if (!userId) {
+        userId = localStorage.getItem('playerId');
+    }
+    // Only queue up if this is PvE; for PvP we already did it on /matchmaking
+    if (mode === 'pve') {
+        const sendJoinQueue = () => ws.send(JSON.stringify({
+            type: 'joinQueue',
+            payload: { mode }
+        }));
+        if (ws.readyState === WebSocket.OPEN)
+            sendJoinQueue();
+        else
+            ws.addEventListener('open', sendJoinQueue, { once: true });
     }
     const handleMessage = (ev) => {
         const msg = JSON.parse(ev.data);
@@ -42,23 +51,26 @@ export function startGame(mode) {
                 onGameEndCallback === null || onGameEndCallback === void 0 ? void 0 : onGameEndCallback(msg.state.winner);
             }
         }
+        else {
+            console.error('Unknown message type:', msg);
+            return;
+        }
     };
-    socket.addEventListener('message', handleMessage);
-    // Make sure we clean up when the game page is left
-    function stopGame() {
-        socket === null || socket === void 0 ? void 0 : socket.removeEventListener('message', handleMessage);
-        // …whatever else stopGame used to do…
+    ws.addEventListener('message', handleMessage);
+    if (!inputHandlersRegistered) {
+        setupInputHandlers();
+        inputHandlersRegistered = true;
     }
 }
 export function stopGame() {
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
             type: 'leaveGame',
             payload: { roomId: currentRoomId, userId }
         }));
-        socket.close();
+        ws.close();
     }
-    socket = null;
+    ws = null;
 }
 function drawFrame(state) {
     if (!ctx)
@@ -95,7 +107,7 @@ function setupInputHandlers() {
     // send a single movePaddle packet
     function sendMovement(active) {
         const direction = getDirection();
-        socket === null || socket === void 0 ? void 0 : socket.send(JSON.stringify({
+        ws === null || ws === void 0 ? void 0 : ws.send(JSON.stringify({
             type: 'movePaddle',
             payload: {
                 roomId: currentRoomId,
