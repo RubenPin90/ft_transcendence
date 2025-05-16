@@ -73,6 +73,15 @@ async function find_translation(to_find, lang) {
 	return response.content[lang];
 }
 
+await translate_text("Create your 2FA custom");
+await translate_text("6 diggit code");
+await translate_text("Create your 2FA custom 6 diggit code");
+await translate_text("Verify your 2FA custom 6 diggit code");
+await translate_text("Verify");
+await translate_text("Input your Email code");
+await translate_text("Input your OTC code from your authenticator app");
+await translate_text("Input your Custom code");
+
 
 export {
 	translator,

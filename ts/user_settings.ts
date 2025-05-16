@@ -259,7 +259,7 @@ async function change_logindata(){
     }
     
     if (passValue !== repValue){
-        alert("password is not equal to repeat password");
+        alert("password is not equal to repeat password"); //todo add css visual
         return;
     }
     if (parse_email(emailValue) === false){
