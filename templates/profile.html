@@ -10,7 +10,12 @@
     <div class="min-h-screen flex items-center justify-center px-4 py-10">
         <div id="login-container" class="user_field">
             <main id="login-signup-field" class="w-full">
-                <div class="w-full flex bg-gray-400 py-4">
+                <div class="w-full flex bg-gray-400 py-4 relative">
+                    <button class="absolute top-10 right-10 border-black bg-yellow-600 p-1 rounded-lg" onclick="window.location.href='http://localhost:8080'">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                     <img src="{{picture}}" class="w-28 h-28 ml-10 my-auto" alt="Profile picture">
                     <div class="pl-12 flex flex-col">
                         <label for="username" class="label_profile">Username</label>
