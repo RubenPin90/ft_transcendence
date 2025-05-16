@@ -1,21 +1,16 @@
-var http = require('http');
-var urls = require('./urls');
-const db = require('./database/db_user_functions');
+import http from 'http';
+import * as urls from './urls.js';
 const PORT = 8080;
+import * as settings_db from './database/db_settings_functions.js';
 
 
 const server = http.createServer(async function (req, res) {
+	// console.log(await settings_db.get_settings());
 	try {
-		const {content, data} = await urls.urlpattern(req, res);
-		if (data !== null) {
-			res.writeHead(200, {'Content-Type': content});
-			res.write(data);
-			res.end();
-		}
+		// console.log(await settings_db.get_settings());
+		const returned = await urls.url_pattern(req, res);
 	} catch (exception) {
 		console.log(exception);
-		res.writeHead(500, {'Content-Type': 'text/plain'});
-		res.end('internal server error');
 	}
 });
 

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Transcendence</title>
+    <link rel="stylesheet" href="../css/output.css">
+    <!-- <script defer src="home/main.js"></script> -->
+</head>
+<body class="background" id="main_screen">
+    <div class="min-h-screen flex items-center justify-center px-4 py-10">
+        <div id="login-container" class="user_field">
+            <main id="login-signup-field" class="w-full">
+                <div class="w-full flex bg-gray-400 py-4 relative">
+                    <button class="absolute top-10 right-10 border-black bg-yellow-600 p-1 rounded-lg" onclick="window.location.href='http://localhost:8080'">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                    <img src="{{picture}}" class="w-28 h-28 ml-10 my-auto" alt="Profile picture">
+                    <div class="pl-12 flex flex-col">
+                        <label for="username" class="label_profile">Username</label>
+                        <span id="username">{{username}}</span>
+                        <label for="email" class="label_profile">email</label>
+                        <span id="email">{{email}}</span>
+                        <label for="win/loss" class="label_profile">win/loss</label>
+                        <span id="win_loss">{{win_loss}}</span>
+                        <label for="elo" class="label_profile">elo</label>
+                        <span id="elo">{{elo}}</span>
+                        <label for="status" class="label_profile">status</label>
+                        <span id="status">{{status}}</span>
+                    </div>
+                </div>
+                <div class="w-full flex bg-gray-400 mt-2 pb-8 py-4 pl-4 gap-2 overflow-x-auto">
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 border-green-600" src="../public/ecaliska.jpg">
+                        <span class="absolute text-center w-full">ecaliska</span><br>
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 border-green-600" src="public/gkonstan.jpg">
+                        <span class="absolute text-center w-full">gkonstan</span><br>
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="public/default_profile.svg">
+                        <span class="absolute text-center w-full">gkonstan</span><br>
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="public/default_profile.svg">
+                        <span class="absolute text-center w-full">gkonstan</span><br>
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="public/default_profile.svg">
+                        <span class="absolute text-center w-full">gkonstan</span><br>
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="public/default_profile.svg">
+                        <span class="absolute text-center w-full">gkonstan</span><br>
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="public/default_profile.svg">
+                        <span class="absolute text-center w-full">gkonstan</span><br>
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="public/default_profile.svg">
+                        <span class="absolute text-center w-full">gkonstan</span><br>
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="public/default_profile.svg">
+                        <span class="absolute text-center w-full">gkonstan</span><br>
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="public/default_profile.svg">
+                        <span class="absolute text-center w-full">gkonstan</span><br>
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="public/default_profile.svg">
+                        <span class="absolute text-center w-full">gkonstan</span><br>
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="public/default_profile.svg">
+                        <span class="absolute text-center w-full">gkonstan</span><br>
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="public/default_profile.svg">
+                        <span class="absolute text-center w-full">gkonstan</span><br>
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="public/default_profile.svg">
+                        <span class="absolute text-center w-full">gkonstan</span><br>
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="public/default_profile.svg">
+                        <span class="absolute text-center w-full">gkonstan</span><br>
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="public/default_profile.svg">
+                        <span class="absolute text-center w-full">gkonstan</span><br>
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="public/default_profile.svg">
+                        <span class="absolute text-center w-full">gkonstan</span><br>
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="public/default_profile.svg">
+                        <span class="absolute text-center w-full">gkonstan</span><br>
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="public/default_profile.svg">
+                        <span class="absolute text-center w-full">gkonstan</span><br>
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="public/default_profile.svg">
+                        <span class="absolute text-center w-full">gkonstan</span><br>
+                    </div>
+                    
+                    {{Friends}}
+                </div>
+                <div class="w-full max-h-60 overflow-y-auto flex h-full flex-col bg-gray-500 mt-2 py-4 pl-4">
+                    <h1>Match History</h1>
+                    <!-- <div class="overflow-y-auto max-h-60"> -->
+                        <table class="table-auto text-left">
+                            <thead>
+                                <tr class="">
+                                    <th>oponent</th>
+                                    <th>final score</th>
+                                <th>date</th>
+                                <th>elo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table_body">
+                            <tr class="bg-green-200">
+                                <td>ecaliska</td>
+                                <td>3/5</td>
+                                <td>29.04.2025</td>
+                                <td>+ 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            <tr class="bg-red-200">
+                                <td>gkonstan</td>
+                                <td>5/3</td>
+                                <td>29.04.2025</td>
+                                <td>- 12</td>
+                            </tr>
+                            
+                            <tr class=""> <!--if loss show red if win show green forefit is a win-->
+                                <td>{{enemy}}</td>
+                                <td>{{final_score}}</td>
+                                <td>{{date}}</td>
+                                <td>{{elo_win_lose}}</td>
+                            </tr>
+                            {{table_informations}}
+                        </tbody>
+                    </table>
+                <!-- </div> -->
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>
