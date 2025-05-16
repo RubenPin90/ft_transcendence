@@ -21,8 +21,8 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
     console.error('Invalid JSON message from client:', err);
     return;
   }
-  console.log(`Incoming from ${ws.userId}:`);
-  console.log(data);
+  // console.log(`Incoming from ${ws.userId}:`);
+  // console.log(data);
   switch (data.type) {
     case 'chat':
       wss.clients.forEach(client => {

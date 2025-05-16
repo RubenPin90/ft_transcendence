@@ -17,15 +17,12 @@ export function initGameCanvas() {
 }
 export function startGame(mode) {
     ws = getSocket();
-    /* 🆕 ────────────────────────────────────────────── */
-    // If the IDs were stashed by main.ts, pull them back now
     if (!currentRoomId) {
         currentRoomId = localStorage.getItem('currentGameId');
     }
     if (!userId) {
         userId = localStorage.getItem('playerId');
     }
-    // Only queue up if this is PvE; for PvP we already did it on /matchmaking
     if (mode === 'pve') {
         const sendJoinQueue = () => ws.send(JSON.stringify({
             type: 'joinQueue',
@@ -106,6 +103,8 @@ function setupInputHandlers() {
     }
     // send a single movePaddle packet
     function sendMovement(active) {
+        if (!currentRoomId || !userId)
+            return;
         const direction = getDirection();
         ws === null || ws === void 0 ? void 0 : ws.send(JSON.stringify({
             type: 'movePaddle',
@@ -121,9 +120,7 @@ function setupInputHandlers() {
         if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && userId && currentRoomId) {
             if (!keysPressed[e.key]) {
                 keysPressed[e.key] = true;
-                // send one immediately…
                 sendMovement(true);
-                // …then start a 60 fps loop if not already running
                 if (moveInterval == null) {
                     moveInterval = window.setInterval(() => {
                         sendMovement(true);

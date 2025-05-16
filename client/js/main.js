@@ -2,7 +2,7 @@
 import { initGameCanvas, startGame, stopGame, setOnGameEnd } from './game.js';
 import { renderTournamentList, joinByCode, renderTLobby } from './tournament.js';
 import { setupButtons } from './buttons.js';
-import { setMyId, setCurrentTLobby, getCurrentTLobby } from './state.js';
+import { setMyId, setCurrentTLobby } from './state.js';
 import { hideAllPages } from './helpers.js';
 import { setupMatchmakingHandlers } from './matchmaking.js';
 import { on, send, getSocket } from './socket.js';
@@ -43,13 +43,10 @@ on('tournamentList', (msg) => {
 });
 on('matchFound', (msg) => {
     const { gameId, mode, userId } = msg.payload;
-    // 1️⃣  we are no longer queued
     queued = false;
     markQueued === null || markQueued === void 0 ? void 0 : markQueued(false);
-    // 2️⃣  remember IDs for later (optional, but handy for reconnects)
     localStorage.setItem('currentGameId', gameId);
     localStorage.setItem('playerId', userId);
-    // 3️⃣  swap the UI – this triggers startGame() via route()
     navigate(`/game/${mode === 'PVP' || mode === '1v1' ? '1v1' : 'pve'}`);
 });
 //------------------------------------------------------------------
@@ -85,7 +82,7 @@ function route() {
         return;
     }
     if (path === '/matchmaking') {
-        enterMatchmaking(); // sends joinQueue via message bus
+        enterMatchmaking();
         markQueued(true);
         document.getElementById('matchmaking-page').style.display = 'block';
         return;
@@ -129,7 +126,7 @@ function route() {
 document.addEventListener('DOMContentLoaded', () => {
     setupNavigationButtons();
     setupCodeJoinHandlers();
-    setupButtons(navigate, getSocket(), getCurrentTLobby);
+    setupButtons(navigate, getSocket());
     ({ markQueued } = setupMatchmakingHandlers(navigate, getSocket()));
     window.addEventListener('popstate', route);
     route();

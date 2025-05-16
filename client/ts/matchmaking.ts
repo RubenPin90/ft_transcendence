@@ -6,7 +6,6 @@ export function setupMatchmakingHandlers(
 ) {
   const cancelBtn = document.getElementById('cancel-matchmaking-btn')!;
 
-  // popstate still lets us queue again when user clicks browser Back
   window.addEventListener('popstate', tryQueue);
 
   function tryQueue() {
@@ -25,7 +24,6 @@ export function setupMatchmakingHandlers(
     navigate('/');
   });
 
-  // expose a way for main.ts to mark that we already queued
   return {
     markQueued: (v: boolean) => { queued = v; }
   };
