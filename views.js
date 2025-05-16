@@ -734,7 +734,7 @@ async function update_settings(request, response) {
         return send.redirect(response, '/login', 302);
     }
 
-    const { email, password } = data;
+    const { email, password, avatar } = data;
 
 
     const tokenIndex = keys.findIndex((key) => key === 'token');
@@ -748,10 +748,18 @@ async function update_settings(request, response) {
     }
     const userid = decoded.userid;
 
+    let result;
 
     try {
-        let result = await settings_db.update_settings_value('email', email, userid);
-        result = await settings_db.update_settings_value('password', password, userid);
+        if (email){
+            result = await settings_db.update_settings_value('email', email, userid);
+        }
+        if (password){
+            result = await settings_db.update_settings_value('password', password, userid);
+        }
+        if (avatar){
+            result = await settings_db.update_settings_value('pfp', avatar, userid);
+        }
         if (result) {
             response.writeHead(200, {'Content-Type': 'application/json'});
             response.end(JSON.stringify({message: 'Successfully updated Username'}));
