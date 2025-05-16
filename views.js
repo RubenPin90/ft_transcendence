@@ -86,12 +86,13 @@ async function register(request, response) {
         const settings = await settings_db.create_settings_value(hashed, '', 0, replace_data.email, 'en', '', '');
         if (!settings || settings === undefined || settings < 0)
             return `2_${settings}`;
+        console.log("wow");
         const user = await users_db.create_users_value(0, replace_data.username, settings.self);
         if (!user || user === undefined || user < 0) {
             await settings_db.delete_settings_value(settings.self);
             return `3_${user}`;
         }
-        console.log(parsed.settings);
+        // console.log(parsed.settings);
         const token = modules.create_jwt(settings.self, '1h');
         if (!token || token === undefined || token < 0)
             return `4_${token}`;
@@ -125,10 +126,10 @@ async function home(request, response) {
         if (data < 0) {
             return `1_${data}`;
         }
-        const check_settings = await settings_db.get_settings_value('self', data);
+        const check_settings = await settings_db.get_settings_value('google', data);
         if (!check_settings || check_settings === undefined || check_settings < 0)
             return `2_${check_settings}`;
-        const token = modules.create_jwt(data, '1h');
+        const token = modules.create_jwt(check_settings.self, '1h');
         if (!token || token === undefined || token < 0)
             return `3_${token}`
         const lang = modules.create_jwt(check_settings.lang, '1h');
@@ -144,12 +145,16 @@ async function home(request, response) {
         if (data < 0) {
             return `5_${data}`;
         }
-        const token = modules.create_jwt(data, '1h');
+        const check_settings = await settings_db.get_settings_value('github', data);
+        console.log(check_settings);
+        if (!check_settings || check_settings === undefined || check_settings < 0)
+            return `6_${check_settings}`;
+        const token = modules.create_jwt(check_settings.self, '1h');
         if (!token || token === undefined || token < 0)
-            return `6_${token}`
+            return `7_${token}`
         const lang = modules.create_jwt(check_settings.lang, '1h');
         if (!lang || lang === undefined || lang < 0)
-            return `7_${lang}`;
+            return `8_${lang}`;
         
         modules.set_cookie(response, 'token', token, true, true, 'strict');
         modules.set_cookie(response, 'lang', lang, true, true, 'strict');
@@ -158,7 +163,6 @@ async function home(request, response) {
     }
     const check = await send.send_html('home.html', response, 200, async (data) => {
         var [keys, values] = modules.get_cookies(request.headers.cookie);
-        console.log(keys, values);
         const token_check = keys?.find((key) => key === 'token');
         if (!token_check || token_check === undefined || token_check == false)
             return false;
@@ -178,17 +182,15 @@ async function home(request, response) {
         const replace_data = await users_db.get_users_value('self', decoded_token.userid);
         if (!replace_data)
             return false;
-        console.log(decoded_lang);
         if (decoded_lang.userid !== 'en') {
-            data = data.replace("Welcome home user {{userid}}", await translator.find_translation("Welcome home user {{userid}}", decoded_lang.userid));
+            data = await translator.cycle_translations(data, decoded_lang.userid);
         }
         // EC sets the user status to online
         // await users_db.update_users_value('status', 1, decoded.userid);
-
         return data.replace("{{userid}}", replace_data.username);
     });
     if (!check || check === undefined || check == false)
-        return `6_${check}`
+        return `9_${check}`
     return true;
 }
 
@@ -648,7 +650,20 @@ async function profile(request, response){
         return send.send_error_page('404.html', response, 404);
     }
 
+
     const status = await send.send_html('profile.html', response, 200, async(data) => {
+        var [keys, values] = modules.get_cookies(request.headers.cookie);
+        const lang_check = keys?.find((key) => key === 'lang');
+        if (!lang_check || lang_check === undefined || lang_check == false)
+            return false;
+        const langIndex = keys.indexOf('lang');
+        const lang = values[langIndex];
+        try {
+            var decoded_lang = modules.get_jwt(lang);
+        } catch (err) {
+            return false;
+        }
+        data = await translator.cycle_translations(data, decoded_lang.userid);
         data = data.replace('{{username}}', user.username);
         data = data.replace('{{email}}', settings.email || 'Not provided');
         data = data.replace('{{picture}}', settings.pfp || 'public/default_profile.svg');

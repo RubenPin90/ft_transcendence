@@ -82,7 +82,8 @@ async function encrypt_github(request) {
 	if (!user_email || !userid || !pfp || !username || user_email === undefined || userid === undefined || username === undefined || pfp === undefined || user_email.length == 0 || userid.length == 0 || username.length == 0 || pfp.length == 0)
 		return -7;
 	username = username.replace(/\./g, '-');
-	const db_return = await settings_db.create_settings_value('', pfp, 0, user_email, 'en', userid, 0);
+	const db_return = await settings_db.create_settings_value('', pfp, 0, user_email, 'en', 0, userid);
+	console.log(db_return);
 	if (db_return.self === undefined || db_return.return === undefined)
 		return userid;
 	if (db_return < 0)
@@ -108,7 +109,7 @@ async function encrypt_google(request) {
 	const code = subbed_code.replace("%2F", "/");
 	if (!code || code === undefined || code == subbed_code)
 		return -3;
-
+	
 	try {
 		const header = {"Accept": 'application/json', "Content-Type": 'application/json'};
 		const body = JSON.stringify({'code': code, 'client_id': process.env.google_client_id, 'client_secret': client_secret, 'redirect_uri': 'http://localhost:8080', 'grant_type': 'authorization_code'})
@@ -129,7 +130,12 @@ async function encrypt_google(request) {
 		const username = create_username(email);
 		if (username < 0)
 			return -8;
+		console.log("---");
+		console.log(userid);
+		console.log(typeof(userid));
+		console.log("---");
 		const db_return = await settings_db.create_settings_value('', pfp, 0, email, 'en', userid, 0);
+		console.log(db_return);
 		if (db_return.self === undefined || db_return.return === undefined)
 			return userid;
 		if (db_return < 0)
@@ -140,6 +146,7 @@ async function encrypt_google(request) {
 		const check_username = await users_db.create_users_value(0, username, userid);
 		if (check_username < 0 || check_username === undefined)
 			return -11;
+		console.log("Here");
 		return userid;
 	} catch (error) {
 		console.error("Error during Google OAuth:", error);

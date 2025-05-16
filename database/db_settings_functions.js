@@ -55,26 +55,30 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
     
     
     try {
-        let check = await db.get(
-            `SELECT * FROM settings
-			WHERE google = ?
-			`, [google]
-		);
-        // console.log(check);
-        if (check && google.length !== 0)
-			return -1;
-        check = await db.get(
-            `SELECT * FROM settings
-			WHERE github = ?
-			`, [github]
-		);
-		if (check && github.length !== 0)
-			return -2;
-        var self;
-        if (google.length !== 0) {
-           self = google;
+        let check_github;
+        let check_google;
+        if (google !== 0) {
+            check_google = await db.get(
+                `SELECT * FROM settings
+                WHERE google = ?
+                `, [google]
+            );
+            if (check_google)
+                return -1;
         }
-        else if (github.length !== 0)
+        if (github !== 0) {
+            check_github = await db.get(
+                `SELECT * FROM settings
+                WHERE github = ?
+                `, [github]
+            );
+            if (check_github)
+                return -2;
+        }
+        var self;
+        if (google !== 0)
+            self = google;
+        else if (github !== 0)
             self = github;
         else {
             var random_self = Math.floor(Math.random() * 1000000000);
@@ -84,10 +88,10 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
                 check = await db.get(`
                     SELECT * from settings
                     WHERE self = ${random_self}`);
-                if (!check)
-                    break;
-                it++;
-                random_self = Math.floor(Math.random() * 1000000000);
+                    if (!check)
+                        break;
+                    it++;
+                    random_self = Math.floor(Math.random() * 1000000000);
             }
             if (it == max_loop_size) {
                 console.log(`Error in create_settings_value: ${err}`);
@@ -96,17 +100,36 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
             console.log(`Random: ${random_self}`);
             self = random_self;
         }
+        var check_email = await db.get(
+            `SELECT * FROM settings
+            WHERE email = ?
+            `, [email]
+        );
+        if (check_email) {
+            const id = await get_settings_value('email', email);
+            const user_id = id.self;
+            if (id.github == '0') {
+                await update_settings_value('github', github, user_id);
+            }
+            if (id.google == '0') {
+                console.log(await update_settings_value('google', google, user_id));
+            }
+            const ret = await get_settings_value('email', email);
+            console.log("Here");
+            self = ret.self;
+            return {"return": row, "self": ret.self};
+        }
         var row = await db.run(
 			`INSERT INTO settings (password, pfp, mfa, email, lang, google, github, self) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 			[password, pfp, mfa, email, lang, google, github, self]
 		);
 		console.log(`New user created with ID: ${row.lastID}`);
+        return {"return": row, "self": self};
     } catch (err) {
         console.log(`Error in create_settings_value: ${err}`);
         return null;
     } finally {
         await db.close();
-        return {"return": row, "self": self};
     }
 }
 

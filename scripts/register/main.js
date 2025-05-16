@@ -111,6 +111,7 @@ async function create_account() {
             window.location.reload();
         else{
             alert("error line 113");
+            console.log(data);
             return; // show error on screen
         }
     } catch (err) {

@@ -14,7 +14,9 @@ async function url_pattern(request, response) {
         case request.url === '/':
             return await views.home(request, response);
         case request.url.includes('?code='):
-            return await views.home(request, response);
+            const data = await views.home(request, response);
+            // console.log(data);
+            return data;
         case request.url === '/login':
             return await views.login(request, response);
         case request.url === '/register':

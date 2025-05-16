@@ -7,7 +7,7 @@ import * as settings_db from './database/db_settings_functions.js';
 const server = http.createServer(async function (req, res) {
 	// console.log(await settings_db.get_settings());
 	try {
-		// console.log(req.url);
+		// console.log(await settings_db.get_settings());
 		const returned = await urls.url_pattern(req, res);
 	} catch (exception) {
 		console.log(exception);

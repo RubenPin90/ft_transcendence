@@ -73,10 +73,20 @@ async function find_translation(to_find, lang) {
 	return response.content[lang];
 }
 
+async function cycle_translations(text, lang) {
+	const data = await fs.readFile("./translations.json", 'utf8');
+	const json_data = await JSON.parse(data);
+	const json_keys = Object.keys(json_data);
+	for (var index = 0; index < json_keys.length; index++) {
+		text = text.replace(json_keys[index], await find_translation(json_keys[index], lang));
+	}
+	return text;
+}
 
 export {
 	translator,
 	translate_text_from_index,
 	translate_text,
-	find_translation
+	find_translation,
+	cycle_translations
 }
