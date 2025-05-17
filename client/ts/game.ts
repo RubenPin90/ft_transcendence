@@ -132,14 +132,12 @@ function drawFrame(state: GameState): void {
 function setupInputHandlers(): void {
   let moveInterval: number | null = null;
 
-  // figure out current direction from keysPressed
   function getDirection(): 'up' | 'down' | null {
     if (keysPressed['ArrowUp'] && !keysPressed['ArrowDown']) return 'up';
     if (keysPressed['ArrowDown'] && !keysPressed['ArrowUp']) return 'down';
     return null;
   }
 
-  // send a single movePaddle packet
   function sendMovement(active: boolean): void {
     if (!currentRoomId || !userId) return;
     const direction = getDirection();
@@ -175,11 +173,10 @@ function setupInputHandlers(): void {
         keysPressed[e.key] = false;
       }
 
-      // if neither arrow is down, stop the loop
       if (!keysPressed['ArrowUp'] && !keysPressed['ArrowDown'] && moveInterval != null) {
         clearInterval(moveInterval);
         moveInterval = null;
-        sendMovement(false);   // tell server we’ve stopped
+        sendMovement(false);
       }
       e.preventDefault();
     }

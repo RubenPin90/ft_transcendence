@@ -15,7 +15,7 @@ import {
   renderTLobby
 } from './tournament.js';
 
-import { setupButtons } from './buttons.js';
+import { setupButtonsDelegated } from './buttons.js';
 import type { TLobbyState } from './types.js';
 
 import { setMyId, setCurrentTLobby, getCurrentTLobby } from './state.js';
@@ -59,6 +59,7 @@ on('tournamentUpdated', (msg) => {
 let tournaments: TourneySummary[] = [];
 
 on('tournamentList', (msg) => {
+  // console.log('tournamentList', msg.payload);
   tournaments = msg.payload as TourneySummary[];
   if (window.location.pathname === '/tournament') {
     renderTournamentList(tournaments, joinByCodeWithSocket);
@@ -168,7 +169,7 @@ function route() {
 document.addEventListener('DOMContentLoaded', () => {
   setupNavigationButtons();
   setupCodeJoinHandlers();
-  setupButtons(navigate, getSocket());
+  setupButtonsDelegated(navigate, getSocket());
   ({ markQueued } = setupMatchmakingHandlers(navigate, getSocket()));
 
   window.addEventListener('popstate', route);

@@ -93,7 +93,6 @@ function drawFrame(state) {
 }
 function setupInputHandlers() {
     let moveInterval = null;
-    // figure out current direction from keysPressed
     function getDirection() {
         if (keysPressed['ArrowUp'] && !keysPressed['ArrowDown'])
             return 'up';
@@ -101,7 +100,6 @@ function setupInputHandlers() {
             return 'down';
         return null;
     }
-    // send a single movePaddle packet
     function sendMovement(active) {
         if (!currentRoomId || !userId)
             return;
@@ -135,11 +133,10 @@ function setupInputHandlers() {
             if (keysPressed[e.key]) {
                 keysPressed[e.key] = false;
             }
-            // if neither arrow is down, stop the loop
             if (!keysPressed['ArrowUp'] && !keysPressed['ArrowDown'] && moveInterval != null) {
                 clearInterval(moveInterval);
                 moveInterval = null;
-                sendMovement(false); // tell server we’ve stopped
+                sendMovement(false);
             }
             e.preventDefault();
         }

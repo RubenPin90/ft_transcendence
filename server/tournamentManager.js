@@ -207,27 +207,34 @@ export class TournamentManager {
   broadcastTournamentUpdate() {
     if (!this.wss) return;
   
-    const message = JSON.stringify({
-      type: 'tournamentList',
-      payload: Object.values(this.tournaments).map(t => ({
-        id:       t.id,
-        code:     t.code,
-        name:     t.name ?? `Tournament ${t.code}`,
-        slots:    `${t.players.length}/${this.MAX_PLAYERS}`,
-        joinable: t.players.length < this.MAX_PLAYERS && t.status === 'waiting',
-        hostId:   t.host,
-        players:  t.players,
-        status:   t.status,
-        createdAt:t.createdAt,
+    const list = Object.values(this.tournaments).map(t => ({
+      id:       t.id,
+      code:     t.code,
+      name:     t.name ?? `Tournament ${t.code}`,
+      slots: this.MAX_PLAYERS,                // number – what the code expects
+      current: t.players.length,              // number – how many are inside
+      displaySlots: `${t.players.length}/${this.MAX_PLAYERS}`, // for your list UI only
+      joinable: t.players.length < this.MAX_PLAYERS && t.status === 'waiting',
+      hostId:   t.host,
+      players:  t.players.map(p => ({
+        id:    getPlayerId(p),
+        name:  p.name,
+        ready: p.ready
       })),
+      status:   t.status,
+      createdAt:t.createdAt,
+    }));
+  
+    const message = JSON.stringify({
+      type:    'tournamentList',
+      payload: list,
     });
   
     for (const client of this.wss.clients) {
-      if (client.readyState === 1) {
-        client.send(message);
-      }
+      if (client.readyState === 1) client.send(message);
     }
   }
+  
 
   notifyPlayers(room) {
     console.log(`Room created: ${room.matchId} with players ${room.players.join(', ')}`);

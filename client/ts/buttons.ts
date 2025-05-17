@@ -3,56 +3,64 @@ import { setCurrentTLobby, getCurrentTLobby, getMyId } from './state.js';
 
 let buttonsInitialized = false;
 
-export function setupButtons(
+export function setupButtonsDelegated(
   navigate: (path: string) => void,
   TLobbySocket: WebSocket
 ) {
-  // Prevent double initialization
-  if (buttonsInitialized) return;
+
+  if (buttonsInitialized) return;           // ← …but never used it
   buttonsInitialized = true;
 
-  // Back button
-  document.getElementById('t-back-btn')?.addEventListener('click', () => navigate('/'));
 
-  // Create Tournament
-  document.getElementById('t-create-btn')?.addEventListener('click', () => {
-    TLobbySocket.send(JSON.stringify({ type: 'createTournament' }));
-  });
+  const lobbyPage = document.getElementById('t-lobby-page');
+  if (!lobbyPage) return;
 
-  // Copy Code
-  document.getElementById('t-copy-code-btn')?.addEventListener('click', () => {
-    navigator.clipboard.writeText('#' + (getCurrentTLobby()?.code ?? ''));
-  });
-
-  // Leave Tournament
-  document.getElementById('t-leave-btn')?.addEventListener('click', () => {
-    const TLobby = getCurrentTLobby();
-    TLobbySocket.send(
-      JSON.stringify({ type: 'leaveTournament', payload: TLobby ? { tournamentId: TLobby.id } : {} })
-    );
-    if (TLobby) setCurrentTLobby(null);
-    navigate('/tournament');
-  });
-
-  // Toggle Ready Button (single listener)
-  document.getElementById('t-ready-btn')?.addEventListener('click', () => {
+  lobbyPage.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement;
     const TLobby = getCurrentTLobby();
     const userId = getMyId();
-    TLobbySocket.send(
-      JSON.stringify({
-        type: 'toggleReady',
-        payload: TLobby ? { tournamentId: TLobby.id, userId } : { userId }
-      })
-    );
-  });
 
-  // Start Tournament
-  document.getElementById('t-start-btn')?.addEventListener('click', () => {
-    const TLobby = getCurrentTLobby();
-    if (TLobby) {
-      TLobbySocket.send(
-        JSON.stringify({ type: 'startTournament', payload: { id: TLobby.id } })
-      );
+    switch (target.id) {
+      case 't-back-btn':
+        navigate('/');
+        break;
+
+      case 't-create-btn':
+        TLobbySocket.send(JSON.stringify({ type: 'createTournament' }));
+        break;
+
+      case 't-copy-code-btn':
+        navigator.clipboard.writeText('#' + (TLobby?.code ?? ''));
+        break;
+
+      case 't-leave-btn':
+        TLobbySocket.send(JSON.stringify({
+          type: 'leaveTournament',
+          payload: TLobby ? { tournamentId: TLobby.id } : {}
+        }));
+        if (TLobby) setCurrentTLobby(null);
+        navigate('/tournament');
+        break;
+
+      case 't-ready-btn':
+        TLobbySocket.send(JSON.stringify({
+          type: 'toggleReady',
+          payload: TLobby ? { tournamentId: TLobby.id, userId } : { userId }
+        }));
+        break;
+
+      case 't-start-btn':
+        if (TLobby) {
+          TLobbySocket.send(JSON.stringify({
+            type: 'startTournament',
+            payload: { id: TLobby.id }
+          }));
+        }
+        break;
+      default: 
+        console.log('Unknown button clicked:', target.id);
+        break;
     }
+
   });
 }

@@ -1,7 +1,7 @@
 // main.ts – UI + routing wired to the central message bus
 import { initGameCanvas, startGame, stopGame, setOnGameEnd } from './game.js';
 import { renderTournamentList, joinByCode, renderTLobby } from './tournament.js';
-import { setupButtons } from './buttons.js';
+import { setupButtonsDelegated } from './buttons.js';
 import { setMyId, setCurrentTLobby } from './state.js';
 import { hideAllPages } from './helpers.js';
 import { setupMatchmakingHandlers } from './matchmaking.js';
@@ -36,6 +36,7 @@ on('tournamentUpdated', (msg) => {
 });
 let tournaments = [];
 on('tournamentList', (msg) => {
+    // console.log('tournamentList', msg.payload);
     tournaments = msg.payload;
     if (window.location.pathname === '/tournament') {
         renderTournamentList(tournaments, joinByCodeWithSocket);
@@ -126,7 +127,7 @@ function route() {
 document.addEventListener('DOMContentLoaded', () => {
     setupNavigationButtons();
     setupCodeJoinHandlers();
-    setupButtons(navigate, getSocket());
+    setupButtonsDelegated(navigate, getSocket());
     ({ markQueued } = setupMatchmakingHandlers(navigate, getSocket()));
     window.addEventListener('popstate', route);
     route();

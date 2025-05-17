@@ -70,86 +70,111 @@ export function renderTournamentList(list: TourneySummary[], onJoin: (code: stri
  * Lobby rendering – called whenever the server pushes a new TLobbyState
  * ------------------------------------------------------------------ */
 
+/**
+ * Re-render the tournament lobby page.
+ * Expects `TLobby.slots` to be a **number**, but will gracefully fall back
+ * to `players.length` if it isn’t.
+ */
 export function renderTLobby(TLobby: TLobbyState, sock: WebSocket) {
-  // cache latest lobby in global state
+  /* ---------- cache & locals --------------------------------------- */
   setCurrentTLobby(TLobby);
 
-  // handy locals
-  const myId = getMyId();
+  const myId   = getMyId();
   const amHost = TLobby.hostId === myId;
   const players = Array.isArray(TLobby.players) ? TLobby.players : [];
-  if (amHost) {
-    console.log('testing amHost', TLobby.hostId, myId);
-  }
 
-  /* ---------- show page & hide others -------------------------------- */
+  /* ---------- UI helpers ------------------------------------------- */
+  const totalSlots =
+    typeof TLobby.slots === 'number'
+      ? TLobby.slots
+      : Number.parseInt(String(TLobby.slots), 10) || players.length;
+
+  const displayName = (p: typeof players[number]) => {
+    const youMark  = p.id === myId      ? ' (you)' : '';
+    const hostMark = p.id === TLobby.hostId ? ' ⭐️'   : '';
+    const shortId  = p.id.slice(0, 4);            // e.g. “a1b2”
+    return `${p.name}${youMark}${hostMark}  [${shortId}]`;
+  };
+
+  /* ---------- page switching --------------------------------------- */
   hideAllPages();
   document.getElementById('t-lobby-page')!.style.display = 'block';
 
-  /* ---------- player table ------------------------------------------- */
+  /* ---------- player table ----------------------------------------- */
   const table = document.getElementById('t-lobby-table')!;
   table.innerHTML = '';
 
-  // Build one row per slot (filled or empty)
-  for (let i = 0; i < TLobby.slots; i++) {
-    const p = players[i];
+  const frag = document.createDocumentFragment();
+
+  for (let i = 0; i < totalSlots; i++) {
+    const p        = players[i];
     const isFilled = Boolean(p);
 
-    // prettier‑ignore
-    table.insertAdjacentHTML(
-      'beforeend',
-      `<div class="TLobby-row">
-         <span class="t-name">${isFilled ? p!.name : '— empty —'}</span>
-         <span class="t-status ${isFilled ? (p!.ready ? 'green-dot' : 'red-dot') : ''}"></span>
-         ${amHost && isFilled && p!.id !== myId ? `<button class="kick-btn" data-id="${p!.id}">Kick</button>` : ''}
-       </div>`,
-    );
+    const row = document.createElement('div');
+    row.className = 'TLobby-row';
+
+    /* name + id */
+    const nameSpan       = document.createElement('span');
+    nameSpan.className   = 't-name';
+    nameSpan.textContent = isFilled ? displayName(p!) : '— empty —';
+    row.appendChild(nameSpan);
+
+    /* ready indicator */
+    const dot = document.createElement('span');
+    dot.className = 't-status';
+    if (isFilled) dot.classList.add(p!.ready ? 'green-dot' : 'red-dot');
+    row.appendChild(dot);
+
+    /* kick button (host only, not yourself) */
+    if (amHost && isFilled && p!.id !== myId) {
+      const kick = document.createElement('button');
+      kick.className   = 'kick-btn';
+      kick.dataset.id  = p!.id;
+      kick.textContent = 'Kick';
+      row.appendChild(kick);
+    }
+
+    frag.appendChild(row);
   }
 
-  /* ----- attach kick events (host only) ------------------------------ */
+  table.appendChild(frag);
+
+  /* ---------- kick-button handlers (host only) --------------------- */
   if (amHost) {
     table.querySelectorAll<HTMLButtonElement>('.kick-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const pid = btn.dataset.id!;
+      btn.onclick = () => {
+        const pid = btn.dataset.id;
         if (!pid) return;
         if (!confirm('Kick this player from the lobby?')) return;
         send(sock, { type: 'kickPlayer', payload: { playerId: pid } });
-      });
+      };
     });
   }
 
-  /* ---------- share‑code widget -------------------------------------- */
-  (document.getElementById('t-share-code') as HTMLInputElement).value = '#' + (TLobby.code ?? '----');
+  /* ---------- share code ------------------------------------------- */
+  (document.getElementById('t-share-code') as HTMLInputElement).value =
+    '#' + (TLobby.code ?? '----');
 
-  /* ---------- host / player control blocks --------------------------- */
-  const allReady = players.length === TLobby.slots && players.every((p) => p.ready);
-  const hostControls = document.getElementById('host-controls') as HTMLElement;
-  const playerControls = document.getElementById('player-controls') as HTMLElement;
-  hostControls.style.display = amHost ? 'block' : 'none';
-  playerControls.style.display = amHost ? 'none' : 'block';
+  /* ---------- controls and status ---------------------------------- */
+  const allReady =
+    players.length === totalSlots && players.every(p => p.ready);
 
-  // START button (host)
-  const startBtn = document.getElementById('t-start-btn') as HTMLButtonElement;
-  startBtn.disabled = !allReady;
+  (document.getElementById('host-controls')   as HTMLElement).style.display =
+    amHost ? 'block' : 'none';
+  (document.getElementById('player-controls') as HTMLElement).style.display =
+    amHost ? 'none'  : 'block';
 
-  if (amHost && !startBtn.onclick) {
-    startBtn.onclick = () => send(sock, { type: 'startTournament' });
-  }
+  (document.getElementById('t-start-btn') as HTMLButtonElement).disabled = !allReady;
 
-  const readyBtn = document.getElementById('t-ready-btn') as HTMLButtonElement;
-  const myReadyDot = document.getElementById('t-my-ready-dot') as HTMLSpanElement;
-  const me = players.find((p) => p.id === myId);
-  myReadyDot.className = me?.ready ? 'green-dot' : 'red-dot';
+  const me = players.find(p => p.id === myId);
+  (document.getElementById('t-my-ready-dot') as HTMLSpanElement).className =
+    me?.ready ? 'green-dot' : 'red-dot';
 
-  if (!amHost && !readyBtn.onclick) {
-    readyBtn.onclick = () => send(sock, { type: 'toggleReady', payload: { tournamentId: TLobby.id } });
-  }
-
-  /* ---------- headline status ---------------------------------------- */
-  const status = document.getElementById('t-lobby-status')!;
-  status.textContent = amHost
-    ? `Waiting for players… (${players.length}/${TLobby.slots})`
+  const statusEl = document.getElementById('t-lobby-status')!;
+  statusEl.textContent = amHost
+    ? `Waiting for players… (${players.length}/${totalSlots})`
     : allReady
-    ? 'Waiting for host to start…'
-    : 'Waiting for players…';
+      ? 'Waiting for host to start…'
+      : 'Waiting for players…';
 }
+
