@@ -138,7 +138,7 @@ async function create_db() {
 
         console.log("Alle Tabellen erfolgreich erstellt oder existieren bereits.");
     } catch (err) {
-        console.log(`Error creating db: ${err}`);
+        console.error(`Error creating db: ${err}`);
         return -1;
     } finally {
         console.log('Database setup abgeschlossen');
@@ -206,7 +206,7 @@ async function show_full_db() {
         `);
         return row;
     } catch (err) {
-        console.log(`Error in show_full_db: ${err}`);
+        console.error(`Error in show_full_db: ${err}`);
         return null;
     } finally {
         await db.close();

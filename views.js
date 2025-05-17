@@ -7,6 +7,7 @@ import * as users_db from './database/db_users_functions.js';
 import * as mfa_db from './database/db_mfa_functions.js';
 import qrcode from 'qrcode';
 import { json } from 'stream/consumers';
+import { response } from 'express';
 
 async function login(request, response) {
     const check_login = utils.check_login(request, response);
@@ -146,7 +147,7 @@ async function home(request, response) {
             return `5_${data}`;
         }
         const check_settings = await settings_db.get_settings_value('github', data);
-        console.log(check_settings);
+        // console.log(check_settings);
         if (!check_settings || check_settings === undefined || check_settings < 0)
             return `6_${check_settings}`;
         const token = modules.create_jwt(check_settings.self, '1h');
@@ -224,13 +225,13 @@ async function mfa(request, response) {
                 response.end(JSON.stringify({"Response": "Failed"}));
             return true;
         } else if (replace_data.Function == 'create_custom') {
-            console.log("LOL");
+            // console.log("LOL");
             return await utils.create_custom_code(userid, response, replace_data);
         } else if (replace_data.Function == 'verify_function') {
             return await utils.verify_custom_code(userid, response, replace_data);
         } else if (replace_data.Function == 'create_email') {
             const returned = await utils.create_email_code(userid, response, replace_data);
-            console.log(returned);
+            // console.log(returned);
             return returned;
         } else if (replace_data.Function == 'verify_email') {
             return await utils.verify_email_code(userid, response, replace_data);;
@@ -272,10 +273,6 @@ async function mfa(request, response) {
             replace_string += '<button class="block w-full mb-6 mt-6">';
             replace_string += '<span class="button_text">Enable email authentication</span>';
             replace_string += '</button></div>';
-            replace_string += '<a class="buttons mb-6" href="/settings/user_settings">';
-            replace_string += '<button class="block w-full mb-6 mt-6">';
-            replace_string += '<span class="button_text">Change User Information</span>';
-            replace_string += '</button></a>';
             replace_string += '<div class="flex mt-12 gap-4 w-full">';
             replace_string += '<a class="flex-1">';
             replace_string += '<button onclick="window.location.href=\'http://localhost:8080/settings\'" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
@@ -308,14 +305,13 @@ async function mfa(request, response) {
             replace_string += '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="create_custom_code()"><span class="button_text">Create custom 6 diggit code</span></button></div> ';
         // replace_string += '<br></br>'
         if (check_mfa.email.length !== 0 && !check_mfa.email.endsWith('_temp')) {
-            console.log("WOW");
+            // console.log("WOW");
             replace_string += '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="remove_email()"><span class="button_text">Disable email authentication</span></button></div> ';
             select_number++;
             select_menu += '<option value="email">Email</option>';
         } else
             replace_string += '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="create_email()"><span class="button_text">Enable email authentication</span></button></div> ';
         // replace_string += '<br></br>'
-        replace_string += '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="change_info()"><span class="button_text">Change User Information</span></button></div> ';
         if (select_number < 2)
             return data.replace("{{mfa-button}}", `${replace_string} <button onclick="window.location.href = \'http://localhost:8080\'">Back</button> \
                 <button onclick="logout()">Logout</button>`);
@@ -336,10 +332,9 @@ async function mfa(request, response) {
     return true;
 }
 
-async function user(request, response) {
-    if (request.method == 'POST') {
-        console.log("Here");
-
+async function select_language(request, response){
+    if (request.method == 'POST'){
+        console.log("selecting language");
     }
     const status = await send.send_html('settings.html', response, 200, async (data) => {
         var replace_string = '<button onclick="change_language()">Change language</button><br></br>';
@@ -459,6 +454,191 @@ async function user(request, response) {
     return true;
 }
 
+// async function user(request, response) {
+//     if (request.method == 'POST') {
+//         console.log("Here");
+
+//     }
+//     const status = await send.send_html('settings.html', response, 200, async (data) => {
+//         var replace_string = '<button onclick="select_language()">Change language</button><br></br>';
+//         replace_string += ``
+//         replace_string += '<button onclick="window.location.href = \'http://localhost:8080/settings\'">back</button> \
+//         <button onclick="logout()">Logout</button>';
+//         return data.replace('{{mfa-button}}', replace_string);
+//     });
+//     return true;
+// }
+
+// async function user(request, response) {
+//     if (request.method == 'POST') {
+//         console.log("Here");
+
+//     }
+//     const status = await send.send_html('settings.html', response, 200, async (data) => {
+//         var replace_string = '<button onclick="change_language()">Change language</button><br></br>';
+//         replace_string += `
+//         <form id="language">
+//             <select name="lang" id="lang">
+//                 <option value="" selected disabled hidden>Choose your main language</option>
+//                 <option value="af">Afrikaans</option>
+//                 <option value="az">Azərbaycanca</option>
+//                 <option value="id">Bahasa Indonesia</option>
+//                 <option value="ms">Bahasa Melayu</option>
+//                 <option value="jw">Basa Jawa</option>
+//                 <option value="su">Basa Sunda</option>
+//                 <option value="bs">Bosanski</option>
+//                 <option value="ca">Català</option>
+//                 <option value="ceb">Cebuano</option>
+//                 <option value="sn">ChiShona</option>
+//                 <option value="ny">Chichewa</option>
+//                 <option value="co">Corsu</option>
+//                 <option value="cy">Cymraeg</option>
+//                 <option value="da">Dansk</option>
+//                 <option value="de">Deutsch</option>
+//                 <option value="et">Eesti</option>
+//                 <option value="en">English</option>
+//                 <option value="es">Español</option>
+//                 <option value="eo">Esperanto</option>
+//                 <option value="eu">Euskara</option>
+//                 <option value="fr">Français</option>
+//                 <option value="fy">Frysk</option>
+//                 <option value="ga">Gaeilge</option>
+//                 <option value="sm">Gagana Samoa</option>
+//                 <option value="gl">Galego</option>
+//                 <option value="gd">Gàidhlig</option>
+//                 <option value="ha">Hausa</option>
+//                 <option value="hmn">Hmoob</option>
+//                 <option value="hr">Hrvatski</option>
+//                 <option value="ig">Igbo</option>
+//                 <option value="it">Italiano</option>
+//                 <option value="sw">Kiswahili</option>
+//                 <option value="ht">Kreyòl Ayisyen</option>
+//                 <option value="ku">Kurdî</option>
+//                 <option value="la">Latina</option>
+//                 <option value="lv">Latviešu</option>
+//                 <option value="lt">Lietuvių</option>
+//                 <option value="lb">Lëtzebuergesch</option>
+//                 <option value="hu">Magyar</option>
+//                 <option value="mg">Malagasy</option>
+//                 <option value="mt">Malti</option>
+//                 <option value="mi">Māori</option>
+//                 <option value="nl">Nederlands</option>
+//                 <option value="no">Norsk</option>
+//                 <option value="uz">Oʻzbekcha</option>
+//                 <option value="pl">Polski</option>
+//                 <option value="pt">Português</option>
+//                 <option value="ro">Română</option>
+//                 <option value="st">Sesotho</option>
+//                 <option value="sq">Shqip</option>
+//                 <option value="sk">Slovenčina</option>
+//                 <option value="sl">Slovenščina</option>
+//                 <option value="so">Soomaali</option>
+//                 <option value="fi">Suomi</option>
+//                 <option value="sv">Svenska</option>
+//                 <option value="tl">Tagalog</option>
+//                 <option value="vi">Tiếng Việt</option>
+//                 <option value="tr">Türkçe</option>
+//                 <option value="yo">Yorùbá</option>
+//                 <option value="xh">isiXhosa</option>
+//                 <option value="zu">isiZulu</option>
+//                 <option value="is">Íslenska</option>
+//                 <option value="cs">Čeština</option>
+//                 <option value="haw">ʻŌlelo Hawaiʻi</option>
+//                 <option value="el">Ελληνικά</option>
+//                 <option value="be">Беларуская</option>
+//                 <option value="bg">Български</option>
+//                 <option value="ky">Кыргызча</option>
+//                 <option value="mk">Македонски</option>
+//                 <option value="mn">Монгол</option>
+//                 <option value="ru">Русский</option>
+//                 <option value="sr">Српски</option>
+//                 <option value="tg">Тоҷикӣ</option>
+//                 <option value="uk">Українська</option>
+//                 <option value="kk">Қазақша</option>
+//                 <option value="hy">Հայերեն</option>
+//                 <option value="yi">ייִדיש</option>
+//                 <option value="iw">עברית</option>
+//                 <option value="ur">اردو</option>
+//                 <option value="ar">العربية</option>
+//                 <option value="sd">سنڌي</option>
+//                 <option value="fa">فارسی</option>
+//                 <option value="ps">پښتو</option>
+//                 <option value="ne">नेपाली</option>
+//                 <option value="mr">मराठी</option>
+//                 <option value="hi">हिन्दी</option>
+//                 <option value="bn">বাংলা</option>
+//                 <option value="gu">ગુજરાતી</option>
+//                 <option value="ta">தமிழ்</option>
+//                 <option value="te">తెలుగు</option>
+//                 <option value="kn">ಕನ್ನಡ</option>
+//                 <option value="ml">മലയാളം</option>
+//                 <option value="si">සිංහල</option>
+//                 <option value="th">ไทย</option>
+//                 <option value="lo">ລາວ</option>
+//                 <option value="my">မြန်မာ</option>
+//                 <option value="ka">ქართული</option>
+//                 <option value="km">ភាសាខ្មែរ</option>
+//                 <option value="ja">日本語</option>
+//                 <option value="zh-cn">简体中文</option>
+//                 <option value="zh-tw">繁體中文</option>
+//                 <option value="ko">한국어</option>
+//             </select>
+//             <button type="submit">Submit</button>
+//         </form>`
+//         replace_string += '<button onclick="window.location.href = \'http://localhost:8080/settings\'">back</button> \
+//         <button onclick="logout()">Logout</button>';
+//         return data.replace('{{mfa-button}}', replace_string);
+//     });
+//     return true;
+// }
+
+// async function show_user_settings(request, response){
+//     const status = await send.send_html('user_settings.html', response, 200);
+//     if (!status || status === undefined || status < 0)
+//         return `_${status}`
+//     return true;
+// }
+
+
+async function user(request, response){
+    var [keys, values] = modules.get_cookies(request.headers.cookie);
+    if (!keys?.includes('token'))
+        return send.redirect(response, '/login', 302);
+    var request_url = request.url.slice(14);
+    if (request_url == '/select_language')
+        return await select_language(request, response);
+    if (request_url == '/profile_settings')
+        return await user_settings(request, response);
+
+    const status = await send.send_html('settings.html', response, 200, async  (data) => {
+        var replace_string = "";
+        replace_string += '<div class="buttons mb-6" onclick="window.location.href = \'http://localhost:8080/settings/user/select_language\'">';
+        replace_string += '<button class="block w-full mb-6 mt-6">';
+        replace_string += '<span class="button_text">Select Language</span>';
+        replace_string += '</button></div>';
+
+        replace_string += '<div class="buttons mb-6" onclick="window.location.href = \'http://localhost:8080/settings/user/profile_settings\'">';
+        replace_string += '<button class="block w-full mb-6 mt-6">';
+        replace_string += '<span class="button_text">Profile changes</span>';
+        replace_string += '</button></div>';
+
+        replace_string += '<div class="flex mt-12 gap-4 w-full">';
+        replace_string += '<a class="flex-1">';
+        // replace_string += '<div class="buttons mb-6" onclick="window.location.href = \'http://localhost:8080\'">';
+        replace_string += '<button onclick="window.location.href = \'http://localhost:8080/settings\'" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+        replace_string += '<span class="button_text">Back</span>';
+        replace_string += '</button></a>';
+        replace_string += '<a class="flex-1">';
+        replace_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+        replace_string += '<span class="button_text">Logout</span>';
+        replace_string += '</button></a></div>';
+        return data.replace('{{mfa-button}}', replace_string);
+    });
+    if (!status || status === undefined || status < 0)
+        return `_${status}`
+    return true;
+}
+
 async function settings(request, response) {
     var [keys, values] = modules.get_cookies(request.headers.cookie);
     if (!keys?.includes('token'))
@@ -470,7 +650,7 @@ async function settings(request, response) {
         return await mfa(request, response);
     if (request_url.startsWith("/user?"))
         return await settings_prefered_language(request, response);
-    if (request_url == "/user")
+    if (request_url.startsWith("/user"))
         return await user(request, response);
     // if (request.method === 'POST') {
 
@@ -489,7 +669,6 @@ async function settings(request, response) {
 
         replace_string += '<div class="flex mt-12 gap-4 w-full">';
         replace_string += '<a class="flex-1">';
-        // replace_string += '<div class="buttons mb-6" onclick="window.location.href = \'http://localhost:8080\'">';
         replace_string += '<button onclick="window.location.href = \'http://localhost:8080\'" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
         replace_string += '<span class="button_text">Back</span>';
         replace_string += '</button></a>';
@@ -497,10 +676,6 @@ async function settings(request, response) {
         replace_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
         replace_string += '<span class="button_text">Logout</span>';
         replace_string += '</button></a></div>';
-        // replace_string += '<button onclick="window.location.href = \'http://localhost:8080/settings/mfa\'">mfa</button>';
-        // replace_string += '<button onclick="window.location.href = \'http://localhost:8080/settings/user\'">user</button>';
-        // replace_string += '<button onclick="window.location.href = \'http://localhost:8080\'">back</button> \
-        // <button onclick="logout()">Logout</button>';
         return data.replace('{{mfa-button}}', replace_string);
     });
     if (!status || status === undefined || status < 0)
@@ -566,9 +741,9 @@ async function settings_prefered_language(request, response) {
         return send.redirect(response, '/settings/user', 302);
     modules.delete_cookie(response, 'lang');
     modules.set_cookie(response, 'lang', lang_jwt);
-    console.log(user);
+    // console.log(user);
     const wow = await settings_db.update_settings_value('lang', method, user.userid);
-    console.log(wow);
+    // console.log(wow);
     return send.redirect(response, '/settings/user', 302);
 }
 
@@ -816,7 +991,7 @@ async function update_settings(request, response) {
         }
     }
     catch (err){
-        console.log("Error regarding updating user: " + err);
+        console.error("Error regarding updating user: " + err);
         response.writeHead(500, {'Content-Type': 'application/json'});
         response.end(JSON.stringify({message: 'Server error'}));
     }

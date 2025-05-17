@@ -85,17 +85,17 @@ function toggle_eye(num) {
 function return_main_settings() {
     return `
     <div class="flex flex-col mt-8 gap-6">
-        <a href="/settings/change_user" class="buttons">
+        <a href="/settings/user/change_user" class="buttons">
             <button class="block w-full mb-4 mt-6">
                 <span class="button_text">change username</span>
             </button>
         </a>
-        <a href="/settings/change_login" class="buttons">
+        <a href="/settings/user/change_login" class="buttons">
             <button class="block w-full mb-4 mt-6">
                 <span class="button_text">change login data</span>
             </button>
         </a>
-        <a href="/settings/change_avatar" class="buttons">
+        <a href="/settings/user/change_avatar" class="buttons">
             <button class="block w-full mb-4 mt-6">
                 <span class="button_text">change avatar</span>
             </button>
@@ -121,7 +121,7 @@ function return_change_uname() {
         <input type="text" id="username" placeholder="Username" required class="input_field" />
     </div>
     <div class="flex mt-12 gap-4 w-full">
-        <a href="/settings/user_settings" class="flex-1">
+        <a href="/settings/user/profile_settings" class="flex-1">
             <button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
                 <span class="font-bold text-lg">Back</span>
             </button>
@@ -184,7 +184,7 @@ function return_change_credential() {
                 <span class="font-bold text-lg">Submit</span>
             </button>
         </a>
-        <a href="/settings/user_settings" class="flex-1">
+        <a href="/settings/user/profile_settings" class="flex-1">
             <button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
                 <span class="font-bold text-lg">Back</span>
             </button>
@@ -204,7 +204,7 @@ function return_change_avatar() {
                 <span class="font-bold text-lg">Submit</span>
             </button>
         </a>
-        <a href="/settings/user_settings" class="flex-1">
+        <a href="/settings/user/profile_settings" class="flex-1">
             <button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
                 <span class="font-bold text-lg">Back</span>
             </button>
@@ -281,14 +281,16 @@ function change_logindata() {
 function change_avatar() {
     return __awaiter(this, void 0, void 0, function* () {
         const avatar_field = document.getElementById("file_input");
-        if (!avatar_field) {
+        if (!avatar_field || !avatar_field.files) {
+            alert("No file selected");
             return;
         }
         const avatar_value = avatar_field.value;
+        const file = avatar_field.files[0];
         const value_struct = {
             email: null,
             password: null,
-            avatar: avatar_value
+            avatar: "public/" + file.name
         };
         try {
             const response = yield fetch('/update_settings', {
@@ -302,6 +304,7 @@ function change_avatar() {
         catch (err) {
             console.error('Error updating logindata: ', err);
         }
+        alert("success");
     });
 }
 document.addEventListener('DOMContentLoaded', () => {
@@ -310,16 +313,16 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     const update = (pathname) => {
         switch (pathname) {
-            case "/settings/user_settings":
+            case "/settings/user/profile_settings":
                 field.innerHTML = return_main_settings();
                 break;
-            case "/settings/change_avatar":
+            case "/settings/user/change_avatar":
                 field.innerHTML = return_change_avatar();
                 break;
-            case "/settings/change_login":
+            case "/settings/user/change_login":
                 field.innerHTML = return_change_credential();
                 break;
-            case "/settings/change_user":
+            case "/settings/user/change_user":
                 field.innerHTML = return_change_uname();
             default:
                 break;

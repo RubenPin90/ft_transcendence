@@ -10,7 +10,7 @@ async function get_mfa() {
     try {
         var row = await db.all(`SELECT * FROM mfa`);
     } catch (err) {
-        console.log(`Error in get_mfa: ${err}`)
+        console.error(`Error in get_mfa: ${err}`)
         return null;
     } finally {
         await db.close();
@@ -34,7 +34,7 @@ async function get_mfa_value(search_value, value) {
             SELECT * FROM mfa
             WHERE ${search_value} = ?`, [value]);
     } catch (err) {
-        console.log(`Error in get_mfa_value: ${err}`);
+        console.error(`Error in get_mfa_value: ${err}`);
         return null;
     } finally {
         await db.close();
@@ -64,7 +64,7 @@ async function create_mfa_value(mfa_email, otc, custom, prefered, self) {
             INSERT INTO mfa (email, otc, custom, prefered, self)
             VALUES (?, ?, ?, ?, ?)`, [mfa_email, otc, custom, prefered, self]);
     } catch (err) {
-        console.log(`Error in create_mfa_value: ${err}`);
+        console.error(`Error in create_mfa_value: ${err}`);
         return null;
     } finally {
         await db.close();
@@ -93,7 +93,7 @@ async function update_mfa_value(search_value, value, self) {
             SET ${search_value} = '${value}'
             WHERE self = '${self}'`);
     } catch (err) {
-        console.log(`Error in update_settings_value: ${err}`);
+        console.error(`Error in update_settings_value: ${err}`);
         return -3;
     } finally {
         await db.close();
@@ -118,7 +118,7 @@ async function delete_mfa_value(self) {
             DELETE FROM mfa
             WHERE mfa.self = '${self}'`);
     } catch (err) {
-        console.log(`Error in delete_mfa_value: ${err}`);
+        console.error(`Error in delete_mfa_value: ${err}`);
         return null;
     } finally {
         await db.close();

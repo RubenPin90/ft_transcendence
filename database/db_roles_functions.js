@@ -11,7 +11,7 @@ async function get_roles() {
     try {
         var row = await db.all(`SELECT * FROM roles`);
     } catch (err) {
-        console.log(`Error in get_roles: ${err}`)
+        console.error(`Error in get_roles: ${err}`)
         return null;
     } finally {
         await db.close();
@@ -34,7 +34,7 @@ async function get_roles_value(search_value, value) {
             SELECT * FROM roles
             WHERE ${search_value} = ${value}`);
     } catch (err) {
-        console.log(`Error in get_roles_value: ${err}`);
+        console.error(`Error in get_roles_value: ${err}`);
         return null;
     } finally {
         await db.close();
@@ -54,7 +54,7 @@ async function create_roles_value(name, mute, ban, change_score) {
             INSERT INTO roles (name, mute, ban, change_score)
             VALUES (?, ?, ?, ?)`, [name, mute, ban, change_score]);
     } catch (err) {
-        console.log(`Error in create_roles_value: ${err}`);
+        console.error(`Error in create_roles_value: ${err}`);
         return null;
     } finally {
         await db.close();
@@ -78,7 +78,7 @@ async function update_roles_value(search_value, value, id) {
             SET ${search_value} = '${value}'
             WHERE id = ${id}`);
     } catch (err) {
-        console.log(`Error in update_settings_value: ${err}`);
+        console.error(`Error in update_settings_value: ${err}`);
         return null;
     } finally {
         await db.close();
@@ -98,7 +98,7 @@ async function delete_roles_value(id) {
             DELETE FROM roles
             WHERE id = ${id}`);
     } catch (err) {
-        console.log(`Error in delete_roles_value: ${err}`);
+        console.error(`Error in delete_roles_value: ${err}`);
         return null;
     } finally {
         await db.close();

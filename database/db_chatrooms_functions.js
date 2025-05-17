@@ -10,7 +10,7 @@ async function get_chatrooms() {
     try {
         var row = await db.all(`SELECT * FROM chatrooms`);
     } catch (err) {
-        console.log(`Error in get_chatrooms: ${err}`)
+        console.error(`Error in get_chatrooms: ${err}`)
         return null;
     } finally {
         await db.close();
@@ -34,7 +34,7 @@ async function get_chatrooms_value(search_value, value) {
             SELECT * FROM chatrooms
             WHERE ${search_value} = ${value}`);
     } catch (err) {
-        console.log(`Error in get_chatrooms_value: ${err}`);
+        console.error(`Error in get_chatrooms_value: ${err}`);
         return null;
     } finally {
         await db.close();
@@ -64,7 +64,7 @@ async function create_chatrooms_value(name, self) {
             INSERT INTO chatrooms (name, self)
             VALUES (?, ?)`, [name, self]);
     } catch (err) {
-        console.log(`Error in create_chatrooms_value: ${err}`);
+        console.error(`Error in create_chatrooms_value: ${err}`);
         return null;
     } finally {
         await db.close();
@@ -94,7 +94,7 @@ async function update_chatrooms_value(search_value, value, self) {
             SET ${search_value} = '${value}'
             WHERE self = '${self}'`);
     } catch (err) {
-        console.log(`Error in update_settings_value: ${err}`);
+        console.error(`Error in update_settings_value: ${err}`);
         return null;
     } finally {
         await db.close();
@@ -119,7 +119,7 @@ async function delete_chatrooms_value(self) {
             DELETE FROM chatrooms
             WHERE chatrooms.self = '${self}'`);
     } catch (err) {
-        console.log(`Error in delete_chatrooms_value: ${err}`);
+        console.error(`Error in delete_chatrooms_value: ${err}`);
         return null;
     } finally {
         await db.close();

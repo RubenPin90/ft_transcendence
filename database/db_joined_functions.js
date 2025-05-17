@@ -34,7 +34,7 @@ async function get_settings_mfa_value(search_value, value) {
 
         return row;
     } catch (err) {
-        console.log(`Error in get_mfa_with_settings: ${err}`);
+        console.error(`Error in get_mfa_with_settings: ${err}`);
         return null;
     } finally {
         await db.close();

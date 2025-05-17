@@ -9,12 +9,9 @@ async function url_pattern(request, response) {
     // console.log(response.url);
     switch (true) {
         case request.url.includes(".js"):
-            // console.log(request.url);
             return await mimes.get_js(request.url, response);
         case request.url === '/':
             return await views.home(request, response);
-        case request.url.includes(".js"):
-            return await mimes.get_js(request.url, response);
         case request.url.includes(".css"):
             return await serveStaticFile(request.url, response, 'text/css');
         case request.url.includes(".svg"):

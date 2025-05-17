@@ -20,7 +20,7 @@ async function get_settings_value(search_value, value) {
         SELECT * FROM settings
         WHERE ${search_value} = ?`, [value]);
     } catch (err) {
-        console.log(`Error in get_settings_value: ${err}`);
+        console.error(`Error in get_settings_value: ${err}`);
         return null;
     } finally {
         await db.close();
@@ -39,7 +39,7 @@ async function get_settings() {
         var row = await db.all(`
         SELECT * FROM settings`);
     } catch (err) {
-        console.log(`Error in get_settings: ${err}`);
+        console.error(`Error in get_settings: ${err}`);
     } finally {
         await db.close();
         return row;
@@ -82,7 +82,7 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
             self = github;
         else {
             var random_self = Math.floor(Math.random() * 1000000000);
-            console.log(random_self);
+            // console.log(random_self);
             var it = 0
             while (it < 2000000000) {
                 check = await db.get(`
@@ -94,7 +94,7 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
                     random_self = Math.floor(Math.random() * 1000000000);
             }
             if (it == max_loop_size) {
-                console.log(`Error in create_settings_value: ${err}`);
+                console.error(`Error in create_settings_value: ${err}`);
                 return null;
             }
             console.log(`Random: ${random_self}`);
@@ -115,7 +115,7 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
                 console.log(await update_settings_value('google', google, user_id));
             }
             const ret = await get_settings_value('email', email);
-            console.log("Here");
+            // console.log("Here");
             self = ret.self;
             return {"return": row, "self": ret.self};
         }
@@ -126,7 +126,7 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
 		console.log(`New user created with ID: ${row.lastID}`);
         return {"return": row, "self": self};
     } catch (err) {
-        console.log(`Error in create_settings_value: ${err}`);
+        console.error(`Error in create_settings_value: ${err}`);
         return null;
     } finally {
         await db.close();
@@ -158,7 +158,7 @@ async function update_settings_value(search_value, value, self) {
         SET ${search_value} = '${value}'
         WHERE self = '${self}'`);
     } catch (err) {
-        console.log(`Error in update_settings_value: ${err}`);
+        console.error(`Error in update_settings_value: ${err}`);
         return null;
     } finally {
         await db.close();
@@ -182,7 +182,7 @@ async function delete_settings_value(self) {
         DELETE FROM settings
         WHERE mfa.self = '${self}'`);
     } catch (err) {
-        console.log(`Error in delete_mfa_value: ${err}`);
+        console.error(`Error in delete_mfa_value: ${err}`);
         return null;
     } finally {
         await db.close();

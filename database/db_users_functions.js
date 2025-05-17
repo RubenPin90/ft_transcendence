@@ -11,7 +11,7 @@ async function get_users() {
     try {
         var row = await db.all(`SELECT * FROM users`);
     } catch (err) {
-        console.log(`Error in get_users: ${err}`)
+        console.error(`Error in get_users: ${err}`)
         return null;
     } finally {
         await db.close();
@@ -34,7 +34,7 @@ async function get_users_value(search_value, value) {
             SELECT * FROM users
             WHERE ${search_value} = '${value}'`);
     } catch (err) {
-        console.log(`Error in get_users_value: ${err}`);
+        console.error(`Error in get_users_value: ${err}`);
         return null;
     } finally {
         await db.close();
@@ -69,7 +69,7 @@ async function create_users_value(role_id, username, self) {
             INSERT INTO users (role_id, username, self)
             VALUES (?, ?, ?)`, [role_id, username, self]);
     } catch (err) {
-        console.log(`Error in create_users_value: ${err}`);
+        console.error(`Error in create_users_value: ${err}`);
         return null;
     } finally {
         await db.close();
@@ -99,7 +99,7 @@ async function update_users_value(search_value, value, self) {
             SET ${search_value} = '${value}'
             WHERE self = '${self}'`);
     } catch (err) {
-        console.log(`Error in update_settings_value: ${err}`);
+        console.error(`Error in update_settings_value: ${err}`);
         return null;
     } finally {
         await db.close();
@@ -124,7 +124,7 @@ async function delete_users_value(self) {
             DELETE FROM users
             WHERE users.self = '${self}'`);
     } catch (err) {
-        console.log(`Error in delete_users_value: ${err}`);
+        console.error(`Error in delete_users_value: ${err}`);
         return null;
     } finally {
         await db.close();

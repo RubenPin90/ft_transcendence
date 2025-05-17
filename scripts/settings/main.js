@@ -248,7 +248,7 @@ async function remove_custom_code() {
         if (data.Response === 'Success')
             window.location.href = 'http://localhost:8080/settings/mfa';
     } catch (err) {
-        console.log(`Error in removing custom code: ${err}`)
+        console.error(`Error in removing custom code: ${err}`)
     }
 }
 
@@ -268,7 +268,7 @@ async function remove_otc() {
         if (data.Response === 'Success')
             window.location.href = 'http://localhost:8080/settings/mfa';
     } catch (err) {
-        console.log(`Error in removing custom code: ${err}`)
+        console.error(`Error in removing custom code: ${err}`)
     }
 }
 
@@ -288,7 +288,7 @@ async function remove_email() {
         if (data.Response === 'Success')
             window.location.href = 'http://localhost:8080/settings/mfa';
     } catch (err) {
-        console.log(`Error in removing custom code: ${err}`)
+        console.error(`Error in removing custom code: ${err}`)
     }
 }
 
@@ -306,7 +306,7 @@ async function change_language() {
     try {
         
     } catch (err) {
-        console.log(`Error in change language: ${err}`)
+        console.error(`Error in change language: ${err}`)
     }
 }
 
