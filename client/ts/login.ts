@@ -1,11 +1,14 @@
 async function login() {
-    const email = document.getElementById("email-input").value;
-    const password = document.getElementById("password-input").value;
+    const email2 = document.getElementById("email-input") as HTMLInputElement;
+    const password2 = document.getElementById("password-input") as HTMLInputElement;
 
-    if (!email && !password) {
+    if (!email2 && !password2) {
         return;
     }
 
+
+    const email = email2.value;
+    const password = password2.value;
     const response = await fetch('/login', {
         method: 'POST',
         headers: {
@@ -17,10 +20,13 @@ async function login() {
     let data;
     try {
         data = await response.json();
+        var Div = document.getElementById("login-container") as HTMLDivElement;
+        if (!Div)
+            return;
         if (data.Response === "reload")
             window.location.reload();
         else if (data.Response == "send_email_verification") {
-            document.getElementById("login-container").innerHTML = `
+            Div.innerHTML = `
                 <h2>Input your Email code</h2>
                 <input type="text" id="email-input" placeholder="Code" required><br>
                 <button id="email-login-button" onclick="email_login('${data.Content}')">
@@ -28,7 +34,7 @@ async function login() {
                 </button>
             `;
         } else if (data.Response === "send_2FA_verification") {
-            document.getElementById("login-container").innerHTML = `
+            Div.innerHTML = `
                 <h2>Input your OTC code from your authenticator app</h2>
                 <input type="text" id="otc-input" placeholder="Code" required><br>
                 <button id="mfa-login-button" onclick="mfa_login('${data.Content}')">
@@ -36,7 +42,7 @@ async function login() {
                 </button>
             `;
         } else if (data.Response === 'send_custom_verification') {
-            document.getElementById("login-container").innerHTML = `
+            Div.innerHTML = `
                 <h2>Input your Custom code</h2>
                 <input type="text" id="custom-input" placeholder="Code" required><br>
                 <button id="custom-login-button" onclick="custom_login('${data.Content}')">
@@ -49,11 +55,12 @@ async function login() {
     }
 }
 
-async function email_login(userid) {
-    const code = document.getElementById("email-input").value;
-    if (!code)
+async function email_login(userid : string) {
+    const code2 = document.getElementById("email-input") as HTMLInputElement;
+    if (!code2)
         return;
 
+    const code = code2.value;
     console.log(userid);
     const response = await fetch('/verify_email', {
         method: 'POST',
@@ -77,11 +84,12 @@ async function email_login(userid) {
     }
 }
 
-async function mfa_login(userid) {
-    const code = document.getElementById("otc-input").value;
-    if (!code)
+async function mfa_login(userid : string) {
+    const code2 = document.getElementById("otc-input") as HTMLInputElement;
+    if (!code2)
         return;
 
+    const code = code2.value;
     console.log(userid);
     const response = await fetch('/verify_2fa', {
         method: 'POST',
@@ -105,10 +113,12 @@ async function mfa_login(userid) {
     }
 }
 
-async function custom_login(userid) {
-    const code = document.getElementById("custom-input").value;
-    if (!code)
+async function custom_login(userid : string) {
+    const code2 = document.getElementById("custom-input") as HTMLInputElement;
+    if (!code2)
         return;
+
+    const code = code2.value;
 
     console.log(userid);
     const response = await fetch('/verify_custom', {

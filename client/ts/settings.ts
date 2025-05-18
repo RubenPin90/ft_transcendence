@@ -27,13 +27,17 @@ async function create_otc() {
         }
 
     } catch (error) {
-        console.error('Fehler bei create_otc:', error.message);
+        // console.error('Fehler bei create_otc:', error.message);
         throw error;
     }
 }
 
 async function verify_code() {
-    const code = document.getElementById('Code');
+    const code = document.getElementById('Code') as HTMLInputElement;
+    if (!code){
+        alert("code not found");
+        return;
+    }
     if (!code.value) {
         alert("Error. Input cant be empty");
         return;
@@ -64,20 +68,20 @@ async function verify_code() {
     console.log(data);
 }
 
-async function verify_custom_code() {
-    console.log('hi');
-    const qrcodeButtonDiv = document.getElementById('mfa-button');
-    if (qrcodeButtonDiv) {
-        qrcodeButtonDiv.innerHTML = '<input id="Code" name="Code" placeholder="Code"><br>\
-        <button onclick="create_custom_code()">Next</button> <button onclick="window.location.reload()">Back</button>';
-    }
-}
+// async function verify_custom_code() {
+//     console.log('hi');
+//     const qrcodeButtonDiv = document.getElementById('mfa-button');
+//     if (qrcodeButtonDiv) {
+//         qrcodeButtonDiv.innerHTML = '<input id="Code" name="Code" placeholder="Code"><br>\
+//         <button onclick="create_custom_code()">Next</button> <button onclick="window.location.reload()">Back</button>';
+//     }
+// }
 
 
 // THIS IS COPIED FROM CHATGPT. CREATE OWN FRONTEND UI
 async function verify_custom_code() {
     const qrcodeDiv = document.getElementById('mfa');
-    const inputField = document.getElementById('Code');
+    const inputField = document.getElementById('Code') as HTMLInputElement;
     if (!inputField || !qrcodeDiv)
         return;
 
@@ -120,7 +124,7 @@ async function create_custom_code() {
     console.log("create_custom_code gestartet");
     
     const qrcodeDiv = document.getElementById('mfa');
-    const qrcodeButtonDiv = document.getElementById('mfa-button');
+    const qrcodeButtonDiv = document.getElementById('mfa-button') as HTMLDivElement;
 
     if (!qrcodeDiv)
         return;
@@ -133,11 +137,11 @@ async function create_custom_code() {
             <button onclick="window.location.reload()">Back</button>
         `;
 
-        const nextButton = document.getElementById('nextButton');
+        const nextButton = document.getElementById('nextButton') as HTMLButtonElement;
 
         // Beim ersten Klick sendet der Button den Code und wechselt zur Verifikation
         nextButton.addEventListener('click', async function firstClick() {
-            const inputField = document.getElementById('Code');
+            const inputField = document.getElementById('Code') as HTMLInputElement;
             if (!inputField) return;
 
             const codeValue = inputField.value;
@@ -174,7 +178,12 @@ async function create_custom_code() {
 
 // Copied from a function that used chatgpt. Rebuild pls
 async function verifyEmail() {
-    const code = document.getElementById('email-code').value;
+    const code2 = document.getElementById('email-code') as HTMLInputElement;
+    
+    if (!code2){
+        return;
+    }
+    const code = code2.value;
     console.log("Verification code:", code);
     
     try {
@@ -215,10 +224,13 @@ async function create_email() {
     try {
         data = await response.json();
         if (data.Response === "NoEmail")
-            ; // Here an alert that there is email set. then start a promt to let user input a mail
+            alert("no email set"); // Here an alert that there is email set. then start a promt to let user input a mail
         else if (data.Response === "Success") {
             const emailDiv = document.getElementById('mfa');
             const emailInputDiv = document.getElementById('mfa-button');
+            if (!emailDiv || !emailInputDiv){
+                return;
+            }
             emailDiv.innerHTML = '<h2>Verify your email code</h2>';
             emailInputDiv.innerHTML = `
                 <input type="text" id="email-code" placeholder="Code"></input>
@@ -315,7 +327,7 @@ async function logout() {
     location.reload();
 }
 
-async function delete_cookie(name) {
+async function delete_cookie(name : string) {
     document.cookie = name  + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
 }
 
