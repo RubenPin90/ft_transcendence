@@ -9,15 +9,7 @@
       "forceConsistentCasingInFileNames": true,
       "skipLibCheck": true,
       "removeComments": true,
-      // me
-      "outDir": "./scripts",
-      "rootDirs": ["./ts", "./scripts/login"],
-      //grigorii
       "outDir": "./client/js"
     },
-    //grigorii
     "include": ["client/ts"],
-    //me
-    "include": ["./ts/**/*", "./scripts/**/*", "./ts/**/*.ts"],
-    "exclude": ["./js"]
   }
