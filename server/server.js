@@ -25,7 +25,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 // Initialize Fastify
-const fastify = Fastify({ logger: true })
+const fastify = Fastify({ logger: false })
 
 // Serve /public
 await fastify.register(fastifyStatic, {
@@ -40,6 +40,9 @@ await fastify.register(urlsPlugin);
 // const PORT = 8080;
 await fastify.listen({ port: PORT, host: '0.0.0.0' });
 const server = fastify.server;               // <-- now defined
+
+console.log(`Server listening at http://127.0.0.1:${PORT}`);
+console.log(`Server listening at http://10.0.2.15:${PORT}`);
 
 const wss = new WebSocketServer({ noServer: true });
 server.on('upgrade', (req, socket, head) => {

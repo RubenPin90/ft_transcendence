@@ -19,7 +19,7 @@ export default fastifyPlugin(async function routes(fastify) {
 
   // --- CSS ---
   fastify.get('/css/output.css', async (_, reply) => {
-    const data = await fs.readFile(path.join('/home/vboxuser/ft_transcendence/', 'css', 'output.css'));
+    const data = await fs.readFile(path.join(__dirname, '..', 'css', 'output.css'));
     reply.type('text/css').send(data);
   });
 
@@ -35,7 +35,7 @@ export default fastifyPlugin(async function routes(fastify) {
     } else {
       return reply.callNotFound();
     }
-  
+
     const filePath = path.join(process.cwd(), 'img', file);
     try {
       const data = await fs.readFile(filePath);
@@ -54,10 +54,10 @@ export default fastifyPlugin(async function routes(fastify) {
 
   fastify.get('/settings', (req, reply) => views.settings(req.raw, reply.raw));
   fastify.get('/settings/*', (req, reply) => views.settings(req.raw, reply.raw));
-  fastify.get('/settings/user_settings', (req, reply) => views.user_settings(req.raw, reply.raw));
-  fastify.get('/settings/change_user', (req, reply) => views.user_settings(req.raw, reply.raw));
-  fastify.get('/settings/change_login', (req, reply) => views.user_settings(req.raw, reply.raw));
-  fastify.get('/settings/change_avatar', (req, reply) => views.user_settings(req.raw, reply.raw));
+  // fastify.get('/settings/user_settings', (req, reply) => views.user_settings(req.raw, reply.raw));
+  // fastify.get('/settings/change_user', (req, reply) => views.user_settings(req.raw, reply.raw));
+  // fastify.get('/settings/change_login', (req, reply) => views.user_settings(req.raw, reply.raw));
+  // fastify.get('/settings/change_avatar', (req, reply) => views.user_settings(req.raw, reply.raw));
 
   fastify.get('/verify_email', (req, reply) => views.verify_email(req.raw, reply.raw));
   fastify.get('/verify_2fa', (req, reply) => views.verify_2fa(req.raw, reply.raw));

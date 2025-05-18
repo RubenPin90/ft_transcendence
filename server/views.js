@@ -111,8 +111,10 @@ async function register(request, response) {
         return `6_${check_login}`;
     const check = await send.send_html('register.html', response, 200, async (data) => {
         const google_link = utils.google_input_handler();
+        console.log("GOOGLE: " + google_link);
         data = data.replace("{{google_login}}", google_link);
         const github_link = utils.github_input_handler();
+        console.log("GITHUG: " + github_link);
         return data.replace("{{github_login}}", github_link);
     })
     return check;
