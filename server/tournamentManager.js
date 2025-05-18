@@ -102,7 +102,7 @@ export class TournamentManager {
       return;
     }
 
-    if (tournament.players.includes(userId)) {
+    if (hasUser(tournament.players, userId)) {
         ws.send(JSON.stringify({
           type: 'error',
           payload: { message: 'You are already in this tournament' },
@@ -142,9 +142,35 @@ export class TournamentManager {
         }
       }
     }));
-    
+    this.broadcastTLobby(tournament);
     this.broadcastTournamentUpdate();
   }
+
+  wsSend(client, data) { 
+    console.log(`Sending to ${client.userId}:`, data);
+    if (client.readyState === 1) client.send(JSON.stringify(data));
+  }
+
+  broadcastTLobby(tournament) {
+     const lobbyPayload = {
+       type: 'tLobbyState',
+       payload: {
+        id:       tournament.id,
+        code:     tournament.code,
+        hostId:   tournament.host,
+         slots:    this.MAX_PLAYERS,
+        players:  tournament.players.map(p => ({
+           id:    getPlayerId(p),
+           name:  p.name,
+           ready: p.ready,
+         })),
+       },
+     };
+    for (const client of this.wss.clients) this.wsSend(client, lobbyPayload);
+  }
+  
+    
+  
 
   startTournament(tournamentId) {
     const tournament = this.tournaments[tournamentId];
@@ -255,7 +281,7 @@ export class TournamentManager {
     }
 
     player.ready = !player.ready;
-
+    this.broadcastTLobby(tournament);
     this.broadcastTournamentUpdate();
 
     const enoughPlayers = tournament.players.length >= 2 &&
@@ -287,11 +313,11 @@ export class TournamentManager {
     if (tournament.host === userId && tournament.players.length > 0) {
       tournament.host = getPlayerId(tournament.players[0]);
     }
+    this.broadcastTLobby(tournament);
   
     if (tournament.players.length === 0) {
       delete this.tournaments[tournament.id];
     }
-  
     this.broadcastTournamentUpdate();
   }  
 }

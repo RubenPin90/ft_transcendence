@@ -11,7 +11,8 @@ export type ServerMessage =
   | { type: 'tournamentList'; payload: TourneySummary[] }
   | { type: 'joinedTLobby'; payload: { playerId: string; TLobby?: TLobbyState } }
   | { type: 'tournamentCreated'; payload: TLobbyState }
-  | { type: 'tournamentUpdated'; payload: TLobbyState };
+  | { type: 'tournamentUpdated'; payload: TLobbyState }
+  | { type: "tLobbyState";     payload: TLobbyState };
 
 export type MsgType = ServerMessage['type'];
 

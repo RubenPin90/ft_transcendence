@@ -64,3 +64,18 @@ export function setupButtonsDelegated(
 
   });
 }
+
+export function setupNavigationButtons(
+  navigate: (path: string) => void
+) {
+  const btnMap: Record<string, string> = {
+    'sp-vs-pve-btn': '/game/pve',
+    'one-vs-one-btn': '/matchmaking',
+    'Tournament-btn': '/tournament',
+    'settings-btn': '/settings',
+    'profile-btn': '/profile'
+  };
+  for (const [btnId, routePath] of Object.entries(btnMap)) {
+    document.getElementById(btnId)?.addEventListener('click', () => navigate(routePath));
+  }
+}

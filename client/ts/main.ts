@@ -1,5 +1,3 @@
-// main.ts – UI + routing wired to the central message bus
-
 import {
   initGameCanvas,
   startGame,
@@ -7,25 +5,18 @@ import {
   setOnGameEnd,
   GameMode
 } from './game.js';
-
 import {
   renderTournamentList,
   joinByCode,
   TourneySummary,
   renderTLobby
 } from './tournament.js';
-
-import { setupButtonsDelegated } from './buttons.js';
+import { setupButtonsDelegated, setupNavigationButtons} from './buttons.js';
 import type { TLobbyState } from './types.js';
-
 import { setMyId, setCurrentTLobby, getCurrentTLobby } from './state.js';
 import { hideAllPages } from './helpers.js';
 import { setupMatchmakingHandlers } from './matchmaking.js';
 import { on, off, send, getSocket } from './socket.js';
-
-//------------------------------------------------------------------
-// ─── Real-time subscriptions via the message bus ──────────────────
-//------------------------------------------------------------------
 
 on('error', (msg) => {
   const banner = document.getElementById('error-banner')!;
@@ -59,11 +50,21 @@ on('tournamentUpdated', (msg) => {
 let tournaments: TourneySummary[] = [];
 
 on('tournamentList', (msg) => {
-  // console.log('tournamentList', msg.payload);
   tournaments = msg.payload as TourneySummary[];
   if (window.location.pathname === '/tournament') {
     renderTournamentList(tournaments, joinByCodeWithSocket);
   }
+});
+
+on('tLobbyState', (msg) => {
+  console.log('tLobbyState', msg);
+  const lobby   = msg.payload as TLobbyState;
+  const current = getCurrentTLobby();
+
+  if (current && current.id !== lobby.id) return;
+
+  setCurrentTLobby(lobby);
+  renderTLobby(lobby, getSocket());
 });
 
 on('matchFound', (msg) => {
@@ -78,26 +79,14 @@ on('matchFound', (msg) => {
   navigate(`/game/${mode === 'PVP' || mode === '1v1' ? '1v1' : 'pve'}`);
 });
 
-
-//------------------------------------------------------------------
-// ─── State for routing / UI ───────────────────────────────────────
-//------------------------------------------------------------------
-
 let markQueued: (v: boolean) => void;
 let currentMode: string | null = null;
 let queued = false;
 
-//------------------------------------------------------------------
-// ─── Helpers that still need the raw socket ───────────────────────
-//------------------------------------------------------------------
 
 function joinByCodeWithSocket(code?: string) {
   joinByCode(getSocket(), code);
 }
-
-//------------------------------------------------------------------
-// ─── Routing & Navigation ────────────────────────────────────────
-//------------------------------------------------------------------
 
 setOnGameEnd((winnerId: string) => {
   alert(`Player ${winnerId} wins!`);
@@ -162,12 +151,8 @@ function route() {
   }
 }
 
-//------------------------------------------------------------------
-// ─── App bootstrapping ────────────────────────────────────────────
-//------------------------------------------------------------------
-
 document.addEventListener('DOMContentLoaded', () => {
-  setupNavigationButtons();
+  setupNavigationButtons(navigate);
   setupCodeJoinHandlers();
   setupButtonsDelegated(navigate, getSocket());
   ({ markQueued } = setupMatchmakingHandlers(navigate, getSocket()));
@@ -175,10 +160,6 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('popstate', route);
   route();
 });
-
-//------------------------------------------------------------------
-// ─── Matchmaking helpers (now using message bus) ──────────────────
-//------------------------------------------------------------------
 
 function enterMatchmaking() {
   if (queued) return;
@@ -189,24 +170,7 @@ function enterMatchmaking() {
 function leaveMatchmaking() {
   if (!queued) return;
   queued = false;
-  send({ type: 'leaveQueue' });
-}
-
-//------------------------------------------------------------------
-// ─── UI wiring helpers ────────────────────────────────────────────
-//------------------------------------------------------------------
-
-function setupNavigationButtons() {
-  const btnMap: Record<string, string> = {
-    'sp-vs-pve-btn': '/game/pve',
-    'one-vs-one-btn': '/matchmaking',
-    'Tournament-btn': '/tournament',
-    'settings-btn': '/settings',
-    'profile-btn': '/profile'
-  };
-  for (const [btnId, routePath] of Object.entries(btnMap)) {
-    document.getElementById(btnId)?.addEventListener('click', () => navigate(routePath));
-  }
+  send({ type: 'leaveQueue'});
 }
 
 function setupCodeJoinHandlers() {

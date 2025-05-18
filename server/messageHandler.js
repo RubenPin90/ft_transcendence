@@ -40,7 +40,15 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
         const userId = ws.userId;
         tournamentManager.joinTournament(userId, code, ws);
         break;
+    }
+    case 'tLobbyState':{
+      // Only re-render if this is the lobby we are currently in:
+      const current = getCurrentTLobby();
+      if (!current || current.id === msg.payload.id) {
+        renderTLobby(msg.payload, socket);
       }
+      break;
+    }
     case 'createTournament': {
       console.log('Incoming createTournament request with data:', data);
       const tournamentId = tournamentManager.createTournament(ws, ws.userId);

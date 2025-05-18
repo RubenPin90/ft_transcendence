@@ -51,3 +51,16 @@ export function setupButtonsDelegated(navigate, TLobbySocket) {
         }
     });
 }
+export function setupNavigationButtons(navigate) {
+    var _a;
+    const btnMap = {
+        'sp-vs-pve-btn': '/game/pve',
+        'one-vs-one-btn': '/matchmaking',
+        'Tournament-btn': '/tournament',
+        'settings-btn': '/settings',
+        'profile-btn': '/profile'
+    };
+    for (const [btnId, routePath] of Object.entries(btnMap)) {
+        (_a = document.getElementById(btnId)) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => navigate(routePath));
+    }
+}
