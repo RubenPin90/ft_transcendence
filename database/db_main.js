@@ -125,14 +125,14 @@ async function create_db() {
          * status TEXT with pending will switch between 'pending' and after accepting 'accepted'
          */
         await db.run(`
-        CREATE TABLE IF NOT EXIST friend_request (
+        CREATE TABLE IF NOT EXISTS friend_request (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             sender_id INTEGER NOT NULL,
             receiver_id INTEGER NOT NULL,
             status TEXT DEFAULT 'pending',
             created_at DATATIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (sender_id) REFERENCE users(id) ON DELETE CASCADE,
-            FOREIGN KEY (receiver_id) REFERENCE users(id) ON DELETE CASCADE
+            FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
         );`);
 
 
