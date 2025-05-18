@@ -1,13 +1,8 @@
-// tournaments.ts
-// -------------------------------------------------------------------
-// Handles tournament lobby UI
-// -------------------------------------------------------------------
 import { getMyId, setCurrentTLobby } from './state.js';
 import { hideAllPages } from './helpers.js';
 function send(sock, msg) {
     sock.readyState === WebSocket.OPEN && sock.send(JSON.stringify(msg));
 }
-/** Join a tournament via its 4‑letter invitation code. */
 export function joinByCode(socket, codeFromBtn) {
     var _a;
     const codeInput = document.getElementById('t-code-input');
@@ -21,7 +16,6 @@ export function joinByCode(socket, codeFromBtn) {
         payload: { code },
     }));
 }
-/** Render the tournament selection list (right column on the page). */
 export function renderTournamentList(list, onJoin) {
     if (!Array.isArray(list))
         return;
@@ -48,35 +42,23 @@ export function renderTournamentList(list, onJoin) {
         box.appendChild(card);
     });
 }
-/* ------------------------------------------------------------------ *
- * Lobby rendering – called whenever the server pushes a new TLobbyState
- * ------------------------------------------------------------------ */
-/**
- * Re-render the tournament lobby page.
- * Expects `TLobby.slots` to be a **number**, but will gracefully fall back
- * to `players.length` if it isn’t.
- */
 export function renderTLobby(TLobby, sock) {
     var _a;
-    /* ---------- cache & locals --------------------------------------- */
     setCurrentTLobby(TLobby);
     const myId = getMyId();
     const amHost = TLobby.hostId === myId;
     const players = Array.isArray(TLobby.players) ? TLobby.players : [];
-    /* ---------- UI helpers ------------------------------------------- */
     const totalSlots = typeof TLobby.slots === 'number'
         ? TLobby.slots
         : Number.parseInt(String(TLobby.slots), 10) || players.length;
     const displayName = (p) => {
         const youMark = p.id === myId ? ' (you)' : '';
         const hostMark = p.id === TLobby.hostId ? ' ⭐️' : '';
-        const shortId = p.id.slice(0, 4); // e.g. “a1b2”
+        const shortId = p.id.slice(0, 4);
         return `${p.name}${youMark}${hostMark}  [${shortId}]`;
     };
-    /* ---------- page switching --------------------------------------- */
     hideAllPages();
     document.getElementById('t-lobby-page').style.display = 'block';
-    /* ---------- player table ----------------------------------------- */
     const table = document.getElementById('t-lobby-table');
     table.innerHTML = '';
     const frag = document.createDocumentFragment();
@@ -85,18 +67,15 @@ export function renderTLobby(TLobby, sock) {
         const isFilled = Boolean(p);
         const row = document.createElement('div');
         row.className = 'TLobby-row';
-        /* name + id */
         const nameSpan = document.createElement('span');
         nameSpan.className = 't-name';
         nameSpan.textContent = isFilled ? displayName(p) : '— empty —';
         row.appendChild(nameSpan);
-        /* ready indicator */
         const dot = document.createElement('span');
         dot.className = 't-status';
         if (isFilled)
             dot.classList.add(p.ready ? 'green-dot' : 'red-dot');
         row.appendChild(dot);
-        /* kick button (host only, not yourself) */
         if (amHost && isFilled && p.id !== myId) {
             const kick = document.createElement('button');
             kick.className = 'kick-btn';
@@ -107,7 +86,6 @@ export function renderTLobby(TLobby, sock) {
         frag.appendChild(row);
     }
     table.appendChild(frag);
-    /* ---------- kick-button handlers (host only) --------------------- */
     if (amHost) {
         table.querySelectorAll('.kick-btn').forEach(btn => {
             btn.onclick = () => {
@@ -120,10 +98,8 @@ export function renderTLobby(TLobby, sock) {
             };
         });
     }
-    /* ---------- share code ------------------------------------------- */
     document.getElementById('t-share-code').value =
         '#' + ((_a = TLobby.code) !== null && _a !== void 0 ? _a : '----');
-    /* ---------- controls and status ---------------------------------- */
     const allReady = players.length === totalSlots && players.every(p => p.ready);
     document.getElementById('host-controls').style.display =
         amHost ? 'block' : 'none';

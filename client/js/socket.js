@@ -1,4 +1,3 @@
-// socket.ts – singleton WebSocket + type‑safe message bus
 const listeners = {};
 let socket = null;
 function createSocket() {
@@ -9,7 +8,7 @@ function createSocket() {
         (_a = listeners[data.type]) === null || _a === void 0 ? void 0 : _a.forEach(cb => cb(data));
     });
     ws.addEventListener('close', () => {
-        socket = null; // will reconnect lazily
+        socket = null;
     });
     return ws;
 }
@@ -22,7 +21,7 @@ export function getSocket() {
 export function on(type, cb) {
     var _a;
     ((_a = listeners[type]) !== null && _a !== void 0 ? _a : (listeners[type] = new Set())).add(cb);
-    ensureSocket(); // guarantee the connection exists
+    ensureSocket();
 }
 export function off(type, cb) {
     var _a;

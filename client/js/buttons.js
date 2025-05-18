@@ -2,7 +2,7 @@ import { setCurrentTLobby, getCurrentTLobby, getMyId } from './state.js';
 let buttonsInitialized = false;
 export function setupButtonsDelegated(navigate, TLobbySocket) {
     if (buttonsInitialized)
-        return; // ← …but never used it
+        return;
     buttonsInitialized = true;
     const lobbyPage = document.getElementById('t-lobby-page');
     if (!lobbyPage)

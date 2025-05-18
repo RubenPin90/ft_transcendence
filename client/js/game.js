@@ -2,7 +2,7 @@ import { getSocket } from './socket.js';
 let ctx = null;
 let userId = null;
 let currentRoomId = null;
-let ws = null; // Declare ws globally
+let ws = null;
 let inputHandlersRegistered = false;
 let onGameEndCallback = null;
 const keysPressed = {};

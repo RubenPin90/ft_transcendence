@@ -1,8 +1,8 @@
 import dotenv from 'dotenv';
 import { Buffer } from 'buffer';
-import * as settings_db from './database/db_settings_functions.js';
-import * as users_db from './database/db_users_functions.js';
-import * as mfa_db from './database/db_mfa_functions.js';
+import * as settings_db from '../database/db_settings_functions.js';
+import * as users_db from '../database/db_users_functions.js';
+import * as mfa_db from '../database/db_mfa_functions.js';
 import * as send from './responses.js';
 import https from 'https';
 import * as modules from './modules.js';

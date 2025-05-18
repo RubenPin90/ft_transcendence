@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import * as utils from './utils.js'
-import translate from 'translate-google'
+import translate from '@vitalets/google-translate-api';
 
 async function translator(text, lang) {
 	var translated;

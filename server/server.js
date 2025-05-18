@@ -12,6 +12,14 @@ import { matchManager, GAME_MODES } from './matchManager.js'
 import { handleClientMessage } from './messageHandler.js'
 import { tournamentManager } from './tournamentManager.js'
 
+import urlsPlugin from './urls.js';
+
+import http from 'http';
+import * as urls from './urls.js';
+const PORT = 8080;
+import * as settings_db from '../database/db_settings_functions.js';
+
+
 // Helper to get __dirname in ES module
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -21,23 +29,37 @@ const fastify = Fastify({ logger: true })
 
 // Serve /public
 await fastify.register(fastifyStatic, {
-  root: path.join(__dirname, '../public'),
-  prefix: '/public/',
+  root: path.join(__dirname, '../client/js'),
+  prefix: '/client/js/',
 })
+
 
 // Serve /client/js via plugin
-await fastify.register(staticJs)
+await fastify.register(urlsPlugin); 
 
-fastify.get('/*', async (request, reply) => {
-  return reply.sendFile('menu.html', path.join(__dirname, '../templates'))
-})
+// const PORT = 8080;
+await fastify.listen({ port: PORT, host: '0.0.0.0' });
+const server = fastify.server;               // <-- now defined
+
+const wss = new WebSocketServer({ noServer: true });
+server.on('upgrade', (req, socket, head) => {
+  if (req.url.startsWith('/ws/game')) {
+    wss.handleUpgrade(req, socket, head, ws =>
+      wss.emit('connection', ws, req)
+    );
+  } else {
+    socket.destroy();
+  }
+});
+
+
 
 // Start Fastify HTTP server
-const httpServer = await fastify.listen({ port: 3000, host: '0.0.0.0' });
-const server = fastify.server
+// const httpServer = await fastify.listen({ port: 3000, host: '0.0.0.0' });
+// const server = fastify.server
 
 // ---- CREATE OUR WEBSOCKET SERVER ----
-const wss = new WebSocketServer({ noServer: true })
+// const wss = new WebSocketServer({ noServer: true })
 
 // ---- CREATE THE MATCH MANAGER INSTANCE ----
 const MatchManager = new matchManager(wss)

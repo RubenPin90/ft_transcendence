@@ -1,6 +1,6 @@
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
-import * as modules from '../modules.js';
+import * as modules from '../server/modules.js';
 
 const max_loop_size = 1000000000;
 
