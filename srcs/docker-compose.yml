@@ -36,17 +36,23 @@ services:
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --web.route-prefix=/
-      - --web.external-url=http://localhost/monitoring/prometheus
+      - --web.external-url=http://localhost/prometheus
 
   grafana:
     image: grafana/grafana
     container_name: 'grafana'
     networks:
       - trancendence-network
-    ports:
-      - "3000:3000"
     volumes:
       - grafana_data:/var/lib/grafana
+    environment:
+      # - GF_SECURITY_ADMIN_PASSWORD_FILE=/run/secrets/grafana_admin_password
+      - GF_SECURITY_ADMIN_PASSWORD=meinTest123
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SERVER_ROOT_URL=https://rpinchas.42.fr/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    secrets:
+      - grafana_admin_password
     depends_on:
       - prometheus
     

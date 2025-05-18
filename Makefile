@@ -9,7 +9,7 @@ ENV_TMP_FILE := $(SRC_DIR)/.env.example
 
 USER_NAME := $(shell whoami)
 SECRETS_DIR := $(ROOT_DIR)/secrets
-DATA_GRAFANA := $(SRC_DIR)/monitoring/grafana
+DATA_GRAFANA := $(ROOT_DIR)/volumes/grafana
 
 all: compose
 
@@ -67,5 +67,9 @@ clean:
 
 fclean: clean
 	@docker system prune -af
+	@if [ -d $(DATA_GRAFANA) ]; then \
+		echo "Removing grafana data directory..."; \
+		sudo rm -rf $(DATA_GRAFANA); \
+	fi
 
 .PHONY: all compose start stop re clean fclean
