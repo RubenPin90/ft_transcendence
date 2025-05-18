@@ -19,9 +19,7 @@ async function url_pattern(request, response) {
         case request.url.includes(".jpg") || request.url.includes(".jpeg"):
             return await serveStaticFile(request.url, response, 'image/jpeg');
         case request.url.includes('?code='):
-            const data = await views.home(request, response);
-            // console.log(data);
-            return data;
+            return await views.home(request, response);
         case request.url === '/login':
             return await views.login(request, response);
         case request.url === '/register':

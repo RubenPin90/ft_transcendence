@@ -130,10 +130,6 @@ async function encrypt_google(request) {
 		const username = create_username(email);
 		if (username < 0)
 			return -8;
-		console.log("---");
-		console.log(userid);
-		console.log(typeof(userid));
-		console.log("---");
 		const db_return = await settings_db.create_settings_value('', pfp, 0, email, 'en', userid, 0);
 		console.log(db_return);
 		if (db_return.self === undefined || db_return.return === undefined)

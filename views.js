@@ -1,7 +1,6 @@
 import * as modules from './modules.js';
 import * as utils from './utils.js';
 import * as send from './responses.js';
-import * as translator from './translate.js'
 import * as settings_db from './database/db_settings_functions.js';
 import * as users_db from './database/db_users_functions.js';
 import * as mfa_db from './database/db_mfa_functions.js';
@@ -60,7 +59,7 @@ async function login(request, response) {
     }
     if (!check_login || check_login === undefined || check_login < -1)
         return `4_${check_login}`;
-    await send.send_html('login.html', response, 200, async (data) => {
+    await send.send_html('login.html', null, response, 200, async (data) => {
         const google_link = utils.google_input_handler();
         data = data.replace("{{google_login}}", google_link);
         const github_link = utils.github_input_handler();
@@ -109,7 +108,7 @@ async function register(request, response) {
     }
     if (!check_login || check_login === undefined || check_login < -1)
         return `6_${check_login}`;
-    const check = await send.send_html('register.html', response, 200, async (data) => {
+    const check = await send.send_html('register.html', null, response, 200, async (data) => {
         const google_link = utils.google_input_handler();
         data = data.replace("{{google_login}}", google_link);
         const github_link = utils.github_input_handler();
@@ -162,30 +161,21 @@ async function home(request, response) {
 		send.redirect(response, '/', 302);
         return true;
     }
-    const check = await send.send_html('home.html', response, 200, async (data) => {
+    const check = await send.send_html('home.html', request, response, 200, async (data) => {
         var [keys, values] = modules.get_cookies(request.headers.cookie);
         const token_check = keys?.find((key) => key === 'token');
         if (!token_check || token_check === undefined || token_check == false)
             return false;
-        const lang_check = keys?.find((key) => key === 'lang');
-        if (!lang_check || lang_check === undefined || lang_check == false)
-            return false;
         const tokenIndex = keys.indexOf('token');
         const token = values[tokenIndex];
-        const langIndex = keys.indexOf('lang');
-        const lang = values[langIndex];
         try {
             var decoded_token = modules.get_jwt(token);
-            var decoded_lang = modules.get_jwt(lang);
         } catch (err) {
             return false;
         }
         const replace_data = await users_db.get_users_value('self', decoded_token.userid);
         if (!replace_data)
             return false;
-        if (decoded_lang.userid !== 'en') {
-            data = await translator.cycle_translations(data, decoded_lang.userid);
-        }
         // EC sets the user status to online
         // await users_db.update_users_value('status', 1, decoded.userid);
         return data.replace("{{userid}}", replace_data.username);
@@ -252,7 +242,7 @@ async function mfa(request, response) {
             return true;
         }
     }
-    const status = await send.send_html('settings.html', response, 200, async (data) => {
+    const status = await send.send_html('settings.html', request, response, 200, async (data) => {
         const userid = await utils.get_decrypted_userid(request, response);
         if (userid === -1)
             return send.redirect(response, '/login', 302);
@@ -295,7 +285,6 @@ async function mfa(request, response) {
             select_menu += '<option value="otc">Otc</option>';
         } else
             replace_string += '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="create_otc()"><span class="button_text">Create OTC</span></button></div> ';
-        // replace_string += '<br></br>'
         if (check_mfa.custom.length !== 0 && !check_mfa.custom.endsWith('_temp')) {
             replace_string += '<button onclick="create_custom_code()">Recreate custom 6 diggit code</button> ';
             replace_string += '<button onclick="remove_custom_code()">Remove custom 6 digit code</button> ';
@@ -303,9 +292,7 @@ async function mfa(request, response) {
             select_menu += '<option value="custom">Custom</option>';
         } else
             replace_string += '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="create_custom_code()"><span class="button_text">Create custom 6 diggit code</span></button></div> ';
-        // replace_string += '<br></br>'
         if (check_mfa.email.length !== 0 && !check_mfa.email.endsWith('_temp')) {
-            // console.log("WOW");
             replace_string += '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="remove_email()"><span class="button_text">Disable email authentication</span></button></div> ';
             select_number++;
             select_menu += '<option value="email">Email</option>';
@@ -336,7 +323,7 @@ async function select_language(request, response){
     if (request.method == 'POST'){
         console.log("selecting language");
     }
-    const status = await send.send_html('settings.html', response, 200, async (data) => {
+    const status = await send.send_html('settings.html', request, response, 200, async (data) => {
         var replace_string = '<button onclick="change_language()">Change language</button><br></br>';
         replace_string += `
         <form id="language">
@@ -610,7 +597,7 @@ async function user(request, response){
     if (request_url == '/profile_settings')
         return await user_settings(request, response);
 
-    const status = await send.send_html('settings.html', response, 200, async  (data) => {
+    const status = await send.send_html('settings.html', request, response, 200, async  (data) => {
         var replace_string = "";
         replace_string += '<div class="buttons mb-6" onclick="window.location.href = \'http://localhost:8080/settings/user/select_language\'">';
         replace_string += '<button class="block w-full mb-6 mt-6">';
@@ -655,7 +642,7 @@ async function settings(request, response) {
     // if (request.method === 'POST') {
 
     // }
-    const status = await send.send_html('settings.html', response, 200, async  (data) => {
+    const status = await send.send_html('settings.html', request, response, 200, async  (data) => {
         var replace_string = "";
         replace_string += '<div class="buttons mb-6" onclick="window.location.href = \'http://localhost:8080/settings/mfa\'">';
         replace_string += '<button class="block w-full mb-6 mt-6">';
@@ -741,7 +728,7 @@ async function settings_prefered_language(request, response) {
         return send.redirect(response, '/settings/user', 302);
     modules.delete_cookie(response, 'lang');
     modules.set_cookie(response, 'lang', lang_jwt);
-    // console.log(user);
+    console.log(user);
     const wow = await settings_db.update_settings_value('lang', method, user.userid);
     // console.log(wow);
     return send.redirect(response, '/settings/user', 302);
@@ -857,19 +844,7 @@ async function profile(request, response){
     }
 
 
-    const status = await send.send_html('profile.html', response, 200, async(data) => {
-        var [keys, values] = modules.get_cookies(request.headers.cookie);
-        const lang_check = keys?.find((key) => key === 'lang');
-        if (!lang_check || lang_check === undefined || lang_check == false)
-            return false;
-        const langIndex = keys.indexOf('lang');
-        const lang = values[langIndex];
-        try {
-            var decoded_lang = modules.get_jwt(lang);
-        } catch (err) {
-            return false;
-        }
-        data = await translator.cycle_translations(data, decoded_lang.userid);
+    const status = await send.send_html('profile.html', request, response, 200, async(data) => {
         data = data.replace('{{username}}', user.username);
         data = data.replace('{{email}}', settings.email || 'Not provided');
         data = data.replace('{{picture}}', settings.pfp || 'public/default_profile.svg');
@@ -927,7 +902,7 @@ async function user_settings(request, response) {
         return send.redirect(response, '/login', 302);
     }
 
-    const status = await send.send_html('user_settings.html', response, 200);
+    const status = await send.send_html('user_settings.html', request, response, 200);
     if (!status || status === undefined){
         return `Error rendering user settings page: ${status}`;
     }
