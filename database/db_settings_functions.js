@@ -123,7 +123,7 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
 			`INSERT INTO settings (password, pfp, mfa, email, lang, google, github, self) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 			[password, pfp, mfa, email, lang, google, github, self]
 		);
-		console.log(`New user created with ID: ${row.lastID}`);
+		// console.log(`New user created with ID: ${row.lastID}`);
         return {"return": row, "self": self};
     } catch (err) {
         console.error(`Error in create_settings_value: ${err}`);

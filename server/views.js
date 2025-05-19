@@ -71,10 +71,13 @@ async function login(request, response) {
 
 async function register(request, response) {
     const check_login = utils.check_login(request, response);
+    console.log("Request: ", request);
+    console.log("Response: ", response);
     if (check_login === true)
         return true;
     if (request.method == 'POST') {
         const replace_data = await utils.get_frontend_content(request);
+        console.log("IN REGISTER POST");
         const check_settings = await settings_db.get_settings_value('email', replace_data.email);
         if (check_settings || check_settings !== undefined) {
             response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
@@ -82,9 +85,11 @@ async function register(request, response) {
             return true;
         }
         const hashed = await modules.create_encrypted_password(replace_data.password);
+        console.log("Here2");
         if (!hashed || hashed === undefined || hashed < 0)
             return `1_${hashed}`;
         const settings = await settings_db.create_settings_value(hashed, '', 0, replace_data.email, 'en', '', '');
+        console.log("Here3");
         if (!settings || settings === undefined || settings < 0)
             return `2_${settings}`;
         console.log("wow");
@@ -111,10 +116,8 @@ async function register(request, response) {
         return `6_${check_login}`;
     const check = await send.send_html('register.html', response, 200, async (data) => {
         const google_link = utils.google_input_handler();
-        console.log("GOOGLE: " + google_link);
         data = data.replace("{{google_login}}", google_link);
         const github_link = utils.github_input_handler();
-        console.log("GITHUG: " + github_link);
         return data.replace("{{github_login}}", github_link);
     })
     return check;
