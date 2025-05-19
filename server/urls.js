@@ -24,7 +24,7 @@ export default fastifyPlugin(async function routes(fastify) {
   });
 
   // --- SVG ---
-  fastify.get('/img/:file', async (req, reply) => {
+  fastify.get('/public/:file', async (req, reply) => {
     const file = req.params.file;
   
     let mime = null;
@@ -36,7 +36,7 @@ export default fastifyPlugin(async function routes(fastify) {
       return reply.callNotFound();
     }
 
-    const filePath = path.join(process.cwd(), 'img', file);
+    const filePath = path.join(process.cwd(), 'public', file);
     try {
       const data = await fs.readFile(filePath);
       reply.type(mime).send(data);
@@ -54,11 +54,6 @@ export default fastifyPlugin(async function routes(fastify) {
 
   fastify.get('/settings', (req, reply) => views.settings(req.raw, reply.raw));
   fastify.get('/settings/*', (req, reply) => views.settings(req.raw, reply.raw));
-  // fastify.get('/settings/user_settings', (req, reply) => views.user_settings(req.raw, reply.raw));
-  // fastify.get('/settings/change_user', (req, reply) => views.user_settings(req.raw, reply.raw));
-  // fastify.get('/settings/change_login', (req, reply) => views.user_settings(req.raw, reply.raw));
-  // fastify.get('/settings/change_avatar', (req, reply) => views.user_settings(req.raw, reply.raw));
-
   fastify.get('/verify_email', (req, reply) => views.verify_email(req.raw, reply.raw));
   fastify.get('/verify_2fa', (req, reply) => views.verify_2fa(req.raw, reply.raw));
   fastify.get('/verify_custom', (req, reply) => views.verify_custom(req.raw, reply.raw));
