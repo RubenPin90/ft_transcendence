@@ -51,6 +51,7 @@ export default fastifyPlugin(async function routes(fastify) {
   });
   fastify.get('/login', (req, reply) => views.login(req.raw, reply.raw));
   fastify.get('/register', (req, reply) => views.register(req.raw, reply.raw));
+  fastify.post('/register', (req, reply) => views.register(req.raw, reply.raw));
 
   fastify.get('/settings', (req, reply) => views.settings(req.raw, reply.raw));
   fastify.get('/settings/*', (req, reply) => views.settings(req.raw, reply.raw));

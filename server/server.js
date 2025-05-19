@@ -5,6 +5,7 @@ import fastifyStatic from '@fastify/static'
 import staticJs from '../plugins/static-js.js'
 import WebSocket, { WebSocketServer } from 'ws';
 import ejs from 'ejs'
+import os from 'os';
 
 
 import { createGameAI } from './matchMaking.js'
@@ -34,6 +35,18 @@ await fastify.register(fastifyStatic, {
 })
 
 
+function getLocalIP() {
+  const nets = os.networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      if (net.family === 'IPv4' && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return 'localhost';
+}
+
 // Serve /client/js via plugin
 await fastify.register(urlsPlugin); 
 
@@ -42,7 +55,7 @@ await fastify.listen({ port: PORT, host: '0.0.0.0' });
 const server = fastify.server;               // <-- now defined
 
 console.log(`Server listening at http://127.0.0.1:${PORT}`);
-console.log(`Server listening at http://10.0.2.15:${PORT}`);
+console.log(`Server listening at http://${getLocalIP()}:${PORT}`);
 
 const wss = new WebSocketServer({ noServer: true });
 server.on('upgrade', (req, socket, head) => {

@@ -83,7 +83,6 @@ function create_account() {
             return;
         }
         const email_at_pos = email.indexOf('@');
-        const email_name = email.slice(0, email_at_pos).replace(/\./g, '-');
         const email_domain = email.slice(email_at_pos + 1);
         if (!email_domain.includes('.')) {
             wrong_input();
