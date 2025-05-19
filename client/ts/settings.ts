@@ -241,7 +241,7 @@ async function create_email() {
     } catch (jsonError) {
         console.error(`Fehler beim Parsen der JSON-Antwort`);
     }
-    console.log(data);
+    // console.log(data);
 }
 
 async function remove_custom_code() {

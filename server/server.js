@@ -26,7 +26,10 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 // Initialize Fastify
-const fastify = Fastify({ logger: false })
+const fastify = Fastify({ 
+  logger: false,
+  bodyLimit: 2 * 1024 * 1024,
+ });
 
 // Serve /public
 await fastify.register(fastifyStatic, {

@@ -71,13 +71,13 @@ async function login(request, response) {
 
 async function register(request, response) {
     const check_login = utils.check_login(request, response);
-    console.log("Request: ", request);
-    console.log("Response: ", response);
+    // console.log("Request: ", request);
+    // console.log("Response: ", response);
     if (check_login === true)
         return true;
     if (request.method == 'POST') {
         const replace_data = await utils.get_frontend_content(request);
-        console.log("IN REGISTER POST");
+        // console.log("IN REGISTER POST");
         const check_settings = await settings_db.get_settings_value('email', replace_data.email);
         if (check_settings || check_settings !== undefined) {
             response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
@@ -85,14 +85,14 @@ async function register(request, response) {
             return true;
         }
         const hashed = await modules.create_encrypted_password(replace_data.password);
-        console.log("Here2");
+        // console.log("Here2");
         if (!hashed || hashed === undefined || hashed < 0)
             return `1_${hashed}`;
         const settings = await settings_db.create_settings_value(hashed, '', 0, replace_data.email, 'en', '', '');
-        console.log("Here3");
+        // console.log("Here3");
         if (!settings || settings === undefined || settings < 0)
             return `2_${settings}`;
-        console.log("wow");
+        // console.log("wow");
         const user = await users_db.create_users_value(0, replace_data.username, settings.self);
         if (!user || user === undefined || user < 0) {
             await settings_db.delete_settings_value(settings.self);
@@ -948,11 +948,13 @@ async function update_settings(request, response) {
         return send.send_error_page('404.html', response, 404);
     }
 
-    const data = await utils.get_frontend_content(request);
+    // const data = await utils.get_frontend_content(request);
+    const data = request.body;
     if (!data || data === undefined){
-        response.writeHead(400, {'Content-Type': 'application/json'});
-        response.end(JSON.stringify({ message: 'Invalid data' }));
-        return ;
+        // response.writeHead(400, {'Content-Type': 'application/json'});
+        // response.end(JSON.stringify({ message: 'Invalid data' }));
+        // return ;
+        return response.code(400).send({ message: 'Invalid data'});
     }
     const [keys, values] = modules.get_cookies(request.headers.cookie);
     if (!keys?.includes('token')) {
@@ -983,21 +985,25 @@ async function update_settings(request, response) {
             result = await settings_db.update_settings_value('password', password, userid);
         }
         if (avatar){
+            // console.log("AVATAR: " + avatar);
             result = await settings_db.update_settings_value('pfp', avatar, userid);
         }
         if (result) {
-            response.writeHead(200, {'Content-Type': 'application/json'});
-            response.end(JSON.stringify({message: 'Successfully updated Username'}));
+            // response.writeHead(200, {'Content-Type': 'application/json'});
+            // response.end(JSON.stringify({message: 'Successfully updated Username'}));
+            return response.code(200).send({ message: 'Successfully updated Username'});
         }
         else{
-            response.writeHead(500, {'Content-Type': 'application/json'});
-            response.end(JSON.stringify({message: 'Failed to update Username'}));
+            // response.writeHead(500, {'Content-Type': 'application/json'});
+            // response.end(JSON.stringify({message: 'Failed to update Username'}));
+            return response.code(500).send({ message: 'Failed to update Username'});
         }
     }
     catch (err){
         console.error("Error regarding updating user: " + err);
-        response.writeHead(500, {'Content-Type': 'application/json'});
-        response.end(JSON.stringify({message: 'Server error'}));
+        // response.writeHead(500, {'Content-Type': 'application/json'});
+        // response.end(JSON.stringify({message: 'Server error'}));
+        return response.code(500).send({ message: 'Server error'});
     }
 
 
@@ -1012,11 +1018,12 @@ async function update_user(request, response) {
         return send.send_error_page('404.html', response, 404);
     }
 
-    const data = await utils.get_frontend_content(request);
+    // const data = await utils.get_frontend_content(request);
+    const data = request.body;
     if (data === null || data === undefined){
-        response.writeHead(400, { 'Content-Type ': 'application/json' });
-        response.end(JSON.stringify({ message: 'Invalid data' }));
-        return ;
+        // response.writeHead(400, { 'Content-Type': 'application/json' });
+        // response.end(JSON.stringify({ message: 'Invalid data' }));
+        return response.code(400).send({ message: 'Invalid data'});
     }
     const [keys, values] = modules.get_cookies(request.headers.cookie);
     if (!keys?.includes('token')) {
@@ -1038,18 +1045,21 @@ async function update_user(request, response) {
     try {
         const result = await users_db.update_users_value('username', data.usernameValue, userid);
         if (result) {
-            response.writeHead(200, {'Content-Type': 'application/json'});
-            response.end(JSON.stringify({message: 'Successfully updated Username'}));
+            // response.writeHead(200, {'Content-Type': 'application/json'});
+            // response.end(JSON.stringify({message: 'Successfully updated Username'}));
+            return response.code(200).send({ message: 'Successfully updated Username'});
         }
         else{
-            response.writeHead(500, {'Content-Type': 'application/json'});
-            response.end(JSON.stringify({message: 'Failed to update Username'}));
+            // response.writeHead(500, {'Content-Type': 'application/json'});
+            // response.end(JSON.stringify({message: 'Failed to update Username'}));
+            return response.code(500).send({ message: 'Failed to update Username'});
         }
     }
     catch (err){
-        console.log("Error regarding updating user: " + err);
-        response.writeHead(500, {'Content-Type': 'application/json'});
-        response.end(JSON.stringify({message: 'Server error'}));
+        // console.log("Error regarding updating user: " + err);
+        // response.writeHead(500, {'Content-Type': 'application/json'});
+        // response.end(JSON.stringify({message: 'Server error'}));
+        return response.code(500).send({ message: 'Server error'});
     }
 }
 

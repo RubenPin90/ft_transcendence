@@ -229,7 +229,6 @@ function create_email() {
         catch (jsonError) {
             console.error(`Fehler beim Parsen der JSON-Antwort`);
         }
-        console.log(data);
     });
 }
 function remove_custom_code() {

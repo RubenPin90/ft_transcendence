@@ -69,7 +69,6 @@ function check_fields(email = '', username = '', password = '', repeat = '') {
 function create_account() {
     return __awaiter(this, void 0, void 0, function* () {
         var _a, _b, _c, _d, _e, _f, _g, _h;
-        console.log('creating account');
         const email = (_b = (_a = $input('email')) === null || _a === void 0 ? void 0 : _a.value) !== null && _b !== void 0 ? _b : '';
         const username = (_d = (_c = $input('username')) === null || _c === void 0 ? void 0 : _c.value) !== null && _d !== void 0 ? _d : '';
         const password = (_f = (_e = $input('password-input')) === null || _e === void 0 ? void 0 : _e.value) !== null && _f !== void 0 ? _f : '';

@@ -62,7 +62,9 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.get('/profile', (req, reply) => views.profile(req.raw, reply.raw));
   fastify.get('/logout', (req, reply) => views.logout(req.raw, reply.raw));
   fastify.get('/update_user', (req, reply) => views.update_user(req.raw, reply.raw));
+  fastify.post('/update_user', (req, reply) => views.update_user(req, reply));
   fastify.get('/update_settings', (req, reply) => views.update_settings(req.raw, reply.raw));
+  fastify.post('/update_settings', (req, reply) => views.update_settings(req, reply));
 
   // --- 404 fallback ---
   fastify.setNotFoundHandler((req, reply) => {

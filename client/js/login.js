@@ -71,7 +71,6 @@ function email_login(userid) {
         if (!code2)
             return;
         const code = code2.value;
-        console.log(userid);
         const response = yield fetch('/verify_email', {
             method: 'POST',
             headers: {
@@ -82,7 +81,6 @@ function email_login(userid) {
         let data;
         try {
             data = yield response.json();
-            console.log(data);
             if (data.Response === "reload") {
                 window.location.reload();
             }
@@ -101,7 +99,6 @@ function mfa_login(userid) {
         if (!code2)
             return;
         const code = code2.value;
-        console.log(userid);
         const response = yield fetch('/verify_2fa', {
             method: 'POST',
             headers: {
@@ -112,7 +109,6 @@ function mfa_login(userid) {
         let data;
         try {
             data = yield response.json();
-            console.log(data);
             if (data.Response === "reload") {
                 window.location.reload();
             }
@@ -131,7 +127,6 @@ function custom_login(userid) {
         if (!code2)
             return;
         const code = code2.value;
-        console.log(userid);
         const response = yield fetch('/verify_custom', {
             method: 'POST',
             headers: {
@@ -142,7 +137,6 @@ function custom_login(userid) {
         let data;
         try {
             data = yield response.json();
-            console.log(data);
             if (data.Response === "reload") {
                 window.location.reload();
             }

@@ -285,26 +285,38 @@ function change_avatar() {
             alert("No file selected");
             return;
         }
-        const avatar_value = avatar_field.value;
         const file = avatar_field.files[0];
-        const value_struct = {
-            email: null,
-            password: null,
-            avatar: "public/" + file.name
+        const read = new FileReader();
+        read.readAsDataURL(file);
+        read.onload = () => __awaiter(this, void 0, void 0, function* () {
+            const base64 = read.result;
+            const value_struct = {
+                email: null,
+                password: null,
+                avatar: base64
+            };
+            try {
+                const response = yield fetch('/update_settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(value_struct)
+                });
+                if (response.ok) {
+                    console.log("success");
+                }
+                else {
+                    alert("error updating avatar");
+                }
+            }
+            catch (err) {
+                console.error('Error updating logindata: ', err);
+            }
+        });
+        read.onerror = () => {
+            console.error("Read file failed");
         };
-        try {
-            const response = yield fetch('/update_settings', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(value_struct)
-            });
-        }
-        catch (err) {
-            console.error('Error updating logindata: ', err);
-        }
-        alert("success");
     });
 }
 document.addEventListener('DOMContentLoaded', () => {

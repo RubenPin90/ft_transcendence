@@ -61,7 +61,7 @@ async function email_login(userid : string) {
         return;
 
     const code = code2.value;
-    console.log(userid);
+    // console.log(userid);
     const response = await fetch('/verify_email', {
         method: 'POST',
         headers: {
@@ -73,7 +73,7 @@ async function email_login(userid : string) {
     let data;
     try {
         data = await response.json();
-        console.log(data);
+        // console.log(data);
         if (data.Response === "reload") {
             window.location.reload();
         } else {
@@ -90,7 +90,7 @@ async function mfa_login(userid : string) {
         return;
 
     const code = code2.value;
-    console.log(userid);
+    // console.log(userid);
     const response = await fetch('/verify_2fa', {
         method: 'POST',
         headers: {
@@ -102,7 +102,7 @@ async function mfa_login(userid : string) {
     let data;
     try {
         data = await response.json();
-        console.log(data);
+        // console.log(data);
         if (data.Response === "reload") {
             window.location.reload();
         } else {
@@ -120,7 +120,7 @@ async function custom_login(userid : string) {
 
     const code = code2.value;
 
-    console.log(userid);
+    // console.log(userid);
     const response = await fetch('/verify_custom', {
         method: 'POST',
         headers: {
@@ -132,7 +132,7 @@ async function custom_login(userid : string) {
     let data;
     try {
         data = await response.json();
-        console.log(data);
+        // console.log(data);
         if (data.Response === "reload") {
             window.location.reload();
         } else {

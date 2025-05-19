@@ -285,30 +285,39 @@ async function change_avatar(){
         alert("No file selected");
         return;
     }
-    const avatar_value = avatar_field.value;
-
     const file = avatar_field.files[0];
     
-    const value_struct = {
-        email: null,
-        password: null,
-        avatar: "public/" + file.name
-    }
-
-    
-    try{
-        const response = await fetch('/update_settings', {
+    const read = new FileReader();
+    read.readAsDataURL(file);
+    read.onload = async () => {
+        const base64 = read.result as string;
+        const value_struct = {
+            email: null,
+            password: null,
+            avatar: base64
+        }
+        
+        try{
+            const response = await fetch('/update_settings', {
             method: 'POST',
             headers: {
                 'Content-Type' : 'application/json'
             },
             body: JSON.stringify(value_struct)
         });
+        if (response.ok){
+            console.log("success");
+        }else{
+            alert("error updating avatar");
+        }
     }
     catch(err){
         console.error('Error updating logindata: ', err);
     }
-    alert("success");
+    };
+    read.onerror = () => {
+        console.error("Read file failed");
+    }
 }
 
 
