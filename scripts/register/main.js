@@ -87,6 +87,8 @@ async function create_account() {
         wrong_input();
         return; // show error on screen
     }
+
+    // Here change the route of the fetch
     const response = await fetch('/register', {
         method: 'POST',
         headers: {

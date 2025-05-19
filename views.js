@@ -92,11 +92,10 @@ async function register(request, response) {
             await settings_db.delete_settings_value(settings.self);
             return `3_${user}`;
         }
-        // console.log(parsed.settings);
         const token = modules.create_jwt(settings.self, '1h');
         if (!token || token === undefined || token < 0)
             return `4_${token}`;
-        const lang = modules.create_jwt(parsed.settings.lang, '1h');
+        const lang = modules.create_jwt(settings.lang, '1h');
         if (!lang || lang === undefined || lang < 0)
             return `5_${lang}`;
         
@@ -588,6 +587,7 @@ async function select_language(request, response){
 
 
 async function user(request, response){
+    console.log("GG");
     var [keys, values] = modules.get_cookies(request.headers.cookie);
     if (!keys?.includes('token'))
         return send.redirect(response, '/login', 302);
@@ -601,7 +601,7 @@ async function user(request, response){
         var replace_string = "";
         replace_string += '<div class="buttons mb-6" onclick="window.location.href = \'http://localhost:8080/settings/user/select_language\'">';
         replace_string += '<button class="block w-full mb-6 mt-6">';
-        replace_string += '<span class="button_text">Select Language</span>';
+        replace_string += '<span class="button_text">Select language</span>';
         replace_string += '</button></div>';
 
         replace_string += '<div class="buttons mb-6" onclick="window.location.href = \'http://localhost:8080/settings/user/profile_settings\'">';
@@ -635,7 +635,7 @@ async function settings(request, response) {
         return await settings_set_prefered_mfa(request, response);
     if (request_url == "/mfa")
         return await mfa(request, response);
-    if (request_url.startsWith("/user?"))
+    if (request_url.startsWith("/user/select_language?"))
         return await settings_prefered_language(request, response);
     if (request_url.startsWith("/user"))
         return await user(request, response);
@@ -699,6 +699,7 @@ async function settings_set_prefered_mfa(request, response) {
 }
 
 async function settings_prefered_language(request, response) {
+    console.log("WOW");
     if (request.url.length < 11)
         return send.redirect(response, '/settings/user', 302);
     const location = request.url.slice(10);

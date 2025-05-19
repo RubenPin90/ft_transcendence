@@ -99,7 +99,9 @@ async function cycle_translations(text, lang) {
 	return text;
 }
 
-// await translate_text("Sixth");
+await translate_text("Change username");
+await translate_text("Change login data");
+await translate_text("Change avatar");
 
 export {
 	translator,

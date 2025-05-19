@@ -81,17 +81,17 @@ function return_main_settings() : string {
     <div class="flex flex-col mt-8 gap-6">
         <a href="/settings/user/change_user" class="buttons">
             <button class="block w-full mb-4 mt-6">
-                <span class="button_text">change username</span>
+                <span class="button_text">Change username</span>
             </button>
         </a>
         <a href="/settings/user/change_login" class="buttons">
             <button class="block w-full mb-4 mt-6">
-                <span class="button_text">change login data</span>
+                <span class="button_text">Change login data</span>
             </button>
         </a>
         <a href="/settings/user/change_avatar" class="buttons">
             <button class="block w-full mb-4 mt-6">
-                <span class="button_text">change avatar</span>
+                <span class="button_text">Change avatar</span>
             </button>
         </a>
     </div>

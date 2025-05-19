@@ -131,22 +131,23 @@ async function encrypt_google(request) {
 		if (username < 0)
 			return -8;
 		const db_return = await settings_db.create_settings_value('', pfp, 0, email, 'en', userid, 0);
-		console.log(db_return);
+		if (!db_return || db_return === undefined)
+			return -9
 		if (db_return.self === undefined || db_return.return === undefined)
 			return userid;
 		if (db_return < 0)
-			return -9;
+			return -10;
 		const check_setting = await settings_db.get_settings_value(userid);
 		if (!check_setting || check_setting === undefined)
-			return -10;
+			return -11;
 		const check_username = await users_db.create_users_value(0, username, userid);
 		if (check_username < 0 || check_username === undefined)
-			return -11;
+			return -12;
 		console.log("Here");
 		return userid;
 	} catch (error) {
 		console.error("Error during Google OAuth:", error);
-		return -12;
+		return -13;
 	}
 }
 
