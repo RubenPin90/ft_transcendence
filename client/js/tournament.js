@@ -60,6 +60,7 @@ export function renderTLobby(TLobby, sock) {
     var _a;
     /* ---------- cache & locals --------------------------------------- */
     setCurrentTLobby(TLobby);
+    console.log('socket', sock);
     const myId = getMyId();
     const amHost = TLobby.hostId === myId;
     const players = Array.isArray(TLobby.players) ? TLobby.players : [];
@@ -91,11 +92,18 @@ export function renderTLobby(TLobby, sock) {
         nameSpan.textContent = isFilled ? displayName(p) : '— empty —';
         row.appendChild(nameSpan);
         /* ready indicator */
+        console.log(`Player ${p === null || p === void 0 ? void 0 : p.name} ready: ${p === null || p === void 0 ? void 0 : p.ready}`);
         const dot = document.createElement('span');
         dot.className = 't-status';
         if (isFilled)
             dot.classList.add(p.ready ? 'green-dot' : 'red-dot');
         row.appendChild(dot);
+        if (isFilled && p.ready) {
+            const readyLbl = document.createElement('span');
+            readyLbl.className = 't-ready-label';
+            readyLbl.textContent = ' ready';
+            row.appendChild(readyLbl);
+        }
         /* kick button (host only, not yourself) */
         if (amHost && isFilled && p.id !== myId) {
             const kick = document.createElement('button');

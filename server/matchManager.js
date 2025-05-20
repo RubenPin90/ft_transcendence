@@ -1,11 +1,12 @@
 import { v4 as uuidv4 } from 'uuid'
+import { EventEmitter } from 'events'
 
 export const GAME_MODES = {
   PVE: 'PVE',     // Player vs AI
   PVP: 'PVP',     // 1v1
 }
 
-export class matchManager {
+export class matchManager extends EventEmitter {
   /*───────────────────────────
     Static configuration
   ───────────────────────────*/
@@ -39,6 +40,7 @@ export class matchManager {
     Construction / bookkeeping
   ───────────────────────────*/
   constructor (wss) {
+    super();
     this.wss         = wss
     this.rooms       = new Map()
     this.userSockets = new Map()

@@ -78,6 +78,7 @@ export function renderTournamentList(list: TourneySummary[], onJoin: (code: stri
 export function renderTLobby(TLobby: TLobbyState, sock: WebSocket) {
   /* ---------- cache & locals --------------------------------------- */
   setCurrentTLobby(TLobby);
+  console.log('socket', sock);
 
   const myId   = getMyId();
   const amHost = TLobby.hostId === myId;
@@ -120,10 +121,18 @@ export function renderTLobby(TLobby: TLobbyState, sock: WebSocket) {
     row.appendChild(nameSpan);
 
     /* ready indicator */
+    console.log(`Player ${p?.name} ready: ${p?.ready}`);
     const dot = document.createElement('span');
     dot.className = 't-status';
     if (isFilled) dot.classList.add(p!.ready ? 'green-dot' : 'red-dot');
     row.appendChild(dot);
+
+    if (isFilled && p!.ready) {
+      const readyLbl = document.createElement('span');
+      readyLbl.className = 't-ready-label';
+      readyLbl.textContent = ' ready';
+      row.appendChild(readyLbl);
+    }
 
     /* kick button (host only, not yourself) */
     if (amHost && isFilled && p!.id !== myId) {
@@ -177,4 +186,3 @@ export function renderTLobby(TLobby: TLobbyState, sock: WebSocket) {
       ? 'Waiting for host to start…'
       : 'Waiting for players…';
 }
-

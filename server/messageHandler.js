@@ -5,14 +5,6 @@ import { joinQueue1v1, joinQueueTournament } from './matchMaking.js';
 import { matchManager } from './matchManager.js';
 import { tournamentManager } from './tournamentManager.js';
 
-
-
-/**
- * Handle any incoming JSON message from a ws-like object.
- * @param {{ userId, inGame, currentGameId, send, readyState }} ws
- * @param {string} rawMsg
- * @param {WebSocket.Server} wss   // only needed if you want to broadcast chat
- */
 export function handleClientMessage(ws, rawMsg, matchManager) {
   let data;
   try {
@@ -66,7 +58,15 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
       tournamentManager.toggleReady(userId, tournamentId);
       break;
     }
-
+    case 'startTournament': {
+      console.log('Incoming startTournament request with data:', data);
+      const { id: tournamentId } = data.payload;
+      const userId = ws.userId;
+      console.log('userId:', userId);
+      console.log('tournamentId:', tournamentId);
+      tournamentManager.startTournament(tournamentId);
+      break;
+    }
     case 'leaveTournament': {
       console.log('Incoming leaveTournament request with data:', data);
       const { tournamentId } = data.payload ?? {};
@@ -114,9 +114,8 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
           else if (direction === 'down') dy =  1
         }
         
-        // 5) apply movement
-        const speed = room.paddleSpeed ?? 1.0      // you can tweak this
-        const FPS = 60                     // same value you use in _mainLoop
+        const speed = room.paddleSpeed ?? 1.0
+        const FPS = 60
         const deltaY = dy * speed / FPS
         player.paddleY = Math.max(0,
           Math.min(1, player.paddleY + deltaY)

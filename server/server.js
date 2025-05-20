@@ -28,6 +28,11 @@ await fastify.register(fastifyStatic, {
 // Serve /client/js via plugin
 await fastify.register(staticJs)
 
+fastify.get('/css/style.css', async (_, reply) => {
+  const data = await fs.readFile(path.join(__dirname, '..', 'css', 'style.css'));
+  reply.type('text/css').send(data);
+});
+
 fastify.get('/*', async (request, reply) => {
   return reply.sendFile('menu.html', path.join(__dirname, '../templates'))
 })
@@ -44,6 +49,12 @@ const MatchManager = new matchManager(wss)
 
 tournamentManager.setSocketServer(wss);
 
+MatchManager.on('matchFinished', ({ roomId, winnerId }) => {
+  const room = tournamentManager.rooms[roomId];
+  if (room) {
+    tournamentManager.reportMatchResult(room.tournamentId, roomId, winnerId);
+  }
+})
 /**
  * For simple matchmaking, we’ll keep arrays of "waiting" users for 1v1 & custom modes.
  * Once we find enough players, we create/join a room using matchManager.
@@ -80,33 +91,38 @@ setInterval(() => {
 
 // ---- MAIN WEBSOCKET CONNECTION HANDLER ----
 wss.on('connection', (ws, request) => {
-  
-  ws.userId        = 'user_' + Math.floor(Math.random() * 10000);
-  ws.inGame        = false;
+  let userId;
+  do {
+    userId = 'user_' + Math.floor(Math.random() * 10000);
+  } while (MatchManager.userSockets.has(userId));
+
+  ws.userId = userId;
+  ws.inGame = false;
   ws.currentGameId = null;
+
   console.log('🔌 New WebSocket connection with userId:', ws.userId);
 
   MatchManager.userSockets.set(ws.userId, ws);
 
   ws.on('message', rawMsg => {
-    handleClientMessage(ws, rawMsg, MatchManager)
-  })
+    handleClientMessage(ws, rawMsg, MatchManager);
+  });
 
   ws.on('close', () => {
-    console.log(`❌ WebSocket disconnected (userId = ${ws.userId})`)
+    console.log(`❌ WebSocket disconnected (userId = ${ws.userId})`);
 
-    removeFromQueue(waiting1v1Players, ws.userId)
-
-    removeFromQueue(waitingTournamentPlayers, ws.userId)
-    MatchManager.unregisterSocket(ws.userId)
+    removeFromQueue(waiting1v1Players, ws.userId);
+    removeFromQueue(waitingTournamentPlayers, ws.userId);
+    MatchManager.unregisterSocket(ws.userId);
 
     if (ws.inGame) {
-      console.log(`--> ${ws.userId} disconnected while in a match. Marking as forfeit/disconnect.`)
-      MatchManager.leaveRoom(ws.currentGameId, ws.userId)
-      ws.inGame = false
-      ws.currentGameId = null
+      console.log(`--> ${ws.userId} disconnected while in a match. Marking as forfeit/disconnect.`);
+      MatchManager.leaveRoom(ws.currentGameId, ws.userId);
+      ws.inGame = false;
+      ws.currentGameId = null;
     }
-  })
-})
+  });
+});
+
 
 
