@@ -36,7 +36,32 @@ async function translate_text_from_index(content, index) {
 	return {'lang': language_codes[index], text};
 }
 
+async function find_translation(to_find, lang) {
+	var data = await fs.readFile("./translations.json", 'utf8');
+	data = JSON.parse(data);
+	const response = data[to_find];
+	return response.content[lang];
+}
+
+async function get_obj_names() {
+	const data = await fs.readFile("./translations.json", 'utf8');
+	const json_data = await JSON.parse(data);
+	const json_keys = Object.keys(json_data);
+	return json_keys
+}
+
+async function check_translations(name) {
+	const json_keys = await get_obj_names();
+	for (var check = 0; check < json_keys.length; check++) {
+		if (json_keys[check] == name)
+			return true;
+	}
+	return false;
+}
+
 async function translate_text(content) {
+	if (await check_translations(content) == true)
+		return;
 	var available = true;
 	const sentences = {
 		content: {}
@@ -66,23 +91,17 @@ async function translate_text(content) {
 	await fs.writeFile('./translations.json', JSON.stringify(data, null, 2), 'utf8');
 }
 
-async function find_translation(to_find, lang) {
-	var data = await fs.readFile("./translations.json", 'utf8');
-	data = JSON.parse(data);
-	const response = data[to_find];
-	return response.content[lang];
-}
-
 async function cycle_translations(text, lang) {
-	const data = await fs.readFile("./translations.json", 'utf8');
-	const json_data = await JSON.parse(data);
-	const json_keys = Object.keys(json_data);
+	const json_keys = await get_obj_names();
 	for (var index = 0; index < json_keys.length; index++) {
 		text = text.replace(json_keys[index], await find_translation(json_keys[index], lang));
 	}
 	return text;
 }
 
+await translate_text("Change username");
+await translate_text("Change login data");
+await translate_text("Change avatar");
 
 export {
 	translator,

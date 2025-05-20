@@ -1,7 +1,6 @@
 import * as modules from './modules.js';
 import * as utils from './utils.js';
 import * as send from './responses.js';
-import * as translator from './translate.js'
 import * as settings_db from '../database/db_settings_functions.js';
 import * as users_db from '../database/db_users_functions.js';
 import * as mfa_db from '../database/db_mfa_functions.js';
@@ -60,7 +59,7 @@ async function login(request, response) {
     }
     if (!check_login || check_login === undefined || check_login < -1)
         return `4_${check_login}`;
-    await send.send_html('login.html', response, 200, async (data) => {
+    await send.send_html('login.html', null, response, 200, async (data) => {
         const google_link = utils.google_input_handler();
         data = data.replace("{{google_login}}", google_link);
         const github_link = utils.github_input_handler();
@@ -98,11 +97,10 @@ async function register(request, response) {
             await settings_db.delete_settings_value(settings.self);
             return `3_${user}`;
         }
-        // console.log(parsed.settings);
         const token = modules.create_jwt(settings.self, '1h');
         if (!token || token === undefined || token < 0)
             return `4_${token}`;
-        const lang = modules.create_jwt(parsed.settings.lang, '1h');
+        const lang = modules.create_jwt(settings.lang, '1h');
         if (!lang || lang === undefined || lang < 0)
             return `5_${lang}`;
         
@@ -114,7 +112,7 @@ async function register(request, response) {
     }
     if (!check_login || check_login === undefined || check_login < -1)
         return `6_${check_login}`;
-    const check = await send.send_html('register.html', response, 200, async (data) => {
+    const check = await send.send_html('register.html', null, response, 200, async (data) => {
         const google_link = utils.google_input_handler();
         data = data.replace("{{google_login}}", google_link);
         const github_link = utils.github_input_handler();
@@ -152,7 +150,6 @@ async function home(request, response) {
             return `5_${data}`;
         }
         const check_settings = await settings_db.get_settings_value('github', data);
-        // console.log(check_settings);
         if (!check_settings || check_settings === undefined || check_settings < 0)
             return `6_${check_settings}`;
         const token = modules.create_jwt(check_settings.self, '1h');
@@ -167,30 +164,21 @@ async function home(request, response) {
 		send.redirect(response, '/', 302);
         return true;
     }
-    const check = await send.send_html('home.html', response, 200, async (data) => {
+    const check = await send.send_html('home.html', request, response, 200, async (data) => {
         var [keys, values] = modules.get_cookies(request.headers.cookie);
         const token_check = keys?.find((key) => key === 'token');
         if (!token_check || token_check === undefined || token_check == false)
             return false;
-        const lang_check = keys?.find((key) => key === 'lang');
-        if (!lang_check || lang_check === undefined || lang_check == false)
-            return false;
         const tokenIndex = keys.indexOf('token');
         const token = values[tokenIndex];
-        const langIndex = keys.indexOf('lang');
-        const lang = values[langIndex];
         try {
             var decoded_token = modules.get_jwt(token);
-            var decoded_lang = modules.get_jwt(lang);
         } catch (err) {
             return false;
         }
         const replace_data = await users_db.get_users_value('self', decoded_token.userid);
         if (!replace_data)
             return false;
-        if (decoded_lang.userid !== 'en') {
-            data = await translator.cycle_translations(data, decoded_lang.userid);
-        }
         // EC sets the user status to online
         // await users_db.update_users_value('status', 1, decoded.userid);
         return data.replace("{{userid}}", replace_data.username);
@@ -230,13 +218,11 @@ async function mfa(request, response) {
                 response.end(JSON.stringify({"Response": "Failed"}));
             return true;
         } else if (replace_data.Function == 'create_custom') {
-            // console.log("LOL");
             return await utils.create_custom_code(userid, response, replace_data);
         } else if (replace_data.Function == 'verify_function') {
             return await utils.verify_custom_code(userid, response, replace_data);
         } else if (replace_data.Function == 'create_email') {
             const returned = await utils.create_email_code(userid, response, replace_data);
-            // console.log(returned);
             return returned;
         } else if (replace_data.Function == 'verify_email') {
             return await utils.verify_email_code(userid, response, replace_data);;
@@ -257,7 +243,7 @@ async function mfa(request, response) {
             return true;
         }
     }
-    const status = await send.send_html('settings.html', response, 200, async (data) => {
+    const status = await send.send_html('settings.html', request, response, 200, async (data) => {
         const userid = await utils.get_decrypted_userid(request, response);
         if (userid === -1)
             return send.redirect(response, '/login', 302);
@@ -289,7 +275,6 @@ async function mfa(request, response) {
             replace_string += '</button></a></div>';
             return data.replace("{{mfa-button}}", replace_string);
         }
-        // <button onclick="window.location.reload()" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">\
         var replace_string = "";
         var select_number = 0;
         var select_menu = "";
@@ -300,7 +285,6 @@ async function mfa(request, response) {
             select_menu += '<option value="otc">Otc</option>';
         } else
             replace_string += '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="create_otc()"><span class="button_text">Create OTC</span></button></div> ';
-        // replace_string += '<br></br>'
         if (check_mfa.custom.length !== 0 && !check_mfa.custom.endsWith('_temp')) {
             replace_string += '<button onclick="create_custom_code()">Recreate custom 6 diggit code</button> ';
             replace_string += '<button onclick="remove_custom_code()">Remove custom 6 digit code</button> ';
@@ -308,15 +292,12 @@ async function mfa(request, response) {
             select_menu += '<option value="custom">Custom</option>';
         } else
             replace_string += '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="create_custom_code()"><span class="button_text">Create custom 6 diggit code</span></button></div> ';
-        // replace_string += '<br></br>'
         if (check_mfa.email.length !== 0 && !check_mfa.email.endsWith('_temp')) {
-            // console.log("WOW");
             replace_string += '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="remove_email()"><span class="button_text">Disable email authentication</span></button></div> ';
             select_number++;
             select_menu += '<option value="email">Email</option>';
         } else
             replace_string += '<div class="buttons mb-6"><button class="block w-full mb-6 mt-6" onclick="create_email()"><span class="button_text">Enable email authentication</span></button></div> ';
-        // replace_string += '<br></br>'
         if (select_number < 2)
             return data.replace("{{mfa-button}}", `${replace_string} <button onclick="window.location.href = \'http://localhost:8080\'">Back</button> \
                 <button onclick="logout()">Logout</button>`);
@@ -341,7 +322,7 @@ async function select_language(request, response){
     if (request.method == 'POST'){
         console.log("selecting language");
     }
-    const status = await send.send_html('settings.html', response, 200, async (data) => {
+    const status = await send.send_html('settings.html', request, response, 200, async (data) => {
         var replace_string = '<button onclick="change_language()">Change language</button><br></br>';
         replace_string += `
         <form id="language">
@@ -459,153 +440,8 @@ async function select_language(request, response){
     return true;
 }
 
-// async function user(request, response) {
-//     if (request.method == 'POST') {
-//         console.log("Here");
-
-//     }
-//     const status = await send.send_html('settings.html', response, 200, async (data) => {
-//         var replace_string = '<button onclick="select_language()">Change language</button><br></br>';
-//         replace_string += ``
-//         replace_string += '<button onclick="window.location.href = \'http://localhost:8080/settings\'">back</button> \
-//         <button onclick="logout()">Logout</button>';
-//         return data.replace('{{mfa-button}}', replace_string);
-//     });
-//     return true;
-// }
-
-// async function user(request, response) {
-//     if (request.method == 'POST') {
-//         console.log("Here");
-
-//     }
-//     const status = await send.send_html('settings.html', response, 200, async (data) => {
-//         var replace_string = '<button onclick="change_language()">Change language</button><br></br>';
-//         replace_string += `
-//         <form id="language">
-//             <select name="lang" id="lang">
-//                 <option value="" selected disabled hidden>Choose your main language</option>
-//                 <option value="af">Afrikaans</option>
-//                 <option value="az">Azərbaycanca</option>
-//                 <option value="id">Bahasa Indonesia</option>
-//                 <option value="ms">Bahasa Melayu</option>
-//                 <option value="jw">Basa Jawa</option>
-//                 <option value="su">Basa Sunda</option>
-//                 <option value="bs">Bosanski</option>
-//                 <option value="ca">Català</option>
-//                 <option value="ceb">Cebuano</option>
-//                 <option value="sn">ChiShona</option>
-//                 <option value="ny">Chichewa</option>
-//                 <option value="co">Corsu</option>
-//                 <option value="cy">Cymraeg</option>
-//                 <option value="da">Dansk</option>
-//                 <option value="de">Deutsch</option>
-//                 <option value="et">Eesti</option>
-//                 <option value="en">English</option>
-//                 <option value="es">Español</option>
-//                 <option value="eo">Esperanto</option>
-//                 <option value="eu">Euskara</option>
-//                 <option value="fr">Français</option>
-//                 <option value="fy">Frysk</option>
-//                 <option value="ga">Gaeilge</option>
-//                 <option value="sm">Gagana Samoa</option>
-//                 <option value="gl">Galego</option>
-//                 <option value="gd">Gàidhlig</option>
-//                 <option value="ha">Hausa</option>
-//                 <option value="hmn">Hmoob</option>
-//                 <option value="hr">Hrvatski</option>
-//                 <option value="ig">Igbo</option>
-//                 <option value="it">Italiano</option>
-//                 <option value="sw">Kiswahili</option>
-//                 <option value="ht">Kreyòl Ayisyen</option>
-//                 <option value="ku">Kurdî</option>
-//                 <option value="la">Latina</option>
-//                 <option value="lv">Latviešu</option>
-//                 <option value="lt">Lietuvių</option>
-//                 <option value="lb">Lëtzebuergesch</option>
-//                 <option value="hu">Magyar</option>
-//                 <option value="mg">Malagasy</option>
-//                 <option value="mt">Malti</option>
-//                 <option value="mi">Māori</option>
-//                 <option value="nl">Nederlands</option>
-//                 <option value="no">Norsk</option>
-//                 <option value="uz">Oʻzbekcha</option>
-//                 <option value="pl">Polski</option>
-//                 <option value="pt">Português</option>
-//                 <option value="ro">Română</option>
-//                 <option value="st">Sesotho</option>
-//                 <option value="sq">Shqip</option>
-//                 <option value="sk">Slovenčina</option>
-//                 <option value="sl">Slovenščina</option>
-//                 <option value="so">Soomaali</option>
-//                 <option value="fi">Suomi</option>
-//                 <option value="sv">Svenska</option>
-//                 <option value="tl">Tagalog</option>
-//                 <option value="vi">Tiếng Việt</option>
-//                 <option value="tr">Türkçe</option>
-//                 <option value="yo">Yorùbá</option>
-//                 <option value="xh">isiXhosa</option>
-//                 <option value="zu">isiZulu</option>
-//                 <option value="is">Íslenska</option>
-//                 <option value="cs">Čeština</option>
-//                 <option value="haw">ʻŌlelo Hawaiʻi</option>
-//                 <option value="el">Ελληνικά</option>
-//                 <option value="be">Беларуская</option>
-//                 <option value="bg">Български</option>
-//                 <option value="ky">Кыргызча</option>
-//                 <option value="mk">Македонски</option>
-//                 <option value="mn">Монгол</option>
-//                 <option value="ru">Русский</option>
-//                 <option value="sr">Српски</option>
-//                 <option value="tg">Тоҷикӣ</option>
-//                 <option value="uk">Українська</option>
-//                 <option value="kk">Қазақша</option>
-//                 <option value="hy">Հայերեն</option>
-//                 <option value="yi">ייִדיש</option>
-//                 <option value="iw">עברית</option>
-//                 <option value="ur">اردو</option>
-//                 <option value="ar">العربية</option>
-//                 <option value="sd">سنڌي</option>
-//                 <option value="fa">فارسی</option>
-//                 <option value="ps">پښتو</option>
-//                 <option value="ne">नेपाली</option>
-//                 <option value="mr">मराठी</option>
-//                 <option value="hi">हिन्दी</option>
-//                 <option value="bn">বাংলা</option>
-//                 <option value="gu">ગુજરાતી</option>
-//                 <option value="ta">தமிழ்</option>
-//                 <option value="te">తెలుగు</option>
-//                 <option value="kn">ಕನ್ನಡ</option>
-//                 <option value="ml">മലയാളം</option>
-//                 <option value="si">සිංහල</option>
-//                 <option value="th">ไทย</option>
-//                 <option value="lo">ລາວ</option>
-//                 <option value="my">မြန်မာ</option>
-//                 <option value="ka">ქართული</option>
-//                 <option value="km">ភាសាខ្មែរ</option>
-//                 <option value="ja">日本語</option>
-//                 <option value="zh-cn">简体中文</option>
-//                 <option value="zh-tw">繁體中文</option>
-//                 <option value="ko">한국어</option>
-//             </select>
-//             <button type="submit">Submit</button>
-//         </form>`
-//         replace_string += '<button onclick="window.location.href = \'http://localhost:8080/settings\'">back</button> \
-//         <button onclick="logout()">Logout</button>';
-//         return data.replace('{{mfa-button}}', replace_string);
-//     });
-//     return true;
-// }
-
-// async function show_user_settings(request, response){
-//     const status = await send.send_html('user_settings.html', response, 200);
-//     if (!status || status === undefined || status < 0)
-//         return `_${status}`
-//     return true;
-// }
-
-
 async function user(request, response){
+    console.log("GG");
     var [keys, values] = modules.get_cookies(request.headers.cookie);
     if (!keys?.includes('token'))
         return send.redirect(response, '/login', 302);
@@ -615,11 +451,11 @@ async function user(request, response){
     if (request_url == '/profile_settings')
         return await user_settings(request, response);
 
-    const status = await send.send_html('settings.html', response, 200, async  (data) => {
+    const status = await send.send_html('settings.html', request, response, 200, async  (data) => {
         var replace_string = "";
         replace_string += '<div class="buttons mb-6" onclick="window.location.href = \'http://localhost:8080/settings/user/select_language\'">';
         replace_string += '<button class="block w-full mb-6 mt-6">';
-        replace_string += '<span class="button_text">Select Language</span>';
+        replace_string += '<span class="button_text">Select language</span>';
         replace_string += '</button></div>';
 
         replace_string += '<div class="buttons mb-6" onclick="window.location.href = \'http://localhost:8080/settings/user/profile_settings\'">';
@@ -629,7 +465,6 @@ async function user(request, response){
 
         replace_string += '<div class="flex mt-12 gap-4 w-full">';
         replace_string += '<a class="flex-1">';
-        // replace_string += '<div class="buttons mb-6" onclick="window.location.href = \'http://localhost:8080\'">';
         replace_string += '<button onclick="window.location.href = \'http://localhost:8080/settings\'" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
         replace_string += '<span class="button_text">Back</span>';
         replace_string += '</button></a>';
@@ -653,14 +488,11 @@ async function settings(request, response) {
         return await settings_set_prefered_mfa(request, response);
     if (request_url == "/mfa")
         return await mfa(request, response);
-    if (request_url.startsWith("/user?"))
+    if (request_url.startsWith("/user/select_language?"))
         return await settings_prefered_language(request, response);
     if (request_url.startsWith("/user"))
         return await user(request, response);
-    // if (request.method === 'POST') {
-
-    // }
-    const status = await send.send_html('settings.html', response, 200, async  (data) => {
+    const status = await send.send_html('settings.html', request, response, 200, async  (data) => {
         var replace_string = "";
         replace_string += '<div class="buttons mb-6" onclick="window.location.href = \'http://localhost:8080/settings/mfa\'">';
         replace_string += '<button class="block w-full mb-6 mt-6">';
@@ -717,6 +549,7 @@ async function settings_set_prefered_mfa(request, response) {
 }
 
 async function settings_prefered_language(request, response) {
+    console.log("WOW");
     if (request.url.length < 11)
         return send.redirect(response, '/settings/user', 302);
     const location = request.url.slice(10);
@@ -746,15 +579,14 @@ async function settings_prefered_language(request, response) {
         return send.redirect(response, '/settings/user', 302);
     modules.delete_cookie(response, 'lang');
     modules.set_cookie(response, 'lang', lang_jwt);
-    // console.log(user);
+    console.log(user);
     const wow = await settings_db.update_settings_value('lang', method, user.userid);
-    // console.log(wow);
     return send.redirect(response, '/settings/user', 302);
 }
 
 async function verify_email(request, response) {
     if (request.method !== 'POST')
-        return await send.send_error_page('404.html', response, 404);
+        return await send.send_error_page('404.html', request, response, 404);
     const frontend_data = await utils.get_frontend_content(request);
     if (!frontend_data || frontend_data === undefined || frontend_data < 0)
         return false;
@@ -777,7 +609,7 @@ async function verify_email(request, response) {
 
 async function verify_2fa(request, response) {
     if (request.method !== 'POST')
-        return await send.send_error_page('404.html', response, 404);
+        return await send.send_error_page('404.html', request, response, 404);
     const frontend_data = await utils.get_frontend_content(request);
     if (!frontend_data || frontend_data === undefined || frontend_data < 0)
         return false;
@@ -798,7 +630,7 @@ async function verify_2fa(request, response) {
 
 async function verify_custom(request, response) {
     if (request.method !== 'POST')
-        return await send.send_error_page('404.html', response, 404);
+        return await send.send_error_page('404.html', request, response, 404);
     const frontend_data = await utils.get_frontend_content(request);
     if (!frontend_data)
         return false;
@@ -852,28 +684,16 @@ async function profile(request, response){
 
     const user = await users_db.get_users_value('self', decoded.userid);
     if (!user || user === undefined){
-        return send.send_error_page('404.html', response, 404);
+        return send.send_error_page('404.html', request, response, 404);
     }
 
     const settings = await settings_db.get_settings_value('self', decoded.userid);
     if (!settings || settings === undefined){
-        return send.send_error_page('404.html', response, 404);
+        return send.send_error_page('404.html', request, response, 404);
     }
 
 
-    const status = await send.send_html('profile.html', response, 200, async(data) => {
-        var [keys, values] = modules.get_cookies(request.headers.cookie);
-        const lang_check = keys?.find((key) => key === 'lang');
-        if (!lang_check || lang_check === undefined || lang_check == false)
-            return false;
-        const langIndex = keys.indexOf('lang');
-        const lang = values[langIndex];
-        try {
-            var decoded_lang = modules.get_jwt(lang);
-        } catch (err) {
-            return false;
-        }
-        data = await translator.cycle_translations(data, decoded_lang.userid);
+    const status = await send.send_html('profile.html', request, response, 200, async(data) => {
         data = data.replace('{{username}}', user.username);
         data = data.replace('{{email}}', settings.email || 'Not provided');
         data = data.replace('{{picture}}', settings.pfp || 'public/default_profile.svg');
@@ -906,7 +726,7 @@ async function logout(request, response) {
 
     const user = await users_db.get_users_value('self', decoded.userid);
     if (!user || user === undefined){
-        return send.send_error_page('404.html', response, 404);
+        return send.send_error_page('404.html', request, response, 404);
     }
 
     await users_db.update_users_value('status', 0, decoded.userid);
@@ -931,7 +751,7 @@ async function user_settings(request, response) {
         return send.redirect(response, '/login', 302);
     }
 
-    const status = await send.send_html('user_settings.html', response, 200);
+    const status = await send.send_html('user_settings.html', request, response, 200);
     if (!status || status === undefined){
         return `Error rendering user settings page: ${status}`;
     }
@@ -945,7 +765,7 @@ async function user_settings(request, response) {
 // fix later dont know where to put it exactly
 async function update_settings(request, response) {
     if (request.method !== 'POST'){
-        return send.send_error_page('404.html', response, 404);
+        return send.send_error_page('404.html', request, response, 404);
     }
 
     // const data = await utils.get_frontend_content(request);
@@ -1015,7 +835,7 @@ async function update_settings(request, response) {
 
 async function update_user(request, response) {
     if (request.method !== 'POST') {
-        return send.send_error_page('404.html', response, 404);
+        return send.send_error_page('404.html', request, response, 404);
     }
 
     // const data = await utils.get_frontend_content(request);
