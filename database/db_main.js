@@ -28,7 +28,7 @@ async function create_db() {
         CREATE TABLE IF NOT EXISTS settings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             password TEXT,
-            pfp text,
+            pfp TEXT,
             MFA INTEGER,
             email TEXT,
             lang TEXT,
