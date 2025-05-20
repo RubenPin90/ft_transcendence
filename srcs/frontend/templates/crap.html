@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Transcendence</title>
+    <script defer src="/login/main.js">asdfs</script>
+</head>
+<body>
+    <div id="login-container">
+        <div>
+            <input type="text" id="email-input" placeholder="Email" required><br>
+            <input type="text" id="password-input" placeholder="Password" required><br>
+            <button id="login-button" onclick="login()">
+                <h3>Login</h3>
+            </button>
+        </div>
+        <br>
+        <div>
+            <a href="{{google_login}}">
+                <button>
+                    <h3>Sign in with Google</h3>
+                </button>
+            </a>
+            <a href="{{github_login}}">
+                <button>
+                    <h3>Sign in with Github</h3>
+                </button>
+            </a>
+        </div>
+    </div>
+    <a href="/register">
+        <button type="submit" name="switch_mode" value="register">Dont have an account? Create one</button>
+    </a>
+</body>
+</html>

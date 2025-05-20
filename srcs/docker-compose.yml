@@ -1,14 +1,14 @@
 services:
   nginx:
     build:
-      context: ./nginx
+      context: ./services/nginx
       target: dev
     container_name: 'nginx'
     restart: always
     ports:
       - "443:443"
     volumes:
-      - ./nginx/conf:/etc/nginx/conf.d
+      - ./services/nginx/conf:/etc/nginx/conf.d
     environment:
       - PROM_USER=${USER_NAME}
       - PROM_PASS_FILE=/run/secrets/prometheus_password
@@ -16,21 +16,30 @@ services:
       - trancendence-network
     secrets:
       - prometheus_password
-    # depends_on:
-    #   - auth-service
 
-  auth-service:
-    build: ./auth-service
-    ports:
-      - "5000:5000"
-  
+
+  frontend:
+    build: ./frontend
+    container_name: 'frontend'
+    image: frontend-build
+    restart: always
+    networks:
+      - trancendence-network
+    
+  backend:
+    build: ./backend
+    container_name: 'backend'
+    restart: always
+    networks:
+      - trancendence-network
+
   prometheus:
     image: prom/prometheus:v2.53.4
     container_name: 'prometheus'
     user: root
     restart: always
     volumes:
-      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./services/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     networks:
       - trancendence-network
     command:
@@ -72,8 +81,6 @@ services:
     image: gcr.io/cadvisor/cadvisor:v0.52.1
     container_name: cadvisor
     restart: always
-    ports:
-      - 8080:8080
     volumes:
       - /:/rootfs:ro
       - /run:/run:ro

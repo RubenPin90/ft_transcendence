@@ -9,7 +9,7 @@ ENV_TMP_FILE := $(SRC_DIR)/.env.example
 
 USER_NAME := $(shell whoami)
 SECRETS_DIR := $(ROOT_DIR)/secrets
-DATA_GRAFANA := $(ROOT_DIR)/volumes/grafana
+DATA_GRAFANA := $(SRC_DIR)/services/monitoring/grafana/data
 
 all: compose
 
