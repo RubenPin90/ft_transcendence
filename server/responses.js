@@ -53,19 +53,21 @@ async function send_error_page(filename, request, response, status, func) {
             return false;
         data = temp;
     }
-    var [keys, values] = modules.get_cookies(request.headers.cookie);
-    const lang_check = keys?.find((key) => key === 'lang');
-    if (!lang_check || lang_check === undefined || lang_check == false)
-        return false;
-    const langIndex = keys.indexOf('lang');
-    const lang = values[langIndex];
-    try {
-        var decoded_lang = modules.get_jwt(lang);
-    } catch (err) {
-        return false;
-    }
-    if (decoded_lang.userid !== 'en') {
-        data = await translator.cycle_translations(data, decoded_lang.userid);
+    if (request != null) {
+        var [keys, values] = modules.get_cookies(request.headers.cookie);
+        const lang_check = keys?.find((key) => key === 'lang');
+        if (!lang_check || lang_check === undefined || lang_check == false)
+            return false;
+        const langIndex = keys.indexOf('lang');
+        const lang = values[langIndex];
+        try {
+            var decoded_lang = modules.get_jwt(lang);
+        } catch (err) {
+            return false;
+        }
+        if (decoded_lang.userid !== 'en') {
+            data = await translator.cycle_translations(data, decoded_lang.userid);
+        }
     }
     send(response, 'text/html', data, status);
     return true;

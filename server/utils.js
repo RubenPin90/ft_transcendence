@@ -130,13 +130,6 @@ async function encrypt_google(request) {
 		const username = create_username(email);
 		if (username < 0)
 			return -8;
-<<<<<<< HEAD:utils.js
-=======
-		// console.log("---");
-		// console.log(userid);
-		// console.log(typeof(userid));
-		// console.log("---");
->>>>>>> bad129698cdd8496ef93451251caec525c0738c7:server/utils.js
 		const db_return = await settings_db.create_settings_value('', pfp, 0, email, 'en', userid, 0);
 		if (!db_return || db_return === undefined)
 			return -9
@@ -149,13 +142,8 @@ async function encrypt_google(request) {
 			return -11;
 		const check_username = await users_db.create_users_value(0, username, userid);
 		if (check_username < 0 || check_username === undefined)
-<<<<<<< HEAD:utils.js
 			return -12;
 		console.log("Here");
-=======
-			return -11;
-		// console.log("Here");
->>>>>>> bad129698cdd8496ef93451251caec525c0738c7:server/utils.js
 		return userid;
 	} catch (error) {
 		console.error("Error during Google OAuth:", error);
