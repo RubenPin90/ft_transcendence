@@ -1,6 +1,6 @@
 FROM node:bullseye-slim
 
-WORKDIR /frontend
+WORKDIR /app
 
 COPY package*.json ./
 
@@ -10,5 +10,7 @@ COPY . .
 
 RUN npm run build
 
+RUN echo "Frontend resources after build" && ls -l ./app
 
+CMD [ "npm", "run", "start" ]
 

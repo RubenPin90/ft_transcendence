@@ -149,4 +149,21 @@ wss.on('connection', (ws, request) => {
   })
 })
 
+// Graceful shutdown handler
+async function shutdown() {
+  try {
+    // Close Fastify HTTP server
+    await fastify.close();
+    // Close WebSocket clients
+    wss.clients.forEach((client) => {
+      client.close(1001, 'Server shutdown');
+    });
+    process.exit(0);
+  } catch (err) {
+    process.exit(1);
+  }
+}
+
+process.on('SIGINT', shutdown);  // Ctrl+C
+process.on('SIGTERM', shutdown); // docker stop
 
