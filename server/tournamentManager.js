@@ -132,22 +132,28 @@ export class TournamentManager {
   }
 
   broadcastTLobby(tournament) {
-     const lobbyPayload = {
-       type: 'tLobbyState',
-       payload: {
-        id:       tournament.id,
-        code:     tournament.code,
-        hostId:   tournament.host,
-         slots:    this.MAX_PLAYERS,
-        players:  tournament.players.map(p => ({
-           id:    getPlayerId(p),
-           name:  p.name,
-           ready: p.ready,
-         })),
-       },
-     };
-    for (const client of this.wss.clients) this.wsSend(client, lobbyPayload);
+    const lobbyPayload = {
+      type: 'tLobbyState',
+      payload: {
+        id: tournament.id,
+        code: tournament.code,
+        hostId: tournament.host,
+        slots: this.MAX_PLAYERS,
+        players: tournament.players.map(p => ({
+          id: getPlayerId(p),
+          name: p.name,
+          ready: p.ready,
+        })),
+      },
+    };
+      const playerIds = new Set(tournament.players.map(p => getPlayerId(p)));
+      for (const client of this.wss.clients) {
+      if (playerIds.has(client.userId)) {
+        this.wsSend(client, lobbyPayload);
+      }
+    }
   }
+  
 
   startTournament(tournamentId) {
     const t = this.tournaments[tournamentId];
@@ -232,7 +238,7 @@ export class TournamentManager {
       status: 'waiting',
     };
     this.rooms[matchId] = room;
-    this.notifyPlayers(room);
+    this.notifyPlayers(room, tournamentId);
   }
 
   leaveTournament(userId) {
@@ -284,20 +290,32 @@ export class TournamentManager {
   }
 
   notifyPlayers(room, tournamentId) {
-  const message = JSON.stringify({
-    type: 'tournamentStarts',
-    payload: {
-      matchId: room.matchId,
-      players: room.players,
-      tournamentId,
-    },
-  });
-
-  //TODO: send to players in tournament only 
-  for (const client of this.wss.clients) {
-    if (client.readyState === 1) client.send(message);
+    const payload = {
+      type: 'matchAssigned',
+      payload: {
+        tournamentId,
+        matchId: room.matchId,
+        players: room.players.map(p => ({
+          id: getPlayerId(p),
+          name: p.name,
+        })),
+      },
+    };
+  
+    for (const player of room.players) {
+      const playerId = getPlayerId(player);
+      const ws = this.userSockets.get(playerId);
+      if (ws?.readyState === 1) {
+        ws.send(JSON.stringify(payload));
+      }
+    }
+  
+    console.log(
+      `Room created: ${room.matchId} with playersid ${room.players[0].id} and ${room.players[1].id}`
+    );
   }
-}
+  
+  
 
   
   toggleReady(userId, tournamentId) {

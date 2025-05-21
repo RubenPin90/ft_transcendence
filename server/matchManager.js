@@ -7,10 +7,6 @@ export const GAME_MODES = {
 }
 
 export class matchManager extends EventEmitter {
-  /*───────────────────────────
-    Static configuration
-  ───────────────────────────*/
-
   static GAME_MODES = GAME_MODES
   static MAX_BOUNCE_ANGLE = Math.PI / 4 // 45°
   static TICK_RATE = 60
