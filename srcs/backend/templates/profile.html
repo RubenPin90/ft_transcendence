@@ -1,11 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Transcendence</title>
-    <link rel="stylesheet" href="../css/output.css">
-</head>
-<body class="background" id="main_screen">
+<div id="profile_div" class="hidden">
     <div class="min-h-screen flex items-center justify-center px-4 py-10">
         <div id="login-container" class="user_field">
             <main id="login-signup-field" class="w-full">
@@ -27,19 +20,7 @@
                         <span id="status">{{status}}</span>
                     </div>
                 </div>
-                <div class="w-full flex bg-gray-400 mt-2 pb-8 py-4 pl-4 gap-2 overflow-x-auto">
-                    <div class="relative flex-shrink-0">
-                        <img class="w-24 h-24 rounded-full border-4 border-green-600" src="../public/ecaliska.jpg">
-                        <span class="absolute text-center w-full">ecaliska</span><br>
-                    </div>
-                    <div class="relative flex-shrink-0">
-                        <img class="w-24 h-24 rounded-full border-4 border-green-600" src="public/gkonstan.jpg">
-                        <span class="absolute text-center w-full">gkonstan</span><br>
-                    </div>
-                    <div class="relative flex-shrink-0">
-                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="public/default_profile.svg">
-                        <span class="absolute text-center w-full">gkonstan</span><br>
-                    </div>        
+                <div class="w-full flex bg-gray-400 mt-2 pb-8 py-4 pl-4 gap-2 overflow-x-auto">    
                     {{Friends}}
                 </div>
                 <div class="w-full max-h-60 overflow-y-auto flex h-full flex-col bg-gray-500 mt-2 py-4 pl-4">
@@ -53,16 +34,6 @@
                             </tr>
                         </thead>
                         <tbody id="table_body">
-                            <tr class="bg-green-200">
-                                <td>ecaliska</td>
-                                <td>3/5</td>
-                                <td>29.04.2025</td>
-                            </tr>
-                            <tr class="bg-red-200">
-                                <td>gkonstan</td>
-                                <td>5/3</td>
-                                <td>29.04.2025</td>
-                            </tr> 
                             <tr class=""> <!--if loss show red if win show green forefit is a win-->
                                 <td>{{enemy}}</td>
                                 <td>{{final_score}}</td>
@@ -75,5 +46,4 @@
             </main>
         </div>
     </div>
-</body>
-</html>
+</div>

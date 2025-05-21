@@ -1,12 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Transcendence</title>
-    <link rel="stylesheet" href="css/output.css">
-    <script defer src="/client/js/home.js"></script>
-</head>
-<body class="background" id="main_screen">
+<div id="home_div" class="hidden">
     <div class="min-h-screen flex items-center justify-center px-4 py-10">
         <div id="login-container" class="field">
             <main id="login-signup-field" class="w-full">
@@ -18,8 +10,18 @@
                         </button>
                     </a>
                     <a href="#" class="buttons">
-                        <button class="block w-full mb-6 mt-6">
+                        <button class="block w-full mb-4 mt-6">
                             <span class="button_text">Play</span>
+                        </button>
+                    </a>
+                    <a href="/friends" class="buttons">
+                        <button class="block w-full mb-6 mt-6">
+                            <span class="button_text">Friends</span>
+                        </button>
+                    </a>
+                    <a href="/blocked" class="buttons">
+                        <button class="block w-full mb-6 mt-6">
+                            <span class="button_text">Blocked Users</span>
                         </button>
                     </a>
                 </div>
@@ -33,7 +35,7 @@
                         </button>
                     </a>
                     <a class="flex-1">
-                        <button onclick="Logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
+                        <button onclick="Logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-16">
                                 <path fill-rule="evenodd" d="M16.5 3.75a1.5 1.5 0 0 1 1.5 1.5v13.5a1.5 1.5 0 0 1-1.5 1.5h-6a1.5 1.5 0 0 1-1.5-1.5V15a.75.75 0 0 0-1.5 0v3.75a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V5.25a3 3 0 0 0-3-3h-6a3 3 0 0 0-3 3V9A.75.75 0 1 0 9 9V5.25a1.5 1.5 0 0 1 1.5-1.5h6ZM5.78 8.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 0 0 0 1.06l3 3a.75.75 0 0 0 1.06-1.06l-1.72-1.72H15a.75.75 0 0 0 0-1.5H4.06l1.72-1.72a.75.75 0 0 0 0-1.06Z" clip-rule="evenodd" />
                             </svg>
@@ -44,5 +46,4 @@
             </main>
         </div>
     </div>
-</body>
-</html>
+</div>
