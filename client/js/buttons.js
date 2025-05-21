@@ -2,65 +2,100 @@ import { setCurrentTLobby, getCurrentTLobby, getMyId } from './state.js';
 let buttonsInitialized = false;
 export function setupButtonsDelegated(navigate, TLobbySocket) {
     if (buttonsInitialized)
-        return; // ← …but never used it
-    buttonsInitialized = true;
-    const lobbyPage = document.getElementById('t-lobby-page');
-    if (!lobbyPage)
         return;
-    lobbyPage.addEventListener('click', (event) => {
-        var _a;
-        const target = event.target;
-        const TLobby = getCurrentTLobby();
-        const userId = getMyId();
-        switch (target.id) {
-            case 't-back-btn':
-                navigate('/');
-                break;
-            case 't-create-btn':
-                TLobbySocket.send(JSON.stringify({ type: 'createTournament' }));
-                break;
-            case 't-copy-code-btn':
-                navigator.clipboard.writeText('#' + ((_a = TLobby === null || TLobby === void 0 ? void 0 : TLobby.code) !== null && _a !== void 0 ? _a : ''));
-                break;
-            case 't-leave-btn':
-                TLobbySocket.send(JSON.stringify({
-                    type: 'leaveTournament',
-                    payload: TLobby ? { tournamentId: TLobby.id } : {}
-                }));
-                if (TLobby)
-                    setCurrentTLobby(null);
-                navigate('/tournament');
-                break;
-            case 't-ready-btn':
-                TLobbySocket.send(JSON.stringify({
-                    type: 'toggleReady',
-                    payload: TLobby ? { tournamentId: TLobby.id, userId } : { userId }
-                }));
-                break;
-            case 't-start-btn':
-                if (TLobby) {
+    buttonsInitialized = true;
+    // --- Handle clicks inside the Main Menu ---
+    const mainMenu = document.getElementById('main-menu');
+    if (mainMenu) {
+        mainMenu.addEventListener('click', (event) => {
+            const target = event.target;
+            switch (target.id) {
+                case 'sp-vs-pve-btn':
+                    navigate('/game/pve');
+                    break;
+                case 'one-vs-one-btn':
+                    navigate('/matchmaking');
+                    break;
+                case 'Tournament-btn':
+                    navigate('/tournament');
+                    break;
+                case 'settings-btn':
+                    navigate('/settings');
+                    break;
+                case 'profile-btn':
+                    navigate('/profile');
+                    break;
+                default:
+                    // Unknown main-menu button
+                    console.log('Main menu button clicked:', target.id);
+                    break;
+            }
+        });
+    }
+    // --- Handle clicks inside the Tournament Lobby Page ---
+    const lobbyPage = document.getElementById('t-lobby-page');
+    if (lobbyPage) {
+        lobbyPage.addEventListener('click', (event) => {
+            var _a;
+            const target = event.target;
+            const TLobby = getCurrentTLobby();
+            const userId = getMyId();
+            console.log('Lobby button clicked:', target.id);
+            switch (target.id) {
+                case 't-back-btn':
+                    navigate('/');
+                    break;
+                case 't-copy-code-btn':
+                    navigator.clipboard.writeText('#' + ((_a = TLobby === null || TLobby === void 0 ? void 0 : TLobby.code) !== null && _a !== void 0 ? _a : ''));
+                    break;
+                case 't-leave-btn':
                     TLobbySocket.send(JSON.stringify({
-                        type: 'startTournament',
-                        payload: { id: TLobby.id }
+                        type: 'leaveTournament',
+                        payload: TLobby ? { tournamentId: TLobby.id } : {}
                     }));
-                }
-                break;
-            default:
-                console.log('Unknown button clicked:', target.id);
-                break;
-        }
-    });
-}
-export function setupNavigationButtons(navigate) {
-    var _a;
-    const btnMap = {
-        'sp-vs-pve-btn': '/game/pve',
-        'one-vs-one-btn': '/matchmaking',
-        'Tournament-btn': '/tournament',
-        'settings-btn': '/settings',
-        'profile-btn': '/profile'
-    };
-    for (const [btnId, routePath] of Object.entries(btnMap)) {
-        (_a = document.getElementById(btnId)) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => navigate(routePath));
+                    if (TLobby)
+                        setCurrentTLobby(null);
+                    navigate('/tournament');
+                    break;
+                case 't-ready-btn':
+                    TLobbySocket.send(JSON.stringify({
+                        type: 'toggleReady',
+                        payload: TLobby ? { tournamentId: TLobby.id, userId } : { userId }
+                    }));
+                    break;
+                case 't-start-btn':
+                    if (TLobby) {
+                        TLobbySocket.send(JSON.stringify({
+                            type: 'startTournament',
+                            payload: { id: TLobby.id }
+                        }));
+                    }
+                    break;
+                default:
+                    console.log('Unknown lobby button clicked:', target.id);
+                    break;
+            }
+        });
+    }
+    // --- Handle clicks inside the Tournament Page ---
+    const tournamentPage = document.getElementById('tournament-page');
+    if (tournamentPage) {
+        tournamentPage.addEventListener('click', (event) => {
+            const target = event.target;
+            console.log('Tournament page button clicked:', target.id);
+            switch (target.id) {
+                case 't-create-btn':
+                    TLobbySocket.send(JSON.stringify({ type: 'createTournament' }));
+                    break;
+                case 't-code-btn':
+                    // join by code button inside tournament page input row
+                    const codeInput = document.getElementById('t-code-input');
+                    const code = codeInput === null || codeInput === void 0 ? void 0 : codeInput.value.trim();
+                    TLobbySocket.send(JSON.stringify({ type: 'joinTournamentByCode', payload: { code } }));
+                    break;
+                default:
+                    break;
+            }
+        });
     }
 }

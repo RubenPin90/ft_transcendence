@@ -1,6 +1,6 @@
 import { initGameCanvas, startGame, stopGame, setOnGameEnd } from './game.js';
 import { renderTournamentList, joinByCode, renderTLobby } from './tournament.js';
-import { setupButtonsDelegated, setupNavigationButtons } from './buttons.js';
+import { setupButtonsDelegated } from './buttons.js';
 import { setMyId, setCurrentTLobby, getCurrentTLobby } from './state.js';
 import { hideAllPages } from './helpers.js';
 import { setupMatchmakingHandlers } from './matchmaking.js';
@@ -117,7 +117,7 @@ function route() {
     }
 }
 document.addEventListener('DOMContentLoaded', () => {
-    setupNavigationButtons(navigate);
+    // setupNavigationButtons(navigate);
     setupCodeJoinHandlers();
     setupButtonsDelegated(navigate, getSocket());
     ({ markQueued } = setupMatchmakingHandlers(navigate, getSocket()));

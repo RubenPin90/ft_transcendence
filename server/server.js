@@ -5,6 +5,7 @@ import fastifyStatic from '@fastify/static'
 import staticJs from '../plugins/static-js.js'
 import WebSocket, { WebSocketServer } from 'ws';
 import ejs from 'ejs'
+import fs from 'node:fs';
 
 
 import { createGameAI } from './matchMaking.js'
@@ -28,9 +29,10 @@ await fastify.register(fastifyStatic, {
 // Serve /client/js via plugin
 await fastify.register(staticJs)
 
-fastify.get('/css/style.css', async (_, reply) => {
-  const data = await fs.readFile(path.join(__dirname, '..', 'css', 'style.css'));
-  reply.type('text/css').send(data);
+await fastify.register(fastifyStatic, {
+  root: path.join(__dirname, '../css'),
+  prefix: '/css/',
+  decorateReply: false,          // don’t add reply.sendFile again
 });
 
 fastify.get('/*', async (request, reply) => {

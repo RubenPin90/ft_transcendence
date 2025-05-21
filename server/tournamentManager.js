@@ -1,7 +1,5 @@
 // tournamentManager.js
 import { matchManager }   from './matchManager.js';
-
-
 import { v4 as uuidv4 } from 'uuid';
 
 const getPlayerId = p => (typeof p === 'string' ? p : p.id);
@@ -19,7 +17,6 @@ export class TournamentManager {
     this.tournaments = {};
     this.rooms = {};
   }
-  
 
   setSocketServer(wss) {
     this.wss = wss;
@@ -38,10 +35,8 @@ export class TournamentManager {
       }));
       return;
     }
-
     const id   = uuidv4();
     const code = uuidv4().slice(0,6).toUpperCase();
-
     const tourney = {
       id,
       code,
@@ -56,12 +51,10 @@ export class TournamentManager {
       matches:   [],
       winner:    null,
       createdAt: Date.now(),
-      // new bookkeeping fields:
       pendingRound: null,
       openMatches:  null,
       roundWinners: null,
     };
-
     this.tournaments[id] = tourney;
     if (ws?.readyState === 1) ws.send(JSON.stringify({
       type: 'tournamentCreated',
@@ -71,7 +64,6 @@ export class TournamentManager {
     return tourney;
   }
   
-
   joinTournament(userId, code, ws) {
     const tournament = Object.values(this.tournaments).find(t => t.code === code);
   
@@ -83,7 +75,6 @@ export class TournamentManager {
       }));
       return;
     }
-  
     if (userId !== 'SERVER' && this.userAlreadyInTournament(userId)) {
       console.error(`User ${userId} is already in a tournament : ${tournament.id}`);
       ws?.send(JSON.stringify({
@@ -92,7 +83,6 @@ export class TournamentManager {
       }));
       return;
     }
-  
     if (hasUser(tournament.players, userId)) {
       ws.send(JSON.stringify({
         type: 'error',
@@ -100,7 +90,6 @@ export class TournamentManager {
       }));
       return;
     }
-  
     if (tournament.players.length >= this.MAX_PLAYERS) {
       ws.send(JSON.stringify({
         type: 'error',
@@ -108,20 +97,15 @@ export class TournamentManager {
       }));
       return;
     }
-  
     const newPlayer = {
       id:    userId,
       name:  `Player ${userId.slice(0, 4)}`,
       ready: false,
     };
     tournament.players.push(newPlayer);
-  
-    // First human becomes host
     if (tournament.host === 'SERVER') {
       tournament.host = userId;
     }
-  
-    // Ensure host is always marked as ready
     this.ensureHostReady(tournament);
   
     ws.send(JSON.stringify({
@@ -164,22 +148,20 @@ export class TournamentManager {
      };
     for (const client of this.wss.clients) this.wsSend(client, lobbyPayload);
   }
-  
-    
-  
 
   startTournament(tournamentId) {
     const t = this.tournaments[tournamentId];
     if (!t) throw new Error('Tournament not found');
     if (t.status !== 'waiting')
-      throw new Error('Tournament already started or finished');
-
+    {
+      console.error(`Tournament ${tournamentId} is not in waiting state`);
+      console.error(`Tournament ${tournamentId} status: ${t.status}`);
+      return ;
+    }
     t.status        = 'in_progress';
     t.pendingRound  = 1;
     t.openMatches   = new Set();
     t.roundWinners  = [];
-
-    // create round #1 from all current players
     this._createRound(t, t.players);
     this.broadcastTournamentUpdate();
   }
@@ -190,7 +172,6 @@ export class TournamentManager {
       const p1      = players.splice(Math.random()*players.length|0,1)[0];
       const p2      = players.splice(Math.random()*players.length|0,1)[0];
       const matchId = uuidv4();
-
       tournament.matches.push({
         matchId,
         player1: p1,
@@ -198,12 +179,8 @@ export class TournamentManager {
         round:   tournament.pendingRound
       });
       tournament.openMatches.add(matchId);
-
-      // pass tournamentId so the room can report back
       this.createMatchRoom(matchId, p1, p2, tournament.id);
     }
-
-    // if odd, give last one an automatic bye into next round
     if (players.length === 1) {
       tournament.roundWinners.push(players[0]);
     }
@@ -212,51 +189,39 @@ export class TournamentManager {
   reportMatchResult(tournamentId, matchId, winner) {
     const t = this.tournaments[tournamentId];
     if (!t || !t.openMatches.has(matchId)) return;
-
     t.openMatches.delete(matchId);
-    // normalize winner object
     const winObj = typeof winner === 'string'
       ? { id: winner, name: `Player ${winner.slice(0,4)}` }
       : winner;
     t.roundWinners.push(winObj);
-
-    // if all matches in this round are done:
     if (t.openMatches.size === 0) {
       const advancers = t.roundWinners;
       t.roundWinners = [];
       t.pendingRound++;
-
       if (advancers.length === 1) {
-        // tournament complete
         t.winner = advancers[0];
         t.status = 'finished';
         this.broadcastTournamentUpdate();
         this.broadcastTLobby(t);
       } else {
-        // kick off next round
         this._createRound(t, advancers);
         this.broadcastTournamentUpdate();
       }
     }
   }
 
-
   createMatches(tournament) {
     const players = tournament.players.slice();
-
     while (players.length > 1) {
       const player1 = players.splice(Math.floor(Math.random() * players.length), 1)[0];
       const player2 = players.splice(Math.floor(Math.random() * players.length), 1)[0];
       const matchId = uuidv4();
-
       tournament.matches.push({ matchId, player1, player2 });
       this.createMatchRoom(matchId, player1, player2);
     }
-
     if (players.length === 1) {
       tournament.winner = players[0];
     }
-
     tournament.status = 'finished';
   }
 
@@ -276,9 +241,7 @@ export class TournamentManager {
     if (!tournament) {
       throw new Error('Not in any tournament');
     }
-
     tournament.players = tournament.players.filter(p => p !== userId);
-
     if (tournament.players.length === 0) {
       delete this.tournaments[tournament.id];
     }
@@ -304,18 +267,15 @@ export class TournamentManager {
       status:   t.status,
       createdAt:t.createdAt,
     }));
-  
     const message = JSON.stringify({
       type:    'tournamentList',
       payload: list,
     });
-  
     for (const client of this.wss.clients) {
       if (client.readyState === 1) client.send(message);
     }
   }
   
-  /** Enforce that the current host’s `ready` flag is always true. */
   ensureHostReady(tournament) {
     const hostPlayer = tournament.players.find(
       p => getPlayerId(p) === tournament.host
@@ -323,10 +283,22 @@ export class TournamentManager {
     if (hostPlayer) hostPlayer.ready = true;
   }
 
+  notifyPlayers(room, tournamentId) {
+  const message = JSON.stringify({
+    type: 'tournamentStarts',
+    payload: {
+      matchId: room.matchId,
+      players: room.players,
+      tournamentId,
+    },
+  });
 
-  notifyPlayers(room) {
-    console.log(`Room created: ${room.matchId} with players ${room.players.join(', ')}`);
+  //TODO: send to players in tournament only 
+  for (const client of this.wss.clients) {
+    if (client.readyState === 1) client.send(message);
   }
+}
+
   
   toggleReady(userId, tournamentId) {
     const tournament = this.tournaments[tournamentId];
@@ -341,24 +313,9 @@ export class TournamentManager {
       console.error(`toggleReady: user ${userId} not in tournament ${tournamentId}`);
       return;
     }
-
-    
     player.ready = !player.ready;
     this.broadcastTLobby(tournament);
     this.broadcastTournamentUpdate();
-
-    const enoughPlayers = tournament.players.length >= 2 &&
-                          tournament.players.length === this.requiredPlayers;
-    const allReady      = tournament.players.every(p => p.ready);
-
-    if (tournament.status === 'waiting' && enoughPlayers && allReady) {
-      try {
-        this.startTournament(tournamentId);
-        this.broadcastTournamentUpdate();
-      } catch (err) {
-        console.error(`toggleReady→startTournament failed: ${err.message}`);
-      }
-    }
   }
 
   leaveTournament(userId, tournamentId) {
@@ -370,14 +327,11 @@ export class TournamentManager {
       console.error(`leaveTournament: user ${userId} not found`);
       return;
     }
-  
     tournament.players = removeUser(tournament.players, userId);
-  
     if (tournament.host === userId && tournament.players.length > 0) {
       tournament.host = getPlayerId(tournament.players[0]);
     }
     this.broadcastTLobby(tournament);
-  
     if (tournament.players.length === 0) {
       delete this.tournaments[tournament.id];
     }

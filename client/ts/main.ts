@@ -11,7 +11,7 @@ import {
   TourneySummary,
   renderTLobby
 } from './tournament.js';
-import { setupButtonsDelegated, setupNavigationButtons} from './buttons.js';
+import { setupButtonsDelegated} from './buttons.js';
 import type { TLobbyState } from './types.js';
 import { setMyId, setCurrentTLobby, getCurrentTLobby } from './state.js';
 import { hideAllPages } from './helpers.js';
@@ -152,7 +152,7 @@ function route() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  setupNavigationButtons(navigate);
+  // setupNavigationButtons(navigate);
   setupCodeJoinHandlers();
   setupButtonsDelegated(navigate, getSocket());
   ({ markQueued } = setupMatchmakingHandlers(navigate, getSocket()));
