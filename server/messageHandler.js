@@ -74,7 +74,10 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
     case 'joinMatchRoom': {
       const { tournamentId, matchId } = data.payload;
       const userId = ws.userId;                     // you already attach this on login
-    
+      console.log('Incoming joinMatchRoom request with data:', data);
+
+
+
       const room = tournamentManager.rooms[matchId];
       if (!room) {
         ws.send(JSON.stringify({
@@ -93,9 +96,8 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
         break;
       }
     
-      // 2. Mark the player as “here”
-      room.sockets   ??= new Map();     // <playerId, WebSocket>
-      room.readySet  ??= new Set();     // playerIds that have joined
+      room.sockets   ??= new Map();
+      room.readySet  ??= new Set();
     
       room.sockets.set(userId, ws);
       room.readySet.add(userId);
@@ -144,7 +146,6 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
     }
     case 'leaveQueue': {
       console.log('Incoming leaveQueue request');
-      // remove this ws.userId from whatever queue you pushed them into
       matchManager.removeFromQueue(ws.userId);
       break;
     }

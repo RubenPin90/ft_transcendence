@@ -6,6 +6,7 @@ import staticJs from '../plugins/static-js.js'
 import WebSocket, { WebSocketServer } from 'ws';
 import ejs from 'ejs'
 import fs from 'node:fs';
+import { userSockets } from './userSockets.js';
 
 
 import { createGameAI } from './matchMaking.js'
@@ -49,8 +50,7 @@ const wss = new WebSocketServer({ noServer: true })
 // ---- CREATE THE MATCH MANAGER INSTANCE ----
 const MatchManager = new matchManager(wss)
 
-tournamentManager.setSocketServer(wss);
-tournamentManager.setUserSockets(MatchManager.userSockets); 
+tournamentManager.setUserSockets(userSockets);
 
 MatchManager.on('matchFinished', ({ roomId, winnerId }) => {
   const room = tournamentManager.rooms[roomId];
@@ -68,7 +68,7 @@ const waitingTournamentPlayers = []
 const initialTournaments = [];
 for (let i = 0; i < 3; i++) {
   const tourney = tournamentManager.createTournament(null, 'SERVER');
-  // console.log(`🌟 Auto-created tournament ${tourney.id} (code: ${tourney.code})`);
+  console.log(`🌟 Auto-created tournament ${tourney.id} (code: ${tourney.code})`);
 }
 
 function removeFromQueue(queue, userId) {
@@ -89,35 +89,38 @@ server.on('upgrade', (request, socket, head) => {
 })
 
 setInterval(() => {
-  +  tournamentManager.broadcastTournamentUpdate();
+    tournamentManager.broadcastTournamentUpdate();
 }, 1000);
 
 // ---- MAIN WEBSOCKET CONNECTION HANDLER ----
 wss.on('connection', (ws, request) => {
-  let userId;
-  do {
-    userId = 'user_' + Math.floor(Math.random() * 10000);
-  } while (MatchManager.userSockets.has(userId));
-
+  let userId = request.headers['sec-websocket-protocol'];
+  if (!userId || userSockets.has(userId)) {
+    do {
+      userId = 'user_' + Math.floor(Math.random() * 10000);
+    } while (userSockets.has(userId));
+  }
+  
   ws.userId = userId;
   ws.inGame = false;
   ws.currentGameId = null;
+  userSockets.set(userId, ws);
 
-  console.log('🔌 New WebSocket connection with userId:', ws.userId);
+  ws.send(JSON.stringify({ type: 'welcome', payload: { userId } }));
 
-  MatchManager.userSockets.set(ws.userId, ws);
-
+  console.log('🔌 New WebSocket connection with userId:', userId);
+  tournamentManager.broadcastTournamentUpdate();
   ws.on('message', rawMsg => {
     handleClientMessage(ws, rawMsg, MatchManager);
   });
 
   ws.on('close', () => {
     console.log(`❌ WebSocket disconnected (userId = ${ws.userId})`);
-
     removeFromQueue(waiting1v1Players, ws.userId);
     removeFromQueue(waitingTournamentPlayers, ws.userId);
     tournamentManager.leaveTournament(ws.userId, null);
     MatchManager.unregisterSocket(ws.userId);
+    userSockets.delete(ws.userId);
 
     if (ws.inGame) {
       console.log(`--> ${ws.userId} disconnected while in a match. Marking as forfeit/disconnect.`);
@@ -127,6 +130,3 @@ wss.on('connection', (ws, request) => {
     }
   });
 });
-
-
-

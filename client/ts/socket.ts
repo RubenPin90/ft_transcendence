@@ -5,15 +5,16 @@ import type { TourneySummary } from './tournament.js';
 import type { TLobbyState } from './types.js';
 
 export type ServerMessage =
-  | { type: 'error'; payload: { message: string } }
-  | { type: 'matchFound'; payload: { gameId: string; mode: string; userId: string } }
-  | { type: 'state'; state: GameState }
-  | { type: 'tournamentList'; payload: TourneySummary[] }
-  | { type: 'joinedTLobby'; payload: { playerId: string; TLobby?: TLobbyState } }
-  | { type: 'tournamentCreated'; payload: TLobbyState }
-  | { type: 'tournamentUpdated'; payload: TLobbyState }
-  | { type: "tLobbyState";     payload: TLobbyState }
-  | { type: 'matchAssigned'; payload: { tournamentId: string; matchId: string; players: { id: string; name: string }[] } }
+  | { type: 'error';              payload: { message: string } }
+  | { type: 'welcome';            payload: { userId: string } }
+  | { type: 'matchFound';         payload: { gameId: string; mode: string; userId: string } }
+  | { type: 'state';              state: GameState }
+  | { type: 'tournamentList';     payload: TourneySummary[] }
+  | { type: 'joinedTLobby';       payload: { playerId: string; TLobby?: TLobbyState } }
+  | { type: 'tournamentCreated';  payload: TLobbyState }
+  | { type: 'tournamentUpdated';  payload: TLobbyState }
+  | { type: 'tLobbyState';        payload: TLobbyState }
+  | { type: 'matchAssigned';      payload: { tournamentId: string; matchId: string; players: { id: string; name: string }[] } }
   | { type: 'tournamentBracketMsg'; payload: { tournamentId: string; rounds: { matchId: string; players: { id: string; name: string }[] }[] } };
 
 export type MsgType = ServerMessage['type'];

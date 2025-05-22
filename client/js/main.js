@@ -1,3 +1,4 @@
+// main.ts — fixed to keep the original `on()` event-bus style
 import { initGameCanvas, startGame, stopGame, setOnGameEnd } from './game.js';
 import { renderTournamentList, joinByCode, renderTLobby, renderBracketOverlay } from './tournament.js';
 import { setupButtonsDelegated } from './buttons.js';
@@ -5,11 +6,27 @@ import { setMyId, setCurrentTLobby, getCurrentTLobby } from './state.js';
 import { hideAllPages } from './helpers.js';
 import { setupMatchmakingHandlers } from './matchmaking.js';
 import { on, send, getSocket } from './socket.js';
+// ────────────────────────────────────────────────────────────
+//  1.  guarantee we have a socket right away and recover userId
+// ────────────────────────────────────────────────────────────
+const socket = getSocket(); // getSocket() now builds WS with stored playerId as sub-protocol
+on('welcome', (msg) => {
+    // server confirms what userId it finally assigned to this tab
+    const { userId } = msg.payload;
+    localStorage.setItem('playerId', userId);
+    socket.userId = userId; // keep a live copy on the WS object
+});
+// ────────────────────────────────────────────────────────────
+//  2.  generic error banner
+// ────────────────────────────────────────────────────────────
 on('error', (msg) => {
     const banner = document.getElementById('error-banner');
     banner.textContent = msg.payload.message;
     banner.style.display = 'block';
 });
+// ────────────────────────────────────────────────────────────
+//  3.  TLobby and tournament events – unchanged API
+// ────────────────────────────────────────────────────────────
 on('joinedTLobby', (msg) => {
     const { playerId, TLobby } = msg.payload;
     setMyId(playerId);
@@ -17,7 +34,7 @@ on('joinedTLobby', (msg) => {
     if (TLobby) {
         setCurrentTLobby(TLobby);
         history.pushState({}, '', `/tournament/${TLobby.code}`);
-        renderTLobby(TLobby, getSocket());
+        renderTLobby(TLobby, socket);
     }
 });
 on('tournamentBracketMsg', (msg) => {
@@ -28,10 +45,10 @@ on('tournamentCreated', (msg) => {
     setMyId(TLobby.hostId);
     localStorage.setItem('playerId', TLobby.hostId);
     history.pushState({}, '', `/tournament/${TLobby.code}`);
-    renderTLobby(TLobby, getSocket());
+    renderTLobby(TLobby, socket);
 });
 on('tournamentUpdated', (msg) => {
-    renderTLobby(msg.payload, getSocket());
+    renderTLobby(msg.payload, socket);
 });
 let tournaments = [];
 on('tournamentList', (msg) => {
@@ -41,14 +58,16 @@ on('tournamentList', (msg) => {
     }
 });
 on('tLobbyState', (msg) => {
-    console.log('tLobbyState', msg);
     const lobby = msg.payload;
     const current = getCurrentTLobby();
     if (current && current.id !== lobby.id)
-        return;
+        return; // ignore lobbies that are not ours
     setCurrentTLobby(lobby);
-    renderTLobby(lobby, getSocket());
+    renderTLobby(lobby, socket);
 });
+// ────────────────────────────────────────────────────────────
+//  4.  Generic matchmaking & game-page transitions
+// ────────────────────────────────────────────────────────────
 on('matchFound', (msg) => {
     const { gameId, mode, userId } = msg.payload;
     queued = false;
@@ -58,22 +77,24 @@ on('matchFound', (msg) => {
     navigate(`/game/${mode === 'PVP' || mode === '1v1' ? '1v1' : 'pve'}`);
 });
 on('matchAssigned', (msg) => {
+    var _a;
     const { tournamentId, matchId, players } = msg.payload;
-    // Pick me vs. opponent (works with your existing state helpers)
-    const myId = localStorage.getItem('playerId');
+    // fall back to the freshly received socket.userId if LS is empty (first load)
+    const myId = (_a = localStorage.getItem('playerId')) !== null && _a !== void 0 ? _a : socket.userId;
     const me = players.find(p => p.id === myId);
     const rival = players.find(p => p.id !== myId);
     if (!me || !rival)
-        return; // shouldn’t happen
+        return;
     showVersusOverlay(me.name, rival.name);
-    // Tell the server we’re ready (optional handshake)
     send({ type: 'joinMatchRoom', payload: { tournamentId, matchId } });
-    // After 3 s go to the game page exactly like matchFound does
     setTimeout(() => {
         localStorage.setItem('currentGameId', matchId);
         navigate('/game/1v1');
     }, 3000);
 });
+// ────────────────────────────────────────────────────────────
+//  5.  UI helpers & routing (original code, lightly trimmed)
+// ────────────────────────────────────────────────────────────
 let markQueued;
 let currentMode = null;
 let queued = false;
@@ -85,18 +106,16 @@ function showVersusOverlay(left, right) {
         el.style.cssText = `
       position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
       background:rgba(0,0,0,.8);color:#fff;font:700 3rem sans-serif;z-index:9999;
-      text-align:center;
-    `;
+      text-align:center;`;
         document.body.appendChild(el);
     }
     el.textContent = `${left}  vs  ${right}`;
     el.style.opacity = '1';
-    // Fade out automatically
     setTimeout(() => { el.style.transition = 'opacity .4s'; el.style.opacity = '0'; }, 2500);
     setTimeout(() => { el.remove(); }, 3000);
 }
 function joinByCodeWithSocket(code) {
-    joinByCode(getSocket(), code);
+    joinByCode(socket, code);
 }
 setOnGameEnd((winnerId) => {
     alert(`Player ${winnerId} wins!`);
@@ -124,8 +143,7 @@ function route() {
     if (path.startsWith('/game')) {
         document.getElementById('game-container').style.display = 'block';
         const mode = path.split('/')[2] || 'pve';
-        document.getElementById('game-mode-title').textContent =
-            'Mode: ' + mode;
+        document.getElementById('game-mode-title').textContent = 'Mode: ' + mode;
         if (currentMode && currentMode !== mode)
             stopGame();
         currentMode = mode;
@@ -142,10 +160,7 @@ function route() {
         document.getElementById('t-lobby-page').style.display = 'block';
         return;
     }
-    const mapping = {
-        '/profile': 'profile-page',
-        '/settings': 'settings-page'
-    };
+    const mapping = { '/profile': 'profile-page', '/settings': 'settings-page' };
     const pageId = mapping[path];
     if (pageId) {
         document.getElementById(pageId).style.display = 'block';
@@ -155,10 +170,9 @@ function route() {
     }
 }
 document.addEventListener('DOMContentLoaded', () => {
-    // setupNavigationButtons(navigate);
     setupCodeJoinHandlers();
-    setupButtonsDelegated(navigate, getSocket());
-    ({ markQueued } = setupMatchmakingHandlers(navigate, getSocket()));
+    setupButtonsDelegated(navigate, socket);
+    ({ markQueued } = setupMatchmakingHandlers(navigate, socket));
     window.addEventListener('popstate', route);
     route();
 });

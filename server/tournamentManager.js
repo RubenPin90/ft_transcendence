@@ -158,7 +158,7 @@ export class TournamentManager {
     }
   }
   
-  getPlayerId(p) {               // <-- add this
+  getPlayerId(p) {
     return typeof p === 'string' ? p : p.id;
   }
 
@@ -186,7 +186,7 @@ export class TournamentManager {
     setTimeout(() => {
       firstRound.forEach(({ matchId, players }) => {
         const [p1, p2] = players;
-        this.createMatchRoom(tournamentId, matchId, p1, p2); // ← the method you already have
+        this.createMatchRoom(tournamentId, matchId, p1, p2);
       });
     }, 5000);
   }
@@ -254,10 +254,15 @@ export class TournamentManager {
   createMatchRoom(tournamentId, matchId, player1, player2) {
     const room = {
       matchId,
+      tournamentId, // <-- make sure to include this
       players: [player1, player2],
       status: 'waiting',
     };
+  
     this.rooms[matchId] = room;
+  
+    matchManager.createRoom(matchId, [player1.id, player2.id]); // <- ensure room exists
+  
     this.notifyPlayers(room, tournamentId);
   }
 
@@ -303,9 +308,9 @@ export class TournamentManager {
       id:       t.id,
       code:     t.code,
       name:     t.name ?? `Tournament ${t.code}`,
-      slots: this.MAX_PLAYERS,                // number – what the code expects
-      current: t.players.length,              // number – how many are inside
-      displaySlots: `${t.players.length}/${this.MAX_PLAYERS}`, // for your list UI only
+      slots: this.MAX_PLAYERS,
+      current: t.players.length,
+      displaySlots: `${t.players.length}/${this.MAX_PLAYERS}`,
       joinable: t.players.length < this.MAX_PLAYERS && t.status === 'waiting',
       hostId:   t.host,
       players:  t.players.map(p => ({
