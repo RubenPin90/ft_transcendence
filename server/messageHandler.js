@@ -16,16 +16,13 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
   // console.log(`Incoming from ${ws.userId}:`);
   // console.log(data);
   switch (data.type) {
-    case 'chat':
-      wss.clients.forEach(client => {
-        if (client !== ws && client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({
-            type: 'chat',
-            payload: data.payload,
-          }));
-        }
-      });
+    case 'kickPlayer': {
+      console.log('Incoming kickPlayer request with data:', data);
+      const { tournamentId, playerId } = data.payload;
+      const userId = ws.userId;
+      tournamentManager.kickPlayer(userId, tournamentId, playerId);
       break;
+    }
     case 'joinByCode': {
         console.log('Incoming joinByCode request with data:', data);
         const { code } = data.payload;
@@ -72,6 +69,65 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
       const { tournamentId } = data.payload ?? {};
       const userId = ws.userId;
       tournamentManager.leaveTournament(userId, tournamentId);
+      break;
+    }
+    case 'joinMatchRoom': {
+      const { tournamentId, matchId } = data.payload;
+      const userId = ws.userId;                     // you already attach this on login
+    
+      const room = tournamentManager.rooms[matchId];
+      if (!room) {
+        ws.send(JSON.stringify({
+          type: 'error',
+          payload: { message: 'Match room not found.' }
+        }));
+        break;
+      }
+    
+      // 1. Make sure this socket really belongs in the room
+      if (!room.players.some(p => tournamentManager.getPlayerId(p) === userId)) {
+        ws.send(JSON.stringify({
+          type: 'error',
+          payload: { message: 'You are not a member of this match.' }
+        }));
+        break;
+      }
+    
+      // 2. Mark the player as “here”
+      room.sockets   ??= new Map();     // <playerId, WebSocket>
+      room.readySet  ??= new Set();     // playerIds that have joined
+    
+      room.sockets.set(userId, ws);
+      room.readySet.add(userId);
+    
+      console.log(`[${matchId}] ${userId} joined (${room.readySet.size}/2)`);
+    
+      // 3. If both players are in, flip the switch
+      if (room.readySet.size === 2) {
+        room.status = 'inProgress';
+    
+        const payload = {
+          type: 'matchStart',
+          payload: {
+            tournamentId,
+            matchId,
+            players: room.players.map(p => ({
+              id:   tournamentManager.getPlayerId(p),
+              name: p.name,
+            })),
+          },
+        };
+    
+        // broadcast only to the two sockets inside the room
+        for (const sock of room.sockets.values()) {
+          if (sock.readyState === 1) {
+            sock.send(JSON.stringify(payload));
+          }
+        }
+    
+        console.log(`[${matchId}] matchStart sent`);
+      }
+    
       break;
     }
 

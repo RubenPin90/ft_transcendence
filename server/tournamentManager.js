@@ -22,6 +22,10 @@ export class TournamentManager {
     this.wss = wss;
   }
 
+  setUserSockets(map) {
+    this.userSockets = map;
+  }
+
   userAlreadyInTournament(userId) {
     return Object.values(this.tournaments)
       .some(t => t.host === userId || hasUser(t.players, userId));
@@ -154,23 +158,39 @@ export class TournamentManager {
     }
   }
   
+  getPlayerId(p) {               // <-- add this
+    return typeof p === 'string' ? p : p.id;
+  }
 
   startTournament(tournamentId) {
-    const t = this.tournaments[tournamentId];
-    if (!t) throw new Error('Tournament not found');
-    if (t.status !== 'waiting')
-    {
-      console.error(`Tournament ${tournamentId} is not in waiting state`);
-      console.error(`Tournament ${tournamentId} status: ${t.status}`);
-      return ;
+    const tourney = this.tournaments[tournamentId];
+    if (!tourney) return;
+
+    const shuffled = [...tourney.players].sort(() => Math.random() - 0.5);
+    const firstRound = [];
+    for (let i = 0; i < shuffled.length; i += 2) {
+      firstRound.push({
+        matchId: uuidv4(),
+        players: [shuffled[i], shuffled[i + 1]],
+      });
     }
-    t.status        = 'in_progress';
-    t.pendingRound  = 1;
-    t.openMatches   = new Set();
-    t.roundWinners  = [];
-    this._createRound(t, t.players);
-    this.broadcastTournamentUpdate();
+    tourney.rounds = [firstRound];
+
+    const bracketMsg = JSON.stringify({
+      type: 'tournamentBracket',
+      payload: { tournamentId, rounds: tourney.rounds },
+    });
+    for (const [uid, ws] of this.userSockets) {
+      if (ws.readyState === 1) ws.send(bracketMsg);
+    }
+    setTimeout(() => {
+      firstRound.forEach(({ matchId, players }) => {
+        const [p1, p2] = players;
+        this.createMatchRoom(tournamentId, matchId, p1, p2); // ← the method you already have
+      });
+    }, 5000);
   }
+
 
   _createRound(tournament, playerList) {
     const players = [...playerList];
@@ -185,7 +205,7 @@ export class TournamentManager {
         round:   tournament.pendingRound
       });
       tournament.openMatches.add(matchId);
-      this.createMatchRoom(matchId, p1, p2, tournament.id);
+      this.createMatchRoom( tournament.id, matchId, p1, p2,);
     }
     if (players.length === 1) {
       tournament.roundWinners.push(players[0]);
@@ -223,7 +243,7 @@ export class TournamentManager {
       const player2 = players.splice(Math.floor(Math.random() * players.length), 1)[0];
       const matchId = uuidv4();
       tournament.matches.push({ matchId, player1, player2 });
-      this.createMatchRoom(matchId, player1, player2);
+      this.createMatchRoom(tournament, matchId, player1, player2);
     }
     if (players.length === 1) {
       tournament.winner = players[0];
@@ -231,7 +251,7 @@ export class TournamentManager {
     tournament.status = 'finished';
   }
 
-  createMatchRoom(matchId, player1, player2) {
+  createMatchRoom(tournamentId, matchId, player1, player2) {
     const room = {
       matchId,
       players: [player1, player2],
@@ -239,6 +259,29 @@ export class TournamentManager {
     };
     this.rooms[matchId] = room;
     this.notifyPlayers(room, tournamentId);
+  }
+
+  kickPlayer(tournamentId, userId) {
+    const tournament = this.tournaments[tournamentId];
+    if (!tournament) {
+      console.error(`Tournament ${tournamentId} not found`);
+      return;
+    }
+    const playerIndex = tournament.players.findIndex(p => getPlayerId(p) === userId);
+    if (playerIndex === -1) {
+      console.error(`Player ${userId} not found in tournament ${tournamentId}`);
+      return;
+    }
+    tournament.players.splice(playerIndex, 1);
+    if (tournament.host === userId) {
+      if (tournament.players.length > 0) {
+        tournament.host = getPlayerId(tournament.players[0]);
+      } else {
+        tournament.host = null;
+      }
+    }
+    this.broadcastTLobby(tournament);
+    this.broadcastTournamentUpdate();
   }
 
   leaveTournament(userId) {

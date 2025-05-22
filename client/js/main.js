@@ -1,5 +1,5 @@
 import { initGameCanvas, startGame, stopGame, setOnGameEnd } from './game.js';
-import { renderTournamentList, joinByCode, renderTLobby } from './tournament.js';
+import { renderTournamentList, joinByCode, renderTLobby, renderBracketOverlay } from './tournament.js';
 import { setupButtonsDelegated } from './buttons.js';
 import { setMyId, setCurrentTLobby, getCurrentTLobby } from './state.js';
 import { hideAllPages } from './helpers.js';
@@ -19,6 +19,9 @@ on('joinedTLobby', (msg) => {
         history.pushState({}, '', `/tournament/${TLobby.code}`);
         renderTLobby(TLobby, getSocket());
     }
+});
+on('tournamentBracketMsg', (msg) => {
+    renderBracketOverlay(msg.payload.rounds);
 });
 on('tournamentCreated', (msg) => {
     const TLobby = msg.payload;
@@ -54,9 +57,44 @@ on('matchFound', (msg) => {
     localStorage.setItem('playerId', userId);
     navigate(`/game/${mode === 'PVP' || mode === '1v1' ? '1v1' : 'pve'}`);
 });
+on('matchAssigned', (msg) => {
+    const { tournamentId, matchId, players } = msg.payload;
+    // Pick me vs. opponent (works with your existing state helpers)
+    const myId = localStorage.getItem('playerId');
+    const me = players.find(p => p.id === myId);
+    const rival = players.find(p => p.id !== myId);
+    if (!me || !rival)
+        return; // shouldn’t happen
+    showVersusOverlay(me.name, rival.name);
+    // Tell the server we’re ready (optional handshake)
+    send({ type: 'joinMatchRoom', payload: { tournamentId, matchId } });
+    // After 3 s go to the game page exactly like matchFound does
+    setTimeout(() => {
+        localStorage.setItem('currentGameId', matchId);
+        navigate('/game/1v1');
+    }, 3000);
+});
 let markQueued;
 let currentMode = null;
 let queued = false;
+function showVersusOverlay(left, right) {
+    let el = document.getElementById('vs-overlay');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'vs-overlay';
+        el.style.cssText = `
+      position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+      background:rgba(0,0,0,.8);color:#fff;font:700 3rem sans-serif;z-index:9999;
+      text-align:center;
+    `;
+        document.body.appendChild(el);
+    }
+    el.textContent = `${left}  vs  ${right}`;
+    el.style.opacity = '1';
+    // Fade out automatically
+    setTimeout(() => { el.style.transition = 'opacity .4s'; el.style.opacity = '0'; }, 2500);
+    setTimeout(() => { el.remove(); }, 3000);
+}
 function joinByCodeWithSocket(code) {
     joinByCode(getSocket(), code);
 }

@@ -50,6 +50,7 @@ const wss = new WebSocketServer({ noServer: true })
 const MatchManager = new matchManager(wss)
 
 tournamentManager.setSocketServer(wss);
+tournamentManager.setUserSockets(MatchManager.userSockets); 
 
 MatchManager.on('matchFinished', ({ roomId, winnerId }) => {
   const room = tournamentManager.rooms[roomId];
@@ -115,6 +116,7 @@ wss.on('connection', (ws, request) => {
 
     removeFromQueue(waiting1v1Players, ws.userId);
     removeFromQueue(waitingTournamentPlayers, ws.userId);
+    tournamentManager.leaveTournament(ws.userId, null);
     MatchManager.unregisterSocket(ws.userId);
 
     if (ws.inGame) {

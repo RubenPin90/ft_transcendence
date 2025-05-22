@@ -12,6 +12,52 @@ function send<T extends object>(sock: WebSocket, msg: T) {
   sock.readyState === WebSocket.OPEN && sock.send(JSON.stringify(msg));
 }
 
+export function renderBracketOverlay(rounds: { matchId: string; players: { id: string; name: string }[] }[]) {
+  let el = document.getElementById('bracket-overlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'bracket-overlay';
+    el.style.cssText = `
+      position:fixed;inset:0;z-index:9999;
+      background:rgba(0,0,0,.9);color:#fff;
+      display:flex;align-items:center;justify-content:center;
+      font-family:sans-serif;overflow:auto;
+    `;
+    document.body.appendChild(el);
+  } else {
+    el.innerHTML = '';
+  }
+
+  const wrapper = document.createElement('div');
+  wrapper.style.display = 'flex';
+  wrapper.style.flexDirection = 'column';
+  wrapper.style.gap = '1rem';
+
+  rounds.forEach((match) => {
+    const card = document.createElement('div');
+    card.style.padding = '0.6rem 1rem';
+    card.style.background = '#222';
+    card.style.borderRadius = '6px';
+    card.innerHTML = `
+      <div>${match.players[0]?.name ?? 'BYE'}</div>
+      <div style="text-align:center;">vs</div>
+      <div>${match.players[1]?.name ?? 'BYE'}</div>
+    `;
+    wrapper.appendChild(card);
+  });
+
+  el.appendChild(wrapper);
+  el.style.opacity = '1';
+
+  setTimeout(() => {
+    el.style.transition = 'opacity .3s';
+    el.style.opacity = '0';
+  }, 4700);
+  setTimeout(() => el.remove(), 5100);
+}
+
+
+
 export interface TourneySummary {
   id: string;
   code: string;

@@ -9,7 +9,7 @@ function createSocket() {
         (_a = listeners[data.type]) === null || _a === void 0 ? void 0 : _a.forEach(cb => cb(data));
     });
     ws.addEventListener('close', () => {
-        socket = null; // will reconnect lazily
+        socket = null;
     });
     return ws;
 }
