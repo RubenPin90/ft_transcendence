@@ -9,12 +9,15 @@ ENV_TMP_FILE := $(SRC_DIR)/.env.example
 
 USER_NAME := $(shell whoami)
 SECRETS_DIR := $(ROOT_DIR)/secrets
-DATA_GRAFANA := $(SRC_DIR)/services/monitoring/grafana/data
+DATA_GRAFANA := $(SRC_DIR)/monitoring/grafana/data
 
 all: compose
 
 compose: .init_setup
 	@$(CMD) $(FLAG) $(COMPOSE_FILE) up
+
+sm: .init_setup
+	@$(CMD) $(FLAG) $(COMPOSE_FILE) up -d
 
 start:
 	@$(CMD) $(FLAG) $(COMPOSE_FILE) start

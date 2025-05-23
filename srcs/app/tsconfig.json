@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+      "target": "ES6",
+      "module": "ESNext",
+      "moduleResolution": "Node",
+      "lib": ["DOM", "ES2017"],
+      "strict": true,
+      "esModuleInterop": true,
+      "forceConsistentCasingInFileNames": true,
+      "skipLibCheck": true,
+      "removeComments": true,
+      "outDir": "frontend/client/js"
+    },
+    "include": ["frontend/client/ts"],
+  }
