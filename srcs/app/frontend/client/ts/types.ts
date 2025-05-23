@@ -6,3 +6,23 @@ export interface TLobbyState {
     hostId: string
     displaySlots: number
   }
+
+export interface MatchAssignedMsg {
+  type: 'matchAssigned';
+  payload: {
+    tournamentId: string;
+    matchId: string;
+    players: { id: string; name: string }[];
+  };
+}
+
+export interface TournamentBracketMsg {
+  type: 'tournamentBracket';
+  payload: {
+    tournamentId: string;
+    rounds: {
+      matchId: string;
+      players: { id: string; name: string }[];
+    }[];
+  };
+}
