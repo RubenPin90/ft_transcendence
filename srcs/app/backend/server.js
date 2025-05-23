@@ -1,9 +1,3 @@
-import { matchManager as MatchManagerClass, GAME_MODES }
-  from './matchManager.js';
-
-import { tournamentManager } from './tournamentManager.js';
-import { handleClientMessage } from './messageHandler.js';
-
 import Fastify from 'fastify';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -15,14 +9,15 @@ import os from 'os';
 
 
 // import { createGameAI } from './matchMaking.js'
-import { matchManager, GAME_MODES } from './matchManager.js'
-import { handleClientMessage } from './messageHandler.js'
-import { tournamentManager } from './tournamentManager.js'
+import { matchManager, GAME_MODES } from './game/matchManager.js'
+import { handleClientMessage } from './game/messageHandler.js'
+import { tournamentManager } from './game/tournamentManager.js'
 
 import urlsPlugin from './urls.js';
 
 const PORT = 8080;
 
+console.log("HERE");
 
 // Helper to get __dirname in ES module
 const __filename = fileURLToPath(import.meta.url)
@@ -62,7 +57,7 @@ const server = fastify.server;
 
 const wss = new WebSocketServer({ noServer: true });
 
-export const matchManager = new MatchManagerClass(wss);
+// export const matchManager = new MatchManagerClass(wss);
 
 tournamentManager.matchManager = matchManager;
 
