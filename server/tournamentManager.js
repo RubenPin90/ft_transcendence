@@ -252,18 +252,25 @@ export class TournamentManager {
   }
 
   createMatchRoom(tournamentId, matchId, player1, player2) {
-    const room = {
+    const lobbyRoom = {
       matchId,
-      tournamentId, // <-- make sure to include this
+      tournamentId,
       players: [player1, player2],
-      status: 'waiting',
+      status : 'waiting',
     };
+    this.rooms[matchId] = lobbyRoom;
   
-    this.rooms[matchId] = room;
+    // ---------- ЖИВОЙ МАТЧ В matchManager ----------
+    this.matchManager.createRoom({
+      roomId    : matchId,
+      creatorId : player1.id,
+      maxPlayers: 2,
+    });
   
-    matchManager.createRoom(matchId, [player1.id, player2.id]); // <- ensure room exists
+    this.matchManager.joinRoom(matchId, player2.id);
   
-    this.notifyPlayers(room, tournamentId);
+    // уведомляем двух игроков
+    this.notifyPlayers(lobbyRoom, tournamentId);
   }
 
   kickPlayer(tournamentId, userId) {

@@ -31,7 +31,6 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
         break;
     }
     case 'tLobbyState':{
-      // Only re-render if this is the lobby we are currently in:
       const current = getCurrentTLobby();
       if (!current || current.id === msg.payload.id) {
         renderTLobby(msg.payload, socket);
@@ -154,23 +153,16 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
         console.log('data received:', data.payload)
         console.log('ws.userId:', ws.userId)
       
-        // 1) pull out direction & active
         const { direction, active } = data.payload
-      
-        // 2) lookup the game room
         const room = matchManager.rooms.get(ws.currentGameId)
         if (!room) break
-      
-        // 3) find this player
         const player = room.players.find(p => p.playerId === ws.userId)
         if (!player) break
-        // 4) compute dy: up = -1, down = +1, else 0
         let dy = 0
         if (active) {
           if (direction === 'up')   dy = -1
           else if (direction === 'down') dy =  1
         }
-        
         const speed = room.paddleSpeed ?? 1.0
         const FPS = 60
         const deltaY = dy * speed / FPS
@@ -180,6 +172,8 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
         break
       }
     case 'leaveGame':
+      console.log('Incoming leaveGame request');
+      console.log('data received:', data.payload);
       ws.inGame = false;
       ws.currentGameId = null;
       console.log(`${ws.userId} left the game voluntarily.`);

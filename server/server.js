@@ -1,69 +1,52 @@
-import Fastify from 'fastify'
-import path from 'path'
-import { fileURLToPath } from 'url'
-import fastifyStatic from '@fastify/static'
-import staticJs from '../plugins/static-js.js'
+import { matchManager as MatchManagerClass, GAME_MODES }
+  from './matchManager.js';
+
+import { tournamentManager } from './tournamentManager.js';
+import { handleClientMessage } from './messageHandler.js';
+
+import Fastify from 'fastify';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fastifyStatic from '@fastify/static';
+import staticJs from '../plugins/static-js.js';
 import WebSocket, { WebSocketServer } from 'ws';
-import ejs from 'ejs'
-import fs from 'node:fs';
-import { userSockets } from './userSockets.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);
+const fastify    = Fastify({ logger: true });
 
-import { createGameAI } from './matchMaking.js'
-import { matchManager, GAME_MODES } from './matchManager.js'
-import { handleClientMessage } from './messageHandler.js'
-import { tournamentManager } from './tournamentManager.js'
-
-// Helper to get __dirname in ES module
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-// Initialize Fastify
-const fastify = Fastify({ logger: true })
-
-// Serve /public
 await fastify.register(fastifyStatic, {
-  root: path.join(__dirname, '../public'),
+  root  : path.join(__dirname, '../public'),
   prefix: '/public/',
-})
-
-// Serve /client/js via plugin
-await fastify.register(staticJs)
-
-await fastify.register(fastifyStatic, {
-  root: path.join(__dirname, '../css'),
-  prefix: '/css/',
-  decorateReply: false,          // don’t add reply.sendFile again
 });
+await fastify.register(staticJs);
 
-fastify.get('/*', async (request, reply) => {
-  return reply.sendFile('menu.html', path.join(__dirname, '../templates'))
-})
+fastify.get('/*', (req, rep) =>
+  rep.sendFile('menu.html', path.join(__dirname, '../templates'))
+);
 
-// Start Fastify HTTP server
-const httpServer = await fastify.listen({ port: 3000, host: '0.0.0.0' });
-const server = fastify.server
+await fastify.listen({ port: 3000, host: '0.0.0.0' });
+const server = fastify.server;
 
-// ---- CREATE OUR WEBSOCKET SERVER ----
-const wss = new WebSocketServer({ noServer: true })
+const wss = new WebSocketServer({ noServer: true });
 
-// ---- CREATE THE MATCH MANAGER INSTANCE ----
-const MatchManager = new matchManager(wss)
+export const matchManager = new MatchManagerClass(wss);
 
-tournamentManager.setUserSockets(userSockets);
+tournamentManager.matchManager = matchManager;
 
-MatchManager.on('matchFinished', ({ roomId, winnerId }) => {
+tournamentManager.setSocketServer(wss);
+tournamentManager.setUserSockets(matchManager.userSockets);
+
+matchManager.on('matchFinished', ({ roomId, winnerId }) => {
   const room = tournamentManager.rooms[roomId];
   if (room) {
     tournamentManager.reportMatchResult(room.tournamentId, roomId, winnerId);
   }
-})
-/**
- * For simple matchmaking, we’ll keep arrays of "waiting" users for 1v1 & custom modes.
- * Once we find enough players, we create/join a room using matchManager.
- */
-const waiting1v1Players = []
-const waitingTournamentPlayers = []
+});
+
+setInterval(() => {
+  tournamentManager.broadcastTournamentUpdate();
+}, 1000);
 
 const initialTournaments = [];
 for (let i = 0; i < 3; i++) {
@@ -71,62 +54,40 @@ for (let i = 0; i < 3; i++) {
   console.log(`🌟 Auto-created tournament ${tourney.id} (code: ${tourney.code})`);
 }
 
-function removeFromQueue(queue, userId) {
-  const idx = queue.findIndex((p) => p.userId === userId)
-  if (idx !== -1) {
-    queue.splice(idx, 1)
-  }
-}
-
-server.on('upgrade', (request, socket, head) => {
-  if (request.url.startsWith('/ws/game')) {
-    wss.handleUpgrade(request, socket, head, (ws) => {
-      wss.emit('connection', ws, request)
-    })
+server.on('upgrade', (req, socket, head) => {
+  if (req.url.startsWith('/ws/game')) {
+    wss.handleUpgrade(req, socket, head, ws => {
+      wss.emit('connection', ws, req);
+    });
   } else {
-    socket.destroy()
+    socket.destroy();
   }
-})
+});
 
-setInterval(() => {
-    tournamentManager.broadcastTournamentUpdate();
-}, 1000);
+// ---------- WS connection ----------
+wss.on('connection', (ws, req) => {
+  let userId;
+  do {
+    userId = 'user_' + (Math.random() * 10000 | 0);
+  } while (matchManager.userSockets.has(userId));
 
-// ---- MAIN WEBSOCKET CONNECTION HANDLER ----
-wss.on('connection', (ws, request) => {
-  let userId = request.headers['sec-websocket-protocol'];
-  if (!userId || userSockets.has(userId)) {
-    do {
-      userId = 'user_' + Math.floor(Math.random() * 10000);
-    } while (userSockets.has(userId));
-  }
-  
   ws.userId = userId;
   ws.inGame = false;
   ws.currentGameId = null;
-  userSockets.set(userId, ws);
 
-  ws.send(JSON.stringify({ type: 'welcome', payload: { userId } }));
+  console.log('🔌  WS connected:', userId);
 
-  console.log('🔌 New WebSocket connection with userId:', userId);
-  tournamentManager.broadcastTournamentUpdate();
-  ws.on('message', rawMsg => {
-    handleClientMessage(ws, rawMsg, MatchManager);
-  });
+  matchManager.registerSocket(userId, ws);
+
+  ws.on('message', raw => handleClientMessage(ws, raw, matchManager));
 
   ws.on('close', () => {
-    console.log(`❌ WebSocket disconnected (userId = ${ws.userId})`);
-    removeFromQueue(waiting1v1Players, ws.userId);
-    removeFromQueue(waitingTournamentPlayers, ws.userId);
-    tournamentManager.leaveTournament(ws.userId, null);
-    MatchManager.unregisterSocket(ws.userId);
-    userSockets.delete(ws.userId);
+    console.log('❌  WS closed:', userId);
+    tournamentManager.leaveTournament(userId, null);
+    matchManager.unregisterSocket(userId);
 
     if (ws.inGame) {
-      console.log(`--> ${ws.userId} disconnected while in a match. Marking as forfeit/disconnect.`);
-      MatchManager.leaveRoom(ws.currentGameId, ws.userId);
-      ws.inGame = false;
-      ws.currentGameId = null;
+      matchManager.leaveRoom(ws.currentGameId, userId);
     }
   });
 });
