@@ -1,23 +1,23 @@
 services:
-  # nginx:
-  #   build:
-  #     context: ./nginx
-  #     target: dev
-  #   container_name: 'nginx'
-  #   restart: always
-  #   ports:
-  #     - "443:443"
-  #   volumes:
-  #     - ./nginx/conf:/etc/nginx/conf.d
-  #   environment:
-  #     - PROM_USER=${USER_NAME}
-  #     - PROM_PASS_FILE=/run/secrets/prometheus_password
-  #   # depends_on:
-  #   #   - app
-  #   networks:
-  #     - trancendence-network
-  #   secrets:
-  #     - prometheus_password
+  nginx:
+    build:
+      context: ./nginx
+      target: dev
+    container_name: 'nginx'
+    restart: always
+    ports:
+      - "443:443"
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d
+    environment:
+      - PROM_USER=${USER_NAME}
+      - PROM_PASS_FILE=/run/secrets/prometheus_password
+    depends_on:
+      - app
+    networks:
+      - trancendence-network
+    secrets:
+      - prometheus_password
 
   app:
     build: ./app
@@ -26,67 +26,67 @@ services:
     networks:
       - trancendence-network
 
-  # prometheus:
-  #   image: prom/prometheus:v2.53.4
-  #   container_name: 'prometheus'
-  #   user: root
-  #   restart: always
-  #   volumes:
-  #     - ${PROMETHEUS_YML}:/etc/prometheus/prometheus.yml
-  #   networks:
-  #     - trancendence-network
-  #   command:
-  #     - --config.file=/etc/prometheus/prometheus.yml
-  #     - --web.route-prefix=/
-  #     - --web.external-url=http://localhost/prometheus
+  prometheus:
+    image: prom/prometheus:v2.53.4
+    container_name: 'prometheus'
+    user: root
+    restart: always
+    volumes:
+      - ${PROMETHEUS_YML}:/etc/prometheus/prometheus.yml
+    networks:
+      - trancendence-network
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.route-prefix=/
+      - --web.external-url=http://localhost/prometheus
 
-  # grafana:
-  #   image: grafana/grafana
-  #   container_name: 'grafana'
-  #   networks:
-  #     - trancendence-network
-  #   volumes:
-  #     - grafana_data:/var/lib/grafana
-  #   environment:
-  #     - GF_SECURITY_ADMIN_PASSWORD__FILE=/run/secrets/admin_password
-  #     - GF_SECURITY_ADMIN_USER=${USER_NAME}
-  #     - GF_SERVER_ROOT_URL=https://rpinchas.42.fr/grafana/
-  #     - GF_SERVER_SERVE_FROM_SUB_PATH=true
-  #   secrets:
-  #     - admin_password
-  #   # depends_on:
-  #   #   - prometheus
+  grafana:
+    image: grafana/grafana
+    container_name: 'grafana'
+    networks:
+      - trancendence-network
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD__FILE=/run/secrets/admin_password
+      - GF_SECURITY_ADMIN_USER=${USER_NAME}
+      - GF_SERVER_ROOT_URL=https://rpinchas.42.fr/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    secrets:
+      - admin_password
+    # depends_on:
+    #   - prometheus
     
-  # node_exporter:
-  #   image: quay.io/prometheus/node-exporter:v1.9.1
-  #   container_name: 'node-exporter'
-  #   restart: always
-  #   command: "--path.rootfs=/host"
-  #   pid: host
-  #   volumes:
-  #     - /:/host:ro,rslave
-  #   depends_on:
-  #     - prometheus
-  #   networks:
-  #     - trancendence-network
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:v1.9.1
+    container_name: 'node-exporter'
+    restart: always
+    command: "--path.rootfs=/host"
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    depends_on:
+      - prometheus
+    networks:
+      - trancendence-network
     
-  # cadvisor:
-  #   image: gcr.io/cadvisor/cadvisor:v0.52.1
-  #   container_name: cadvisor
-  #   restart: always
-  #   volumes:
-  #     - /:/rootfs:ro
-  #     - /run:/run:ro
-  #     - /sys:/sys:ro
-  #     - /var/lib/docker/:/var/lib/docker:ro
-  #     - /dev/disk/:/dev/disk:ro
-  #   depends_on:
-  #     - prometheus
-  #   networks:
-  #     - trancendence-network
-  #   devices:
-  #     - /dev/kmsg
-  #   privileged: true
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.52.1
+    container_name: cadvisor
+    restart: always
+    volumes:
+      - /:/rootfs:ro
+      - /run:/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    depends_on:
+      - prometheus
+    networks:
+      - trancendence-network
+    devices:
+      - /dev/kmsg
+    privileged: true
 
 secrets:
   admin_password:

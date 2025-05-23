@@ -133,10 +133,6 @@ async function encrypt_google(request) {
 		const username = create_username(email);
 		if (username < 0)
 			return -8;
-		// console.log("---");
-		// console.log(userid);
-		// console.log(typeof(userid));
-		// console.log("---");
 		const db_return = await settings_db.create_settings_value('', pfp, 0, email, 'en', userid, 0);
 		console.log(db_return);
 		if (db_return.self === undefined || db_return.return === undefined)
@@ -149,7 +145,6 @@ async function encrypt_google(request) {
 		const check_username = await users_db.create_users_value(0, username, userid);
 		if (check_username < 0 || check_username === undefined)
 			return -11;
-		// console.log("Here");
 		return userid;
 	} catch (error) {
 		console.error("Error during Google OAuth:", error);
@@ -934,7 +929,7 @@ async function replace_all_templates(request, response) {
 	`;
 	const settings_html_user_profile_avatar_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_avatar_string);
 
-	const game_raw = await fs.readFile("./backend/templates/game.html", 'utf8');
+	// const game_raw = await fs.readFile("./backend/templates/game.html", 'utf8');
 
 	const menu_raw = await fs.readFile("./backend/templates/menu.html", 'utf8');
 
@@ -951,7 +946,7 @@ async function replace_all_templates(request, response) {
 	index_html = index_html.replace("{{settings_profile_change_username}}", settings_html_user_profile_username_raw);
 	index_html = index_html.replace("{{settings_profile_change_login_data}}", settings_html_user_profile_credential_raw);
 	index_html = index_html.replace("{{settings_profile_change_avatar}}", settings_html_user_profile_avatar_raw);
-	index_html = index_html.replace("{{game}}", game_raw);
+	// index_html = index_html.replace("{{game}}", game_raw);
 	index_html = index_html.replace("{{friends}}", friends_html_raw);
 	index_html = index_html.replace("{{menu}}", menu_raw);
 
@@ -970,9 +965,7 @@ function show_page(data, tag_name) {
 
 	const search_tag = `<div id=\"${tag_name}\" class="hidden">`;
 	const replace_tag = `<div id=\"${tag_name}\">`;
-	// console.log(page);
 	page = page.replace(search_tag, replace_tag);
-	// console.log(page);
 	return page;
 }
 
@@ -1307,7 +1300,7 @@ async function hahahihihoho(request, response, page) {
 	`;
 	const settings_html_user_profile_avatar_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_avatar_string);
 
-	const game_raw = await fs.readFile("./backend/templates/game.html", 'utf8');
+	// const game_raw = await fs.readFile("./backend/templates/game.html", 'utf8');
 
 	const menu_raw = await fs.readFile("./backend/templates/menu.html", 'utf8');
 
@@ -1325,7 +1318,7 @@ async function hahahihihoho(request, response, page) {
 	index_html = index_html.replace("{{settings_profile_change_username}}", settings_html_user_profile_username_raw);
 	index_html = index_html.replace("{{settings_profile_change_login_data}}", settings_html_user_profile_credential_raw);
 	index_html = index_html.replace("{{settings_profile_change_avatar}}", settings_html_user_profile_avatar_raw);
-	index_html = index_html.replace("{{game}}", game_raw);
+	// index_html = index_html.replace("{{game}}", game_raw);
 	index_html = index_html.replace("{{friends}}", friends_html_raw);
 	index_html = index_html.replace("{{menu}}", menu_raw);
 

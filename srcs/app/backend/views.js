@@ -1003,40 +1003,6 @@ async function block_friend(request, response){
     return true;
 }
 
-// function show_page(data, tag_name) {
-//     const available = ['change_avatar_div', 'user_settings_div', 'settings_div', 'register_div', 'profile_div', 'menu_div', 'login_div', 'home_div', 'game_div', 'friends_div', 'change_user_div', 'change_login_div']
-    
-//     var page = data;
-//     available.forEach((element) => {
-//         var find_tag = `<div id=\"${element}\">`;
-//         var hide_tag = `<div id=\"${element}\" class="hidden">`;
-//         page = page.replace(find_tag, hide_tag);
-//     });
-
-//     const search_tag = `<div id=\"${tag_name}\" class="hidden">`;
-//     const replace_tag = `<div id=\"${tag_name}\">`;
-//     // console.log(page);
-//     page = page.replace(search_tag, replace_tag);
-//     // console.log(page);
-//     return page;
-// }
-
-
-// async function test(request, response) {
-//     var location = request.body.Location;
-//     location = location.slice(location.indexOf('/') + 1);
-//     location = location.slice(location.indexOf('/') + 1);
-//     location = location.slice(location.indexOf('/') + 1);
-//     console.log("LOCATION: ", location);
-//     const new_index = await utils.hahahihihoho(request, response, "./templates/index2.html");
-//     const new_page = await utils.show_page(new_index, `${location}`);
-//     const check = await send.send_html("index2.html", response, 200);
-//     return response
-//         .code(200)
-//         .header('Content-Type', 'application/json')
-//         .send(new_page);
-// }
-
 export {
     login,
     register,
