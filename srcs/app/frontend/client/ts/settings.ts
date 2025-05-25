@@ -304,23 +304,23 @@ async function remove_email() {
     }
 }
 
-async function change_language() {
-    const response = await fetch("/settings/user", {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({'Function': 'change_language'})
-    });
+// async function change_language() {
+//     const response = await fetch("/settings/user", {
+//         method: 'POST',
+//         headers: {'Content-Type': 'application/json'},
+//         body: JSON.stringify({'Function': 'change_language'})
+//     });
 
-    if (!response.ok)
-        throw new Error(`HTTP Fehler! Status: ${response.status}`);
+//     if (!response.ok)
+//         throw new Error(`HTTP Fehler! Status: ${response.status}`);
 
-    let data;
-    try {
+//     let data;
+//     try {
         
-    } catch (err) {
-        console.error(`Error in change language: ${err}`)
-    }
-}
+//     } catch (err) {
+//         console.error(`Error in change language: ${err}`)
+//     }
+// }
 
 async function logout() {
     delete_cookie("token");

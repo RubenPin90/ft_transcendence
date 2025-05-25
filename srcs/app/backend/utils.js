@@ -604,6 +604,113 @@ function split_DOM_elemets(row) {
     return {indent, open_tag, text, closing_tag};
 }
 
+function return_language_values(){
+    return `<option value="" selected disabled hidden>Choose your main language</option>
+        <option value="af">Afrikaans</option>
+        <option value="ko">한국어</option>
+        <option value="az">Azərbaycanca</option>
+        <option value="id">Bahasa Indonesia</option>
+        <option value="ms">Bahasa Melayu</option>
+        <option value="jw">Basa Jawa</option>
+        <option value="su">Basa Sunda</option>
+        <option value="bs">Bosanski</option>
+        <option value="ca">Català</option>
+        <option value="ceb">Cebuano</option>
+        <option value="sn">ChiShona</option>
+        <option value="ny">Chichewa</option>
+        <option value="co">Corsu</option>
+        <option value="cy">Cymraeg</option>
+        <option value="da">Dansk</option>
+        <option value="de">Deutsch</option>
+        <option value="et">Eesti</option>
+        <option value="en">English</option>
+        <option value="es">Español</option>
+        <option value="eo">Esperanto</option>
+        <option value="eu">Euskara</option>
+        <option value="fr">Français</option>
+        <option value="fy">Frysk</option>
+        <option value="ga">Gaeilge</option>
+        <option value="sm">Gagana Samoa</option>
+        <option value="gl">Galego</option>
+        <option value="gd">Gàidhlig</option>
+        <option value="ha">Hausa</option>
+        <option value="hmn">Hmoob</option>
+        <option value="hr">Hrvatski</option>
+        <option value="ig">Igbo</option>
+        <option value="it">Italiano</option>
+        <option value="sw">Kiswahili</option>
+        <option value="ht">Kreyòl Ayisyen</option>
+        <option value="ku">Kurdî</option>
+        <option value="la">Latina</option>
+        <option value="lv">Latviešu</option>
+        <option value="lt">Lietuvių</option>
+        <option value="lb">Lëtzebuergesch</option>
+        <option value="hu">Magyar</option>
+        <option value="mg">Malagasy</option>
+        <option value="mt">Malti</option>
+        <option value="mi">Māori</option>
+        <option value="nl">Nederlands</option>
+        <option value="no">Norsk</option>
+        <option value="uz">Oʻzbekcha</option>
+        <option value="pl">Polski</option>
+        <option value="pt">Português</option>
+        <option value="ro">Română</option>
+        <option value="st">Sesotho</option>
+        <option value="sq">Shqip</option>
+        <option value="sk">Slovenčina</option>
+        <option value="sl">Slovenščina</option>
+        <option value="so">Soomaali</option>
+        <option value="fi">Suomi</option>
+        <option value="sv">Svenska</option>
+        <option value="tl">Tagalog</option>
+        <option value="vi">Tiếng Việt</option>
+        <option value="tr">Türkçe</option>
+        <option value="yo">Yorùbá</option>
+        <option value="xh">isiXhosa</option>
+        <option value="zu">isiZulu</option>
+        <option value="is">Íslenska</option>
+        <option value="cs">Čeština</option>
+        <option value="haw">ʻŌlelo Hawaiʻi</option>
+        <option value="el">Ελληνικά</option>
+        <option value="be">Беларуская</option>
+        <option value="bg">Български</option>
+        <option value="ky">Кыргызча</option>
+        <option value="mk">Македонски</option>
+        <option value="mn">Монгол</option>
+        <option value="ru">Русский</option>
+        <option value="sr">Српски</option>
+        <option value="tg">Тоҷикӣ</option>
+        <option value="uk">Українська</option>
+        <option value="kk">Қазақша</option>
+        <option value="hy">Հայերեն</option>
+        <option value="yi">ייִדיש</option>
+        <option value="iw">עברית</option>
+        <option value="ur">اردو</option>
+        <option value="ar">العربية</option>
+        <option value="sd">سنڌي</option>
+        <option value="fa">فارسی</option>
+        <option value="ps">پښتو</option>
+        <option value="ne">नेपाली</option>
+        <option value="mr">मराठी</option>
+        <option value="hi">हिन्दी</option>
+        <option value="bn">বাংলা</option>
+        <option value="gu">ગુજરાતી</option>
+        <option value="ta">தமிழ்</option>
+        <option value="te">తెలుగు</option>
+        <option value="kn">ಕನ್ನಡ</option>
+        <option value="ml">മലയാളം</option>
+        <option value="si">සිංහල</option>
+        <option value="th">ไทย</option>
+        <option value="lo">ລາວ</option>
+        <option value="my">မြန်မာ</option>
+        <option value="ka">ქართული</option>
+        <option value="km">ភាសាខ្មែរ</option>
+        <option value="ja">日本語</option>
+        <option value="zh-cn">简体中文</option>
+        <option value="zh-tw">繁體中文</option>`
+}
+
+
 async function replace_all_templates(request, response) {
 	const github_login = github_input_handler();
 	const google_login = google_input_handler();
@@ -684,118 +791,20 @@ async function replace_all_templates(request, response) {
 	settings_html_user_string += '</button></a></div>';
 	const settings_html_user = settings_html_raw.replace("{{mfa-button}}", settings_html_user_string);
 
-	var settings_html_user_select_language_string = '<button onclick="change_language()">Change language</button><br></br>';
-	settings_html_user_select_language_string += `
-	<form id="language">
-		<select name="lang" id="lang">
-			<option value="" selected disabled hidden>Choose your main language</option>
-			<option value="af">Afrikaans</option>
-			<option value="az">Azərbaycanca</option>
-			<option value="id">Bahasa Indonesia</option>
-			<option value="ms">Bahasa Melayu</option>
-			<option value="jw">Basa Jawa</option>
-			<option value="su">Basa Sunda</option>
-			<option value="bs">Bosanski</option>
-			<option value="ca">Català</option>
-			<option value="ceb">Cebuano</option>
-			<option value="sn">ChiShona</option>
-			<option value="ny">Chichewa</option>
-			<option value="co">Corsu</option>
-			<option value="cy">Cymraeg</option>
-			<option value="da">Dansk</option>
-			<option value="de">Deutsch</option>
-			<option value="et">Eesti</option>
-			<option value="en">English</option>
-			<option value="es">Español</option>
-			<option value="eo">Esperanto</option>
-			<option value="eu">Euskara</option>
-			<option value="fr">Français</option>
-			<option value="fy">Frysk</option>
-			<option value="ga">Gaeilge</option>
-			<option value="sm">Gagana Samoa</option>
-			<option value="gl">Galego</option>
-			<option value="gd">Gàidhlig</option>
-			<option value="ha">Hausa</option>
-			<option value="hmn">Hmoob</option>
-			<option value="hr">Hrvatski</option>
-			<option value="ig">Igbo</option>
-			<option value="it">Italiano</option>
-			<option value="sw">Kiswahili</option>
-			<option value="ht">Kreyòl Ayisyen</option>
-			<option value="ku">Kurdî</option>
-			<option value="la">Latina</option>
-			<option value="lv">Latviešu</option>
-			<option value="lt">Lietuvių</option>
-			<option value="lb">Lëtzebuergesch</option>
-			<option value="hu">Magyar</option>
-			<option value="mg">Malagasy</option>
-			<option value="mt">Malti</option>
-			<option value="mi">Māori</option>
-			<option value="nl">Nederlands</option>
-			<option value="no">Norsk</option>
-			<option value="uz">Oʻzbekcha</option>
-			<option value="pl">Polski</option>
-			<option value="pt">Português</option>
-			<option value="ro">Română</option>
-			<option value="st">Sesotho</option>
-			<option value="sq">Shqip</option>
-			<option value="sk">Slovenčina</option>
-			<option value="sl">Slovenščina</option>
-			<option value="so">Soomaali</option>
-			<option value="fi">Suomi</option>
-			<option value="sv">Svenska</option>
-			<option value="tl">Tagalog</option>
-			<option value="vi">Tiếng Việt</option>
-			<option value="tr">Türkçe</option>
-			<option value="yo">Yorùbá</option>
-			<option value="xh">isiXhosa</option>
-			<option value="zu">isiZulu</option>
-			<option value="is">Íslenska</option>
-			<option value="cs">Čeština</option>
-			<option value="haw">ʻŌlelo Hawaiʻi</option>
-			<option value="el">Ελληνικά</option>
-			<option value="be">Беларуская</option>
-			<option value="bg">Български</option>
-			<option value="ky">Кыргызча</option>
-			<option value="mk">Македонски</option>
-			<option value="mn">Монгол</option>
-			<option value="ru">Русский</option>
-			<option value="sr">Српски</option>
-			<option value="tg">Тоҷикӣ</option>
-			<option value="uk">Українська</option>
-			<option value="kk">Қазақша</option>
-			<option value="hy">Հայերեն</option>
-			<option value="yi">ייִדיש</option>
-			<option value="iw">עברית</option>
-			<option value="ur">اردو</option>
-			<option value="ar">العربية</option>
-			<option value="sd">سنڌي</option>
-			<option value="fa">فارسی</option>
-			<option value="ps">پښتو</option>
-			<option value="ne">नेपाली</option>
-			<option value="mr">मराठी</option>
-			<option value="hi">हिन्दी</option>
-			<option value="bn">বাংলা</option>
-			<option value="gu">ગુજરાતી</option>
-			<option value="ta">தமிழ்</option>
-			<option value="te">తెలుగు</option>
-			<option value="kn">ಕನ್ನಡ</option>
-			<option value="ml">മലയാളം</option>
-			<option value="si">සිංහල</option>
-			<option value="th">ไทย</option>
-			<option value="lo">ລາວ</option>
-			<option value="my">မြန်မာ</option>
-			<option value="ka">ქართული</option>
-			<option value="km">ភាសាខ្មែរ</option>
-			<option value="ja">日本語</option>
-			<option value="zh-cn">简体中文</option>
-			<option value="zh-tw">繁體中文</option>
-			<option value="ko">한국어</option>
-		</select>
-		<button type="submit">Submit</button>
-	</form>`
-	settings_html_user_select_language_string += '<div><a href="/settings" data-link><button>back</button></a><div> \
-	<button onclick="logout()">Logout</button>';
+	var settings_html_user_select_language_string = '';
+	settings_html_user_select_language_string += '<div id="mfa-button" class="flex flex-col items-center w-full mx-auto">';
+	settings_html_user_select_language_string += '<label for="language" class="justify-center font-bold text-2xl pb-5 text-yellow-100">Choose your main language</label>';
+	settings_html_user_select_language_string += '<form id="language" class="w-full mx-auto">';
+	settings_html_user_select_language_string += '<select name="lang" id="lang" class="w-full p-4 text-center rounded-lg text-lg font-[Roboto] border border-[#e0d35f] border-spacing-8 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]">';
+	settings_html_user_select_language_string += return_language_values();
+	settings_html_user_select_language_string += '</select></form></div>';
+	settings_html_user_select_language_string += '<div class="flex mt-4 gap-4 w-full">';
+	settings_html_user_select_language_string += '<a class="flex-1">';
+	settings_html_user_select_language_string += '<button type="submit" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	settings_html_user_select_language_string += '<span class="font-bold text-lg">Submit</span></button></a>';
+	settings_html_user_select_language_string += '<a href="/" data-link class="flex-1">';
+	settings_html_user_select_language_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	settings_html_user_select_language_string += '<span class="font-bold text-lg">Home</span></button></a></div>';
 	const settings_html_user_select_language_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_select_language_string);
 
 	var settings_html_user_profile_settings_string = "";

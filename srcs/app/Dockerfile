@@ -10,6 +10,8 @@ COPY . .
 
 RUN npm run build-frontend
 
+RUN npm run start:css
+
 USER node
 
 CMD [ "node", "backend/server.js" ]
