@@ -116,7 +116,6 @@ async function encrypt_google(request) {
 		const header = {"Accept": 'application/json', "Content-Type": 'application/json'};
 		const body = JSON.stringify({'code': code, 'client_id': client_id, 'client_secret': client_secret, 'redirect_uri': 'https://localhost/', 'grant_type': 'authorization_code'})
 		const token_data = await modules.easyfetch("https://oauth2.googleapis.com/token", 'POST', header, body);
-		console.log(token_data);
 		if (!token_data || token_data === undefined || token_data == -1)
 			return -4;
 		if (!token_data.id_token || token_data.id_token === undefined || token_data.id_token.length == 0)
@@ -134,16 +133,15 @@ async function encrypt_google(request) {
 		if (username < 0)
 			return -8;
 		const db_return = await settings_db.create_settings_value('', pfp, 0, email, 'en', userid, 0);
-		console.log(db_return);
 		if (db_return.self === undefined || db_return.return === undefined)
 			return userid;
 		if (db_return < 0)
 			return -9;
 		const check_setting = await settings_db.get_settings_value(userid);
-		if (!check_setting || check_setting === undefined)
+		if (!check_setting || check_setting === undefined || check_setting < 0)
 			return -10;
 		const check_username = await users_db.create_users_value(0, username, userid);
-		if (check_username < 0 || check_username === undefined)
+		if (!check_username || check_username === undefined || check_username < 0)
 			return -11;
 		return userid;
 	} catch (error) {
