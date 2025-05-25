@@ -30,8 +30,9 @@ function create_username(email) {
 }
 
 function google_input_handler() {
-	const client_id = process.env.google_client_id;
-	const redirect_uri = "http://localhost:8080";
+	
+	// const client_id = process.env.google_client_id;
+	const redirect_uri = "https://localhost:8080";
 	const scope = "openid email profile";
 	const url = `https://accounts.google.com/o/oauth2/auth?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&scope=${encodeURIComponent(scope)}&response_type=code&access_type=offline&approval_prompt=force`;
 	return url;
@@ -39,7 +40,7 @@ function google_input_handler() {
 
 function github_input_handler() {
 	const client_id = process.env.github_client_id;
-	const redirect = "http://localhost:8080/";
+	const redirect = "https://localhost:8080/";
 	const scope = "user:email";
 	const state = process.env.github_state;
 	const github_string = `https://github.com/login/oauth/authorize?client_id=${client_id}&redirect_uri=${redirect}&scope=${scope}&state=${state}`
@@ -101,7 +102,7 @@ async function encrypt_github(request) {
 }
 
 async function encrypt_google(request) {
-	const client_secret = process.env.google_client_secret;
+	// const client_secret = process.env.google_client_secret;
 	const base_code = request.url;
 	const sliced_code = base_code.slice(7);
 	if (!sliced_code || sliced_code === undefined || sliced_code.length == 0)
