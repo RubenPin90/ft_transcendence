@@ -30,9 +30,7 @@ function create_username(email) {
 }
 
 function google_input_handler() {
-	
-	// const client_id = process.env.google_client_id;
-	const redirect_uri = "https://localhost:8080";
+	const redirect_uri = "https://localhost/";
 	const scope = "openid email profile";
 	const url = `https://accounts.google.com/o/oauth2/auth?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&scope=${encodeURIComponent(scope)}&response_type=code&access_type=offline&approval_prompt=force`;
 	return url;
@@ -40,7 +38,7 @@ function google_input_handler() {
 
 function github_input_handler() {
 	const client_id = process.env.github_client_id;
-	const redirect = "https://localhost:8080/";
+	const redirect = "http://localhost:8080/";
 	const scope = "user:email";
 	const state = process.env.github_state;
 	const github_string = `https://github.com/login/oauth/authorize?client_id=${client_id}&redirect_uri=${redirect}&scope=${scope}&state=${state}`
@@ -116,8 +114,9 @@ async function encrypt_google(request) {
 	
 	try {
 		const header = {"Accept": 'application/json', "Content-Type": 'application/json'};
-		const body = JSON.stringify({'code': code, 'client_id': process.env.google_client_id, 'client_secret': client_secret, 'redirect_uri': 'http://localhost:8080', 'grant_type': 'authorization_code'})
+		const body = JSON.stringify({'code': code, 'client_id': client_id, 'client_secret': client_secret, 'redirect_uri': 'https://localhost/', 'grant_type': 'authorization_code'})
 		const token_data = await modules.easyfetch("https://oauth2.googleapis.com/token", 'POST', header, body);
+		console.log(token_data);
 		if (!token_data || token_data === undefined || token_data == -1)
 			return -4;
 		if (!token_data.id_token || token_data.id_token === undefined || token_data.id_token.length == 0)
