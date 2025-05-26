@@ -2,6 +2,7 @@ import path, { dirname } from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import fastifyPlugin from 'fastify-plugin';
+import * as utils from './utils.js';
 
 import * as views from './views.js';
 import * as mimes from './mimes.js';
@@ -71,9 +72,33 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.post('/accept_friend', (req, reply) => views.accept_friend(req, reply));
   fastify.post('/reject_friend', (req, reply) => views.reject_friend(req, reply));
   fastify.post('/block_friend', (req, reply) => views.block_friend(req, reply));
+  fastify.post('/encript_google', (req, reply) => views.home(req.raw, reply.raw));
 
 
-  fastify.post('/initial_load', (req, reply) => views.test(req, reply));
+  fastify.post('/home', async (request, reply) => {
+    try {
+      // Der Body ist automatisch verfügbar durch Fastify
+      const { link } = request.body;
+
+      // Hier kommt Ihre Logik für die Verarbeitung des Links
+      console.log(link);
+      // const result = await utils.encrypt_google(link);
+
+      // // Validierung der Response
+      // if (!result || !result.userid || !result.lang) {
+      //   return reply.code(500).send({ response: 'fail' });
+      // }
+
+      // return { 
+      //   response: 'success',
+      //   userid: result.userid,
+      //   lang: result.lang 
+      // };
+    } catch (err) {
+      console.error('Error:', err);
+      return reply.code(500).send({ response: 'fail' });
+    }
+  });
 
   // --- 404 fallback ---
   fastify.setNotFoundHandler((req, reply) => {

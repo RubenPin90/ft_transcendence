@@ -4,7 +4,7 @@ import sqlite3 from 'sqlite3';
 // Tested: all working//
 async function get_users() {
     const db = await open({
-        filename: 'database/db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -25,7 +25,7 @@ async function get_users_value(search_value, value) {
 	if (!valid_values.includes(search_value))
 		return null;
     const db = await open({
-        filename: 'database/db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -45,7 +45,7 @@ async function get_users_value(search_value, value) {
 // Not tested: But working propperly so far
 async function create_users_value(role_id, username, self) {
     const db = await open({
-        filename: 'database/db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -83,7 +83,7 @@ async function update_users_value(search_value, value, self) {
     if (!valid_values.includes(search_value))
         return null;
     const db = await open({
-        filename: 'database/db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -110,7 +110,7 @@ async function update_users_value(search_value, value, self) {
 // Tested: all working
 async function delete_users_value(self) {
     const db = await open({
-        filename: 'database/db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 

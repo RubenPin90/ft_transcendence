@@ -18,4 +18,4 @@ WORKDIR /app
 # Entferne das hier:
 # RUN node create_db.js
 
-CMD [ "sh", "-c", "node database/create_db.js && node backend/server.js" ]
+CMD [ "sh", "-c", "node database/create_db.js && mv db.sqlite database/db.sqlite && node backend/server.js" ]

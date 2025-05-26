@@ -11,15 +11,11 @@ async function get_settings_value(search_value, value) {
     if (!valid_values.includes(search_value))
         return -1;
 
-    const test = await fs.readFile('./db.sqlite', 'utf8');
-    console.log("-----");
-    console.log(test);
-    console.log("-----");
     const db = await open({
-        filename: './db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
-    
+
     try {
         var row = await db.get(`
         SELECT * FROM settings
@@ -36,7 +32,7 @@ async function get_settings_value(search_value, value) {
 // Tested: all working
 async function get_settings() {
     const db = await open({
-        filename: 'database/db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -54,7 +50,7 @@ async function get_settings() {
 // Not tested: But working propperly so far
 async function create_settings_value(password, pfp, mfa, email, lang, google, github) {
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
     
@@ -143,7 +139,7 @@ async function update_settings_value(search_value, value, self) {
     if (!valid_values.includes(search_value))
         return null;
     const db = await open({
-        filename: 'database/db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -172,7 +168,7 @@ async function update_settings_value(search_value, value, self) {
 
 async function delete_settings_value(self) {
     const db = await open({
-        filename: 'database/db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 

@@ -119,45 +119,33 @@ async function home(request, response) {
     var [keys, values] = modules.get_cookies(request.headers.cookie);
     if (request.url === '/' && !keys?.includes('token'))
         return send.redirect(response, '/login', 302);
-    if (request.url !== '/' && !request.url.includes('&state=')) {
+    if (request.method == 'POST') {
         const data = await utils.encrypt_google(request);
-        if (data < 0) {
+        if (data < 0)
             return `1_${data}`;
-        }
-        const check_settings = await settings_db.get_settings_value('google', data);
-        if (!check_settings || check_settings === undefined || check_settings < 0)
-            return `2_${check_settings}`;
-        const token = modules.create_jwt(check_settings.self, '1h');
-        if (!token || token === undefined || token < 0)
-            return `3_${token}`
-        const lang = modules.create_jwt(check_settings.lang, '1h');
-        if (!lang || lang === undefined || lang < 0)
-            return `4_${lang}`;
-
-        modules.set_cookie(response, 'token', token, true, true, 'strict');
-        modules.set_cookie(response, 'lang', lang, true, true, 'strict');
-		send.redirect(response, '/', 302);
-        return true;
-    } else if (request.url !== '/') {
-        const data = await utils.encrypt_github(request, response);
-        if (data < 0) {
-            return `5_${data}`;
-        }
-        const check_settings = await settings_db.get_settings_value('github', data);
-        if (!check_settings || check_settings === undefined || check_settings < 0)
-            return `6_${check_settings}`;
-        const token = modules.create_jwt(check_settings.self, '1h');
-        if (!token || token === undefined || token < 0)
-            return `7_${token}`
-        const lang = modules.create_jwt(check_settings.lang, '1h');
-        if (!lang || lang === undefined || lang < 0)
-            return `8_${lang}`;
-        
-        modules.set_cookie(response, 'token', token, true, true, 'strict');
-        modules.set_cookie(response, 'lang', lang, true, true, 'strict');
-		send.redirect(response, '/', 302);
+        response.code(200).type('application/json').send(data);
         return true;
     }
+    // } else if (request.url !== '/') {
+    //     const data = await utils.encrypt_github(request, response);
+    //     if (data < 0) {
+    //         return `5_${data}`;
+    //     }
+    //     const check_settings = await settings_db.get_settings_value('github', data);
+    //     if (!check_settings || check_settings === undefined || check_settings < 0)
+    //         return `6_${check_settings}`;
+    //     const token = modules.create_jwt(check_settings.self, '1h');
+    //     if (!token || token === undefined || token < 0)
+    //         return `7_${token}`
+    //     const lang = modules.create_jwt(check_settings.lang, '1h');
+    //     if (!lang || lang === undefined || lang < 0)
+    //         return `8_${lang}`;
+        
+    //     modules.set_cookie(response, 'token', token, true, true, 'strict');
+    //     modules.set_cookie(response, 'lang', lang, true, true, 'strict');
+	// 	send.redirect(response, '/', 302);
+    //     return true;
+    // }
     const check = await send.send_html('index.html', response, 200, async (data) => {
         data = await utils.replace_all_templates(request, response);
         // data = utils.show_page(data, "home_div");//changed from register to home?
