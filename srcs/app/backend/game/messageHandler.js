@@ -2,7 +2,7 @@
 import WebSocket from 'ws';
 import { createGameAI } from './matchMaking.js';
 import { joinQueue1v1, joinQueueTournament } from './matchMaking.js';
-import { matchManager } from './matchManager.js';
+import { MatchManager } from './matchManager.js';
 import { tournamentManager } from './tournamentManager.js';
 
 export function handleClientMessage(ws, rawMsg, matchManager) {
@@ -13,18 +13,18 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
     console.error('Invalid JSON message from client:', err);
     return;
   }
-  // console.log(`Incoming from ${ws.userId}:`);
-  // console.log(data);
+  // //console.log(`Incoming from ${ws.userId}:`);
+  // //console.log(data);
   switch (data.type) {
     case 'kickPlayer': {
-      console.log('Incoming kickPlayer request with data:', data);
+      //console.log('Incoming kickPlayer request with data:', data);
       const { tournamentId, playerId } = data.payload;
       const userId = ws.userId;
       tournamentManager.kickPlayer(userId, tournamentId, playerId);
       break;
     }
     case 'joinByCode': {
-        console.log('Incoming joinByCode request with data:', data);
+        //console.log('Incoming joinByCode request with data:', data);
         const { code } = data.payload;
         const userId = ws.userId;
         tournamentManager.joinTournament(userId, code, ws);
@@ -38,7 +38,7 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
       break;
     }
     case 'createTournament': {
-      console.log('Incoming createTournament request with data:', data);
+      //console.log('Incoming createTournament request with data:', data);
       const tournamentId = tournamentManager.createTournament(ws, ws.userId);
       ws.send(JSON.stringify({
         type:  'tournamentCreated',
@@ -48,23 +48,23 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
     
     }
     case 'toggleReady':{
-      console.log('Incoming toggleReady request with data:', data);
+      //console.log('Incoming toggleReady request with data:', data);
       const { tournamentId } = data.payload;
       const userId = ws.userId;
       tournamentManager.toggleReady(userId, tournamentId);
       break;
     }
     case 'startTournament': {
-      console.log('Incoming startTournament request with data:', data);
+      //console.log('Incoming startTournament request with data:', data);
       const { id: tournamentId } = data.payload;
       const userId = ws.userId;
-      console.log('userId:', userId);
-      console.log('tournamentId:', tournamentId);
+      //console.log('userId:', userId);
+      //console.log('tournamentId:', tournamentId);
       tournamentManager.startTournament(tournamentId);
       break;
     }
     case 'leaveTournament': {
-      console.log('Incoming leaveTournament request with data:', data);
+      //console.log('Incoming leaveTournament request with data:', data);
       const { tournamentId } = data.payload ?? {};
       const userId = ws.userId;
       tournamentManager.leaveTournament(userId, tournamentId);
@@ -73,7 +73,7 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
     case 'joinMatchRoom': {
       const { tournamentId, matchId } = data.payload;
       const userId = ws.userId;                     // you already attach this on login
-      console.log('Incoming joinMatchRoom request with data:', data);
+      //console.log('Incoming joinMatchRoom request with data:', data);
 
 
 
@@ -101,7 +101,7 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
       room.sockets.set(userId, ws);
       room.readySet.add(userId);
     
-      console.log(`[${matchId}] ${userId} joined (${room.readySet.size}/2)`);
+      //console.log(`[${matchId}] ${userId} joined (${room.readySet.size}/2)`);
     
       // 3. If both players are in, flip the switch
       if (room.readySet.size === 2) {
@@ -126,7 +126,7 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
           }
         }
     
-        console.log(`[${matchId}] matchStart sent`);
+        //console.log(`[${matchId}] matchStart sent`);
       }
     
       break;
@@ -135,7 +135,7 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
     case 'joinQueue': {
       const { mode } = data.payload;  
       const userId = data.payload.userId || ws.userId;
-      console.log('Incoming joinQueue request - mode:', mode);
+      //console.log('Incoming joinQueue request - mode:', mode);
       if (mode === 'pve') {
         createGameAI(matchManager, userId, ws);
       } else if (mode === '1v1') {
@@ -144,14 +144,14 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
       break;
     }
     case 'leaveQueue': {
-      console.log('Incoming leaveQueue request');
+      //console.log('Incoming leaveQueue request');
       matchManager.removeFromQueue(ws.userId);
       break;
     }
     case 'movePaddle': {
-        console.log('Incoming movePaddle request')
-        console.log('data received:', data.payload)
-        console.log('ws.userId:', ws.userId)
+        //console.log('Incoming movePaddle request')
+        //console.log('data received:', data.payload)
+        //console.log('ws.userId:', ws.userId)
       
         const { direction, active } = data.payload
         const room = matchManager.rooms.get(ws.currentGameId)
@@ -172,14 +172,14 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
         break
       }
     case 'leaveGame':
-      console.log('Incoming leaveGame request');
-      console.log('data received:', data.payload);
+      //console.log('Incoming leaveGame request');
+      //console.log('data received:', data.payload);
       ws.inGame = false;
       ws.currentGameId = null;
-      console.log(`${ws.userId} left the game voluntarily.`);
+      //console.log(`${ws.userId} left the game voluntarily.`);
       break;
 
     default:
-      console.log('Unknown message type:', data.type);
+      //console.log('Unknown message type:', data.type);
   }
 }

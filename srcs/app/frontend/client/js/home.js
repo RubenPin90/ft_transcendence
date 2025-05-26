@@ -10,7 +10,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 function Logout() {
     return __awaiter(this, void 0, void 0, function* () {
-        console.log("In Logout function");
         try {
             yield fetch('/logout', {
                 method: 'POST',

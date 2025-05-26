@@ -1,5 +1,5 @@
 // tournamentManager.js
-import { matchManager }   from './matchManager.js';
+import { MatchManager }   from './matchManager.js';
 import { v4 as uuidv4 } from 'uuid';
 
 const getPlayerId = p => (typeof p === 'string' ? p : p.id);

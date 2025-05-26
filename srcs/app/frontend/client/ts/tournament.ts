@@ -1,7 +1,4 @@
 // tournaments.ts
-// -------------------------------------------------------------------
-// Handles tournament lobby UI
-// -------------------------------------------------------------------
 
 import type { TLobbyState } from './types.js';
 import { getMyId, setCurrentTLobby } from './state.js';
@@ -124,7 +121,7 @@ export function renderTournamentList(list: TourneySummary[], onJoin: (code: stri
 export function renderTLobby(TLobby: TLobbyState, sock: WebSocket) {
   /* ---------- cache & locals --------------------------------------- */
   setCurrentTLobby(TLobby);
-  console.log('socket', sock);
+  //console.log('socket', sock);
 
   const myId   = getMyId();
   const amHost = TLobby.hostId === myId;
@@ -167,7 +164,7 @@ export function renderTLobby(TLobby: TLobbyState, sock: WebSocket) {
     row.appendChild(nameSpan);
 
     /* ready indicator */
-    console.log(`Player ${p?.name} ready: ${p?.ready}`);
+    //console.log(`Player ${p?.name} ready: ${p?.ready}`);
     const dot = document.createElement('span');
     dot.className = 't-status';
     if (isFilled) dot.classList.add(p!.ready ? 'green-dot' : 'red-dot');

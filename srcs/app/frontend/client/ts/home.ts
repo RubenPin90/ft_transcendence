@@ -1,5 +1,5 @@
 async function Logout() {
-    console.log("In Logout function");
+    //console.log("In Logout function");
     
     try{
         await fetch('/logout',{

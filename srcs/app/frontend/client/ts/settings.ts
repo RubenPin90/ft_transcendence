@@ -42,7 +42,7 @@ async function verify_code() {
         alert("Error. Input cant be empty");
         return;
     }
-    console.log(code.value);
+    //console.log(code.value);
     const response = await fetch('/settings/mfa', {
         method: 'POST',
         headers: {
@@ -65,11 +65,11 @@ async function verify_code() {
     } catch (jsonError) {
         throw new Error('Fehler beim Parsen der JSON-Antwort');
     }
-    console.log(data);
+    //console.log(data);
 }
 
 // async function verify_custom_code() {
-//     console.log('hi');
+//     //console.log('hi');
 //     const qrcodeButtonDiv = document.getElementById('mfa-button');
 //     if (qrcodeButtonDiv) {
 //         qrcodeButtonDiv.innerHTML = '<input id="Code" name="Code" placeholder="Code"><br>\
@@ -86,7 +86,7 @@ async function verify_custom_code() {
         return;
 
     const codeValue = inputField.value;
-    console.log("Sende Code zur Verifizierung:", codeValue);
+    //console.log("Sende Code zur Verifizierung:", codeValue);
 
     try {
         const response = await fetch('/settings/mfa', {
@@ -121,7 +121,7 @@ async function verify_custom_code() {
 
 // THIS IS COPIED FROM CHATGPT. CREATE OWN FRONTEND UI
 async function create_custom_code() {
-    console.log("create_custom_code gestartet");
+    //console.log("create_custom_code gestartet");
     
     const qrcodeDiv = document.getElementById('mfa');
     const qrcodeButtonDiv = document.getElementById('mfa-button') as HTMLDivElement;
@@ -145,7 +145,7 @@ async function create_custom_code() {
             if (!inputField) return;
 
             const codeValue = inputField.value;
-            console.log("Sende Code:", codeValue);
+            //console.log("Sende Code:", codeValue);
 
             try {
                 const response = await fetch('/settings/mfa', {
@@ -184,7 +184,7 @@ async function verifyEmail() {
         return;
     }
     const code = code2.value;
-    console.log("Verification code:", code);
+    //console.log("Verification code:", code);
     
     try {
         const response = await fetch("/settings/mfa", {
@@ -241,7 +241,7 @@ async function create_email() {
     } catch (jsonError) {
         console.error(`Fehler beim Parsen der JSON-Antwort`);
     }
-    // console.log(data);
+    // //console.log(data);
 }
 
 async function remove_custom_code() {

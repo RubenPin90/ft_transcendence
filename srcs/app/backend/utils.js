@@ -86,7 +86,7 @@ async function encrypt_github(request) {
 		return -7;
 	username = username.replace(/\./g, '-');
 	const db_return = await settings_db.create_settings_value('', pfp, 0, user_email, 'en', 0, userid);
-	console.log(db_return);
+	// //console.log(db_return);
 	if (db_return.self === undefined || db_return.return === undefined)
 		return userid;
 	if (db_return < 0)
@@ -134,7 +134,7 @@ async function encrypt_google(request) {
 		if (username < 0)
 			return -8;
 		const db_return = await settings_db.create_settings_value('', pfp, 0, email, 'en', userid, 0);
-		console.log(db_return);
+		// //console.log(db_return);
 		if (db_return.self === undefined || db_return.return === undefined)
 			return userid;
 		if (db_return < 0)
@@ -204,7 +204,7 @@ async function process_login(request, response) {
 				}
 				const pw = await modules.check_encrypted_password(data.password, check_settings.password);
 				if (!pw || pw === undefined || pw < 0) {
-					console.log("Password incorrect");
+					//console.log("Password incorrect");
 					resolve(-3);
 					return;
 				}
@@ -265,7 +265,7 @@ function check_login(request, response) {
 		send.redirect(response, '/', 302);
 		return true;
 	} catch (err) {
-		console.log(err);
+		//console.log(err);
 		return -3;
 	}
 }
@@ -283,7 +283,7 @@ function get_decrypted_userid(request, response) {
 		var self_decoded = modules.get_jwt(values[0]);
 	} catch (err) {
 		const err_string = String(err);
-		console.log(err_string);
+		//console.log(err_string);
 		if (err_string.includes("jwt expired")) {
 			response.writeHead(302, {
 				'Set-Cookie': 'token=; HttpOnly; Secure; SameSite=Strict; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
@@ -515,7 +515,7 @@ async function clear_settings_mfa(userid, search_value, response) {
 	for (const option of fallback_options) {
 		if (search_value == option)
 			continue;
-		console.log(check_mfa[option]);
+		//console.log(check_mfa[option]);
 		if (!check_mfa[option].endsWith('_temp') && check_mfa[option].length !== 0) {
 			await mfa_db.update_mfa_value('prefered', fallback_options.indexOf(option) + 1, userid);
 			found = true;
@@ -929,9 +929,17 @@ async function replace_all_templates(request, response) {
 	`;
 	const settings_html_user_profile_avatar_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_avatar_string);
 
-	// const game_raw = await fs.readFile("./backend/templates/game.html", 'utf8');
+	// const play_raw = await fs.readFile("./backend/templates/game.html", 'utf8');
 
-	const menu_raw = await fs.readFile("./backend/templates/menu.html", 'utf8');
+	const play_raw = await fs.readFile("./backend/templates/play.html", 'utf8');
+
+	var play_main = "";
+	play_main += '<div id="main-menu">';
+	play_main += `<h1>Welcome, <span id="username">{{uname}}</span>!</h1>`;
+	play_main += '<button id="sp-vs-pve-btn">PVE</button>';
+	play_main += '<button id="one-vs-one-btn">1v1 Matchmaking</button>';
+	play_main += '<button id="tournament-btn">Tournament</button>';
+	play_main += '</div>';
 
 	const index_html_raw = await fs.readFile("./backend/templates/index.html", 'utf8')
 	var index_html = index_html_raw.replace("{{home}}", home_html_raw);
@@ -946,15 +954,15 @@ async function replace_all_templates(request, response) {
 	index_html = index_html.replace("{{settings_profile_change_username}}", settings_html_user_profile_username_raw);
 	index_html = index_html.replace("{{settings_profile_change_login_data}}", settings_html_user_profile_credential_raw);
 	index_html = index_html.replace("{{settings_profile_change_avatar}}", settings_html_user_profile_avatar_raw);
-	// index_html = index_html.replace("{{game}}", game_raw);
+	index_html = index_html.replace("{{play}}", play_raw);
+	index_html = index_html.replace("{{main-menu}}", play_main);
 	index_html = index_html.replace("{{friends}}", friends_html_raw);
-	index_html = index_html.replace("{{menu}}", menu_raw);
 
 	return index_html;
 }
 
 function show_page(data, tag_name) {
-	const available = ['change_avatar_div', 'user_settings_div', 'settings_div', 'register_div', 'profile_div', 'menu_div', 'login_div', 'home_div', 'game_div', 'friends_div', 'change_user_div', 'change_login_div']
+	const available = ['change_avatar_div', 'user_settings_div', 'settings_div', 'register_div', 'profile_div', 'play_div', 'login_div', 'home_div', 'game_div', 'friends_div', 'change_user_div', 'change_login_div']
 	
 	var page = data;
 	available.forEach((element) => {
@@ -1300,11 +1308,11 @@ async function hahahihihoho(request, response, page) {
 	`;
 	const settings_html_user_profile_avatar_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_avatar_string);
 
-	// const game_raw = await fs.readFile("./backend/templates/game.html", 'utf8');
+	// const play_raw = await fs.readFile("./backend/templates/game.html", 'utf8');
 
-	const menu_raw = await fs.readFile("./backend/templates/menu.html", 'utf8');
+	const play_raw = await fs.readFile("./backend/templates/play.html", 'utf8');
 
-	// console.log(page);
+	// //console.log(page);
 	const index_html_raw = await fs.readFile(page, 'utf8')
 	var index_html = index_html_raw.replace("{{home}}", home_html_raw);
 	index_html = index_html.replace("{{login}}", login_html);
@@ -1318,9 +1326,9 @@ async function hahahihihoho(request, response, page) {
 	index_html = index_html.replace("{{settings_profile_change_username}}", settings_html_user_profile_username_raw);
 	index_html = index_html.replace("{{settings_profile_change_login_data}}", settings_html_user_profile_credential_raw);
 	index_html = index_html.replace("{{settings_profile_change_avatar}}", settings_html_user_profile_avatar_raw);
-	// index_html = index_html.replace("{{game}}", game_raw);
+	index_html = index_html.replace("{{play}}", play_raw);
 	index_html = index_html.replace("{{friends}}", friends_html_raw);
-	index_html = index_html.replace("{{menu}}", menu_raw);
+	// index_html = index_html.replace("{{menu}}", play_raw);
 
 	return index_html;
 }

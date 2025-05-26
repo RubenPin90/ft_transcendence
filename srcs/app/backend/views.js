@@ -301,7 +301,7 @@ async function mfa(request, response) {
 
 async function select_language(request, response){
     if (request.method == 'POST'){
-        console.log("selecting language");
+        //console.log("selecting language");
     }
     const status = await send.send_html('settings.html', response, 200, async (data) => {
         var replace_string = '<button onclick="change_language()">Change language</button><br></br>';
@@ -475,15 +475,15 @@ async function settings(request, response) {
 
     const status = await send.send_html('settings.html', response, 200, async  (data) => {
         var replace_string = "";
-        replace_string += '<div><a href="/settings/mfa" data-link><div class="buttons mb-6"></a></div>';
+        replace_string += '<div><a href="/settings/mfa" data-link><div class="buttons mb-6"></div>';
         replace_string += '<button class="block w-full mb-6 mt-6">';
         replace_string += '<span class="button_text">MFA</span>';
-        replace_string += '</button></div>';
+        replace_string += '</button></a></div>';
 
-        replace_string += '<div><a href="/settings/user" data-link><div class="buttons mb-6"></a></div>';
+        replace_string += '<div><a href="/settings/user" data-link><div class="buttons mb-6"></div>';
         replace_string += '<button class="block w-full mb-6 mt-6">';
         replace_string += '<span class="button_text">User</span>';
-        replace_string += '</button></div>';
+        replace_string += '</button></a></div>';
 
         replace_string += '<div class="flex mt-12 gap-4 w-full">';
         replace_string += '<a class="flex-1" href="/" data-link>';
@@ -962,7 +962,7 @@ const [keys, values] = modules.get_cookies(request.headers.cookie);
     // const userid = decoded.userid;
 
     const receiver = data.userid;
-    console.log("RECEIVER: ", receiver);
+    //console.log("RECEIVER: ", receiver);
     const result = await friends_request.delete_friend_request_value(receiver);
     if (!result || result === undefined){
         console.error("error in deleting accepted friend request");
@@ -1003,6 +1003,40 @@ async function block_friend(request, response){
     return true;
 }
 
+async function play(request, response) {
+    console.log("play page requested");
+    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    if (!keys?.includes('token')) {
+        return send.redirect(response, '/login', 302);
+    }
+
+    const tokenIndex = keys.findIndex((key) => key === 'token');
+    const token = values[tokenIndex];
+    let decoded;
+    try {
+        decoded = await modules.get_jwt(token);
+    } catch (err) {
+        return send.redirect(response, '/login', 302);
+    }
+
+    const user = await users_db.get_users_value('self', decoded.userid);
+    if (!user || user === undefined){
+        return send.send_error_page('404.html', response, 404);
+    }
+
+    const status = await send.send_html('index.html', response, 200, async(data) => {
+        data = await utils.replace_all_templates(request, response);
+        data = data.replace("{{uname}}", user.username);
+        data = utils.show_page(data, "play_div");
+        return data;
+    });
+
+    if (!status || status === undefined || status < 0){
+        return `Error rendering play page: ${status}`;
+    }
+    return true;
+}
+
 export {
     login,
     register,
@@ -1022,5 +1056,6 @@ export {
     add_friends,
     accept_friend,
     reject_friend,
-    block_friend
+    block_friend,
+    play
 }

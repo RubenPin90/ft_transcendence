@@ -39,7 +39,7 @@ export function joinQueueTournament(userId, ws) {
   const REQUIRED_PLAYERS = 4
 
   waitingTournamentPlayers.push({ userId, ws })
-  console.log(`${userId} queued for a Tournament. Currently: ${waitingTournamentPlayers.length} waiting.`)
+  //console.log(`${userId} queued for a Tournament. Currently: ${waitingTournamentPlayers.length} waiting.`)
 
   if (waitingTournamentPlayers.length >= REQUIRED_PLAYERS) {
     const group = waitingTournamentPlayers.splice(0, REQUIRED_PLAYERS)
@@ -66,7 +66,7 @@ export function joinQueueTournament(userId, ws) {
       }))
     })
 
-    console.log(`Tournament started with ${REQUIRED_PLAYERS} players (roomId = ${room.roomId})`)
+    //console.log(`Tournament started with ${REQUIRED_PLAYERS} players (roomId = ${room.roomId})`)
   }
 }
 
@@ -91,8 +91,8 @@ export function joinQueue1v1(matchManager, userId, ws) {
       s.inGame        = true;
       s.currentGameId = room.roomId;
     });
-    console.log(`1v1 game started (roomId = ${room.roomId})`);
-    console.log(`Players: ${userId} vs ${rival.userId}`);
+    //console.log(`1v1 game started (roomId = ${room.roomId})`);
+    //console.log(`Players: ${userId} vs ${rival.userId}`);
     const notify = (sock, selfId, oppId) =>
       sock.send(JSON.stringify({
         type: 'matchFound',
@@ -107,7 +107,7 @@ export function joinQueue1v1(matchManager, userId, ws) {
 
   // no rival yet → enqueue and wait
   queue.push({ userId, ws });
-  console.log(`${userId} is now waiting for a 1‑v‑1 opponent…`);
+  //console.log(`${userId} is now waiting for a 1‑v‑1 opponent…`);
   return null;
 }
 

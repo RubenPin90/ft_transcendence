@@ -25,7 +25,6 @@ export function setupButtonsDelegated(navigate, TLobbySocket) {
                     navigate('/profile');
                     break;
                 default:
-                    console.log('Main menu button clicked:', target.id);
                     break;
             }
         });
@@ -37,7 +36,6 @@ export function setupButtonsDelegated(navigate, TLobbySocket) {
             const target = event.target;
             const TLobby = getCurrentTLobby();
             const userId = getMyId();
-            console.log('Lobby button clicked:', target.id);
             switch (target.id) {
                 case 't-back-btn':
                     navigate('/');
@@ -69,7 +67,6 @@ export function setupButtonsDelegated(navigate, TLobbySocket) {
                     }
                     break;
                 default:
-                    console.log('Unknown lobby button clicked:', target.id);
                     break;
             }
         });
@@ -78,7 +75,6 @@ export function setupButtonsDelegated(navigate, TLobbySocket) {
     if (tournamentPage) {
         tournamentPage.addEventListener('click', (event) => {
             const target = event.target;
-            console.log('Tournament page button clicked:', target.id);
             switch (target.id) {
                 case 't-create-btn':
                     TLobbySocket.send(JSON.stringify({ type: 'createTournament' }));

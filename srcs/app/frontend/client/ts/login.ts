@@ -61,7 +61,7 @@ async function email_login(userid : string) {
         return;
 
     const code = code2.value;
-    // console.log(userid);
+    // //console.log(userid);
     const response = await fetch('/verify_email', {
         method: 'POST',
         headers: {
@@ -73,7 +73,7 @@ async function email_login(userid : string) {
     let data;
     try {
         data = await response.json();
-        // console.log(data);
+        // //console.log(data);
         if (data.Response === "reload") {
             window.location.reload();
         } else {

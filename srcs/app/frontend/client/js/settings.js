@@ -51,7 +51,6 @@ function verify_code() {
             alert("Error. Input cant be empty");
             return;
         }
-        console.log(code.value);
         const response = yield fetch('/settings/mfa', {
             method: 'POST',
             headers: {
@@ -73,7 +72,6 @@ function verify_code() {
         catch (jsonError) {
             throw new Error('Fehler beim Parsen der JSON-Antwort');
         }
-        console.log(data);
     });
 }
 function verify_custom_code() {
@@ -83,7 +81,6 @@ function verify_custom_code() {
         if (!inputField || !qrcodeDiv)
             return;
         const codeValue = inputField.value;
-        console.log("Sende Code zur Verifizierung:", codeValue);
         try {
             const response = yield fetch('/settings/mfa', {
                 method: 'POST',
@@ -115,7 +112,6 @@ function verify_custom_code() {
 }
 function create_custom_code() {
     return __awaiter(this, void 0, void 0, function* () {
-        console.log("create_custom_code gestartet");
         const qrcodeDiv = document.getElementById('mfa');
         const qrcodeButtonDiv = document.getElementById('mfa-button');
         if (!qrcodeDiv)
@@ -134,7 +130,6 @@ function create_custom_code() {
                     if (!inputField)
                         return;
                     const codeValue = inputField.value;
-                    console.log("Sende Code:", codeValue);
                     try {
                         const response = yield fetch('/settings/mfa', {
                             method: 'POST',
@@ -173,7 +168,6 @@ function verifyEmail() {
             return;
         }
         const code = code2.value;
-        console.log("Verification code:", code);
         try {
             const response = yield fetch("/settings/mfa", {
                 method: 'POST',

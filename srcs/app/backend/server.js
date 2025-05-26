@@ -5,8 +5,8 @@ import { fileURLToPath } from 'url';
 import fastifyStatic from '@fastify/static';
 import WebSocket, { WebSocketServer } from 'ws';
 import os from 'os';
-
-import { matchManager, GAME_MODES } from './game/matchManager.js';
+import { SocketRegistry } from './socketRegistry.js';
+import { MatchManager, GAME_MODES } from './game/matchManager.js';
 import { handleClientMessage } from './game/messageHandler.js';
 import { tournamentManager } from './game/tournamentManager.js';
 
@@ -40,6 +40,9 @@ const server = fastify.server;
 // Setup WebSocket server
 const wss = new WebSocketServer({ noServer: true });
 
+const socketRegistry = new SocketRegistry();
+const matchManager   = new MatchManager(socketRegistry);
+
 tournamentManager.matchManager = matchManager;
 tournamentManager.setSocketServer(wss);
 tournamentManager.setUserSockets(matchManager.userSockets);
@@ -70,7 +73,8 @@ wss.on('connection', (ws, req) => {
   let userId;
   do {
     userId = 'user_' + (Math.random() * 10000 | 0);
-  } while (matchManager.userSockets.has(userId));
+    console.log(userId);
+  } while (matchManager.socketRegistry.has(userId));
 
   ws.userId = userId;
   ws.inGame = false;
@@ -94,13 +98,13 @@ wss.on('connection', (ws, req) => {
 });
 
 // Graceful shutdown
-const handleSIGINT = () => {
-  wss.close(() => {
-    fastify.close(() => {
-      process.exit(0);
-    });
-  });
-};
+// const handleSIGINT = () => {
+//   wss.close(() => {
+//     fastify.close(() => {
+//       process.exit(0);
+//     });
+//   });
+// };
 
-process.on('SIGTERM', handleSIGINT);
-process.on('SIGINT', handleSIGINT); // For Ctrl+C too
+// process.on('SIGTERM', handleSIGINT);
+// process.on('SIGINT', handleSIGINT); // For Ctrl+C too

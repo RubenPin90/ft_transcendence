@@ -86,7 +86,6 @@ export function renderTournamentList(list, onJoin) {
 export function renderTLobby(TLobby, sock) {
     var _a;
     setCurrentTLobby(TLobby);
-    console.log('socket', sock);
     const myId = getMyId();
     const amHost = TLobby.hostId === myId;
     const players = Array.isArray(TLobby.players) ? TLobby.players : [];
@@ -113,7 +112,6 @@ export function renderTLobby(TLobby, sock) {
         nameSpan.className = 't-name';
         nameSpan.textContent = isFilled ? displayName(p) : '— empty —';
         row.appendChild(nameSpan);
-        console.log(`Player ${p === null || p === void 0 ? void 0 : p.name} ready: ${p === null || p === void 0 ? void 0 : p.ready}`);
         const dot = document.createElement('span');
         dot.className = 't-status';
         if (isFilled)

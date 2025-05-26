@@ -38,12 +38,10 @@ export function startGame(mode) {
         if (msg.type === 'matchFound') {
             currentRoomId = msg.payload.gameId;
             userId = msg.payload.userId;
-            console.log(`Match ready: room=${currentRoomId}, user=${userId}`);
         }
         else if (msg.type === 'state') {
             drawFrame(msg.state);
             if (msg.state.status === 'finished') {
-                console.log('Game finished! Winner =', msg.state.winner);
                 stopGame();
                 onGameEndCallback === null || onGameEndCallback === void 0 ? void 0 : onGameEndCallback(msg.state.winner);
             }

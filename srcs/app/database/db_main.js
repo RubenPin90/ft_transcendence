@@ -10,7 +10,7 @@ async function create_db() {
     try {
         // Fremdschlüssel aktivieren
         await db.run(`PRAGMA foreign_keys = ON;`);
-        console.log("Fremdschlüssel aktiviert!");
+        //console.log("Fremdschlüssel aktiviert!");
 
         // Tabellen in richtiger Reihenfolge erstellen
         // SETTINGS
@@ -94,12 +94,12 @@ async function create_db() {
         );`);
 
 
-        console.log("Alle Tabellen erfolgreich erstellt oder existieren bereits.");
+        //console.log("Alle Tabellen erfolgreich erstellt oder existieren bereits.");
     } catch (err) {
         console.error(`Error creating db: ${err}`);
         return -1;
     } finally {
-        console.log('Database setup abgeschlossen');
+        //console.log('Database setup abgeschlossen');
         db.close();
         return 0;
     }

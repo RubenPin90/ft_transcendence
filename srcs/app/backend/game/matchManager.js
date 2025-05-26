@@ -1,13 +1,13 @@
 import { v4 as uuidv4 } from 'uuid'
 import { EventEmitter } from 'events'
-import { userSockets } from './userSockets.js';
+import { SocketRegistry } from '../socketRegistry.js';
 
 export const GAME_MODES = {
   PVE: 'PVE',
   PVP: 'PVP',
 }
 
-export class matchManager extends EventEmitter {
+export class MatchManager extends EventEmitter {
   static GAME_MODES = GAME_MODES
   static MAX_BOUNCE_ANGLE = Math.PI / 4 // 45°
   static TICK_RATE = 60
@@ -33,25 +33,22 @@ export class matchManager extends EventEmitter {
            Math.random() * (matchManager.BOT_MAX_REACTION_MS - matchManager.BOT_MIN_REACTION_MS)
   }
 
-  constructor (wss) {
+  constructor(socketRegistry) {
     super();
-    this.wss         = wss
-    this.rooms       = new Map()
-    this.userSockets = userSockets;
-    this.queues = {
-      [matchManager.GAME_MODES.PVP]: []
-    }
+    this.socketRegistry = socketRegistry;
+    this.rooms = new Map();
+    this.queues = { PVP: [] };
   }
 
-  registerSocket   (id, ws) { this.userSockets.set(id, ws) }
-  unregisterSocket (id)     { this.userSockets.delete(id) }
-
+   registerSocket   (id, ws) { this.socketRegistry.add(id, ws) }
+   unregisterSocket (id)     { this.socketRegistry.remove(id) }
+   
   _broadcastFor (roomId) {
     return state => {
       const room = this.rooms.get(roomId)
       if (!room) return
       room.players.forEach(p => {
-        const ws = this.userSockets.get(p.playerId)
+        const ws = this.socketRegistry.get(p.playerId)
         if (ws && ws.readyState === ws.OPEN) {
           ws.send(JSON.stringify({ type: 'state', state }))
         }

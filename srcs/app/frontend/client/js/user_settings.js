@@ -237,7 +237,6 @@ function change_user() {
             }
         }
         catch (err) {
-            console.log("error with update: " + err);
             alert("error with update");
         }
         ;
@@ -304,7 +303,6 @@ function change_avatar() {
                     body: JSON.stringify(value_struct)
                 });
                 if (response.ok) {
-                    console.log("success");
                 }
                 else {
                     alert("error updating avatar");

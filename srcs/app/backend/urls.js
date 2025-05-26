@@ -46,9 +46,7 @@ export default fastifyPlugin(async function routes(fastify) {
   });
   
   // --- Views ---
-  fastify.get('/', (req, reply) => {
-    views.home(req.raw, reply.raw);
-  });
+  fastify.get('/', (req, reply) => views.home(req.raw, reply.raw));
   fastify.get('/login', (req, reply) => views.login(req.raw, reply.raw));
   fastify.get('/register', (req, reply) => views.register(req.raw, reply.raw));
   fastify.post('/register', (req, reply) => views.register(req.raw, reply.raw));
@@ -72,6 +70,8 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.post('/reject_friend', (req, reply) => views.reject_friend(req, reply));
   fastify.post('/block_friend', (req, reply) => views.block_friend(req, reply));
 
+  console.log('Registering tournament routes');
+  fastify.get('/play', (req, reply) => views.play(req, reply));
 
   fastify.post('/initial_load', (req, reply) => views.test(req, reply));
 

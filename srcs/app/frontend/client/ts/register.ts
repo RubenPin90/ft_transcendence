@@ -54,7 +54,7 @@ function $input(id: string): HTMLInputElement | null {
   
   
   async function create_account() {
-    // console.log('creating account');
+    // //console.log('creating account');
   
     const email    = $input('email')?.value ?? '';
     const username = $input('username')?.value ?? '';
