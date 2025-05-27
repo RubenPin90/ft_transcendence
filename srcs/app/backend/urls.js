@@ -74,6 +74,8 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.post('/block_friend', (req, reply) => views.block_friend(req, reply));
   fastify.post('/encript_google', (req, reply) => views.home(req.raw, reply.raw));
 
+  fastify.post('/field_login', (req, reply) => views.field_login(req, reply));
+  fastify.post('/field_signup', (req, reply) => views.field_signup(req, reply));
 
   fastify.post('/home', async (request, reply) => {
     try {

@@ -21,6 +21,8 @@ function get_cookies(request) {
 	return [key, value];
 }
 
+const JWT_KEY = "3x@mpl3S3cr3tK3y!2023"; //TODO REMOVE
+
 function create_jwt(data, expire) {
 	var token;
 	try {
