@@ -77,23 +77,13 @@ export default fastifyPlugin(async function routes(fastify) {
 
   fastify.post('/home', async (request, reply) => {
     try {
-      // Der Body ist automatisch verfügbar durch Fastify
-      const { link } = request.body;
-
-      // Hier kommt Ihre Logik für die Verarbeitung des Links
-      console.log(link);
-      // const result = await utils.encrypt_google(link);
-
-      // // Validierung der Response
-      // if (!result || !result.userid || !result.lang) {
-      //   return reply.code(500).send({ response: 'fail' });
-      // }
-
-      // return { 
-      //   response: 'success',
-      //   userid: result.userid,
-      //   lang: result.lang 
-      // };
+      const link = request.body;
+      // check if google or github
+      // if google {
+        const response = await utils.encrypt_google(link);
+        return reply.code(200).send(response);
+    // } else {
+    // }
     } catch (err) {
       console.error('Error:', err);
       return reply.code(500).send({ response: 'fail' });

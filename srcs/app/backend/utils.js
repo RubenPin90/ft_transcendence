@@ -75,7 +75,7 @@ async function encrypt_github(request) {
 	const fetch_response_email = await modules.easyfetch('https://api.github.com/user/emails', 'GET', header);
 	if (!fetch_response_email || fetch_response_email === undefined || fetch_response_email < 0)
 		return -6;
-
+	
 	const user_email = fetch_response_email[0].email;
 	const userid = fetch_response_user.id;
 	const pfp = fetch_response_user.avatar_url;
@@ -100,8 +100,8 @@ async function encrypt_github(request) {
 
 async function encrypt_google(request) {
 	// const client_secret = process.env.google_client_secret;
-	const base_code = request.url;
-	const sliced_code = base_code.slice(7);
+	const base_code = request.link;
+	const sliced_code = base_code.slice(6);
 	if (!sliced_code || sliced_code === undefined || sliced_code.length == 0)
 		return -1;
 	const subbed_code = sliced_code.substring(0, sliced_code.indexOf("&scope"));
@@ -110,19 +110,11 @@ async function encrypt_google(request) {
 	const code = subbed_code.replace("%2F", "/");
 	if (!code || code === undefined || code == subbed_code)
 		return -3;
-	console.log("------------------------");
-	console.log("hah, lol");
-	console.log("------------------------");
 	
 	try {
 		const header = {"Accept": 'application/json', "Content-Type": 'application/json'};
 		const body = JSON.stringify({'code': code, 'client_id': client_id, 'client_secret': client_secret, 'redirect_uri': 'https://localhost/', 'grant_type': 'authorization_code'})
 		const token_data = await modules.easyfetch("https://oauth2.googleapis.com/token", 'POST', header, body);
-		// const token_data = await fetch("https://oauth2.googleapis.com/token", {
-		// 	method: 'POST',
-		// 	headers: header,
-		// 	body: body
-		// });
 		if (!token_data || token_data === undefined || token_data == -1)
 			return -4;
 		if (!token_data.id_token || token_data.id_token === undefined || token_data.id_token.length == 0)
@@ -140,8 +132,11 @@ async function encrypt_google(request) {
 		if (username < 0)
 			return -8;
 		const db_return = await settings_db.create_settings_value('', pfp, 0, email, 'en', userid, 0);
-		if (db_return.self === undefined || db_return.return === undefined)
-			return {userid, 'lang': db_return.lang};
+		const userid_encode = modules.create_jwt(userid, '1h');
+		if (db_return.self === undefined || db_return.return === undefined) {
+			const lang_encode = modules.create_jwt(db_return.lang, '1h');
+			return {"response": "success", "token": userid_encode, "lang": lang_encode};
+		}
 		if (db_return < 0)
 			return -9;
 		const check_setting = await settings_db.get_settings_value('self', userid);
@@ -150,7 +145,8 @@ async function encrypt_google(request) {
 		const check_username = await users_db.create_users_value(0, username, userid);
 		if (!check_username || check_username === undefined || check_username < 0)
 			return -11;
-		return {userid, 'lang': 'en'};
+		const lang_encode = modules.create_jwt('en', '1h');
+		return {"response": "success", "token": userid_encode, "lang": lang_encode};
 	} catch (error) {
 		console.error("Error during Google OAuth:", error);
 		return -12;
