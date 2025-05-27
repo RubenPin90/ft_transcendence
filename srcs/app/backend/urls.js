@@ -90,6 +90,8 @@ export default fastifyPlugin(async function routes(fastify) {
     }
   });
 
+  fastify.post("/get_data", async (request, reply) => utils.get_data(request, reply));
+
   // --- 404 fallback ---
   fastify.setNotFoundHandler((req, reply) => {
     return send.send_error_page('404.html', reply.raw, 404);

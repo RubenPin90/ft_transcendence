@@ -30,6 +30,7 @@ function create_username(email) {
 }
 
 function google_input_handler() {
+	const client_id = "120580817734-tr50q5s7mu9clbb7olk85h78tkdpsokl.apps.googleusercontent.com";
 	const redirect_uri = "https://localhost/";
 	const scope = "openid email profile";
 	const url = `https://accounts.google.com/o/oauth2/auth?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&scope=${encodeURIComponent(scope)}&response_type=code&access_type=offline&approval_prompt=force`;
@@ -99,6 +100,8 @@ async function encrypt_github(request) {
 }
 
 async function encrypt_google(request) {
+	const client_id = "120580817734-tr50q5s7mu9clbb7olk85h78tkdpsokl.apps.googleusercontent.com";
+	const client_secret = "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";
 	// const client_secret = process.env.google_client_secret;
 	const base_code = request.link;
 	const sliced_code = base_code.slice(6);
@@ -1326,6 +1329,22 @@ async function hahahihihoho(request, response, page) {
 	return index_html;
 }
 
+async function get_data(request, response) {
+	try {
+      	const link = request.body;
+		if (link.get == "{{userid}}") {
+			const userid_decrypted = modules.get_jwt(link.search);
+			const search_user = await users_db.get_users_value('self', userid_decrypted.userid);
+			console.log(search_user);
+			return response.code(200).send({ "username": search_user.username });
+		}
+		return response.code(404).send({ "error": "Not found" });
+	} catch (err) {
+      	console.error('Error:', err);
+      	return response.code(500).send({ response: 'fail' });
+    }
+}
+
 
 
 
@@ -1354,5 +1373,6 @@ export {
 	split_DOM_elemets,
 	replace_all_templates,
 	hahahihihoho,
-	show_page
+	show_page,
+	get_data
 }
