@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     try {
         var userid;
         var lang;
+        var name;
         data = await response.json();
         if (data.response == "fail") {
             console.error("error with data");
@@ -33,22 +34,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         if (data.response != "success")
             return ;
+        console.log(data);
         userid = data.token;
         lang = data.lang;
+        name = data.name;
         document.cookie = `token=${userid}`;
         document.cookie = `lang=${lang}`;
         const welcome_field = document.getElementById("welcome-user-field");
         if (!welcome_field)
             return;
-        const user_response = await fetch("/get_data", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({"get": "{{userid}}", "search": userid})
-        });
-        var user_data = await user_response.json();
-        welcome_field.innerHTML = `Welcome home user<br>${user_data.username}`;
+        welcome_field.innerHTML = `Welcome home user<br>${name}`;
         history.pushState({}, '', '/');
     } catch (err) {
         console.error(`error in setting cookies: ${err}`);

@@ -37,6 +37,7 @@ function get_jwt(token) {
 	try {
 		token = jwt.verify(token, JWT_KEY);
 	} catch (err) {
+		console.log(err);
 		return -1;
 	}
 	return token;

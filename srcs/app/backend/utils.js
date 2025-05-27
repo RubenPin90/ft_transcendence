@@ -1335,7 +1335,6 @@ async function get_data(request, response) {
 		if (link.get == "{{userid}}") {
 			const userid_decrypted = modules.get_jwt(link.search);
 			const search_user = await users_db.get_users_value('self', userid_decrypted.userid);
-			console.log(search_user);
 			return response.code(200).send({ "username": search_user.username });
 		}
 		return response.code(404).send({ "error": "Not found" });

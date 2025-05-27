@@ -7,6 +7,8 @@ import * as utils from './utils.js';
 import * as views from './views.js';
 import * as mimes from './mimes.js';
 import * as send from './responses.js';
+import * as modules from './modules.js';
+import * as user_db from '../database/db_users_functions.js'
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -81,7 +83,10 @@ export default fastifyPlugin(async function routes(fastify) {
       // check if google or github
       // if google {
         const response = await utils.encrypt_google(link);
-        return reply.code(200).send(response);
+        const decoded_user = modules.get_jwt(response.token);
+        const user_data = await user_db.get_users_value('self', decoded_user.userid);
+        var new_response = {"response": response.response, "token": response.token, "lang": response.lang, "name": user_data.username}
+        return reply.code(200).send(new_response);
     // } else {
     // }
     } catch (err) {
