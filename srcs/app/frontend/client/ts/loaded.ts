@@ -1,4 +1,12 @@
 async function userid() {
+    console.log("LOL");
+    console.log("LOL");
+    console.log("LOL");
+    console.log("LOL");
+    console.log("LOL");
+    console.log("LOL");
+    console.log("LOL");
+    console.log("LOL");
     var link = window.location.href;
     link = link.slice(link.indexOf('/') + 1);
     link = link.slice(link.indexOf('/') + 1);
@@ -30,6 +38,11 @@ async function userid() {
         document.cookie = `token=${userid}`;
         document.cookie = `lang=${lang}`;
         history.pushState({}, '', '/');
+
+        const home_div = document.getElementById('home_div');
+        if (!home_div)
+            return ;
+        home_div.classList.remove('hidden');
     } catch (err) {
         console.error(`error in setting cookies: ${err}`);
     }

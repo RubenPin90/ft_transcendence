@@ -8,16 +8,9 @@ dotenv.config();
 function get_cookies(request) {
 	if (!request || request === undefined)
 		return [null, null];
-	const values = request.split('; ');
-	if (!values || values === undefined)
-		return [null, null]
-	let key = [];
-	let value = [];
-	values.forEach(element => {
-		const [i_key, i_value] = element.split('=');
-		key.push(i_key);
-		value.push(i_value);
-	});
+	const cookies = request.cookies;
+	const key = Object.keys(cookies);
+	const value = Object.values(cookies);
 	return [key, value];
 }
 

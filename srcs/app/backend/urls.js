@@ -17,7 +17,7 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.get('/js/:file', async (req, reply) => {
     const file = req.params.file;
     if (!file.endsWith('.js')) return reply.callNotFound();
-    return mimes.get_js(file, reply.raw);
+    return mimes.get_js(file, reply);
   });
 
   // --- CSS ---

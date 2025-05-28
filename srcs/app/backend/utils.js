@@ -9,8 +9,9 @@ import * as modules from './modules.js';
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
 import * as friends_request from '../database/db_friend_request.js'
-import { promises as fs } from 'fs';
+import { promises as fs, utimes } from 'fs';
 import { profile } from 'console';
+import * as translator from './translate.js';
 
 dotenv.config();
 
@@ -269,7 +270,7 @@ function check_login(request, response) {
 		var decoded = modules.get_jwt(token);
 		if (!decoded || decoded === undefined)
 			return -2;
-		send.redirect(response, '/', 302);
+		// Here was a redirect(response, '/', 302);
 		return true;
 	} catch (err) {
 		console.log(err);
@@ -382,12 +383,12 @@ async function create_otc(userid, response) {
 	const secret = otc_secret(base32_secret);
 	if (!secret || secret === undefined || secret < 0)
 		return -3;
-	response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+	response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
 	try {
 		const url = await qrcode.toDataURL(secret.otpauth_url);
-		response.end(JSON.stringify({ qrCodeUrl: url }));
+		response.raw.end(JSON.stringify({ qrCodeUrl: url }));
 	} catch (err) {
-		response.end('Fehler beim Generieren des QR-Codes');
+		response.raw.end('Fehler beim Generieren des QR-Codes');
 		return -4;
 	}
 	return true;
@@ -410,20 +411,20 @@ async function create_custom_code(userid, response, replace_data) {
 	if (check_mfa < 0)
 		return -2;
 	const check_code = replace_data.Code;
-	response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+	response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
 	if (check_code.length != 6) {
-		response.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
+		response.raw.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
 		return -3;
 	}
 	if (isNaN(Number(check_code))) {
-		response.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
+		response.raw.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
 		return -4;
 	}
 	if (!check_mfa || check_mfa === undefined)
 		await mfa_db.create_mfa_value('', '', `${check_code}_temp`, 0, userid);
 	else
 		await mfa_db.update_mfa_value('custom', `${check_code}_temp`, userid);
-	response.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Success"}));
+	response.raw.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Success"}));
 	return true;
 }
 
@@ -452,9 +453,9 @@ async function create_email_code(userid, response, replace_data) {
 	const check_settings = await settings_db.get_settings_value('self', userid);
 	if (!check_settings || check_settings === undefined || check_settings < 0)
 		return -2;
-	response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+	response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
 	if (!check_settings.email || check_settings.email === undefined) {
-		response.end(JSON.stringify({"Response": "NoEmail"}));
+		response.raw.end(JSON.stringify({"Response": "NoEmail"}));
 		return -3;
 	}
 	var email_code = Math.floor(Math.random() * 1000000);
@@ -463,11 +464,11 @@ async function create_email_code(userid, response, replace_data) {
 		email_code = '0' + email_code;
 	const check_code = String(email_code);
 	if (check_code.length != 6) {
-		response.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
+		response.raw.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
 		return -4;
 	}
 	if (isNaN(Number(check_code))) {
-		response.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
+		response.raw.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
 		return -5;
 	}
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
@@ -476,7 +477,7 @@ async function create_email_code(userid, response, replace_data) {
 		await mfa_db.create_mfa_value('', '', `${encrypted_code}_temp`, 0, userid);
 	else
 		await mfa_db.update_mfa_value('email', `${encrypted_code}_temp`, userid);
-	response.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Success"}));
+	response.raw.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Success"}));
 	const check_email = await modules.send_email(check_settings.email, 'MFA code', `This is your 2FA code. Please do not share: ${check_code}`);
 	if (!check_email || check_email === undefined || check_email == false) {
 		await mfa_db.update_mfa_value('email', '', userid);
@@ -495,15 +496,15 @@ async function verify_email_code(userid, response, replace_data) {
 	if (email_value.endsWith('_temp'))
 		email_value = email_value.slice(0, -5);
 	const decrypted_email_value = await modules.check_encrypted_password(replace_data.Code, email_value);
-	response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+	response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
 	if (decrypted_email_value === false) {
-		response.end(JSON.stringify({"Response": "Failed"}));
+		response.raw.end(JSON.stringify({"Response": "Failed"}));
 		return false;
 	}
 	await mfa_db.update_mfa_value('email', email_value, userid);
 	if (check_mfa.prefered === 0)
 		await mfa_db.update_mfa_value('prefered', 1, userid);
-	response.end(JSON.stringify({"Response": "Success"}));
+	response.raw.end(JSON.stringify({"Response": "Success"}));
 	return true;
 }
 
@@ -511,10 +512,10 @@ async function clear_settings_mfa(userid, search_value, response) {
 	var fallback_options = ['email', 'otc', 'custom'];
 	if (fallback_options.indexOf(search_value) < 0)
 		return -1;
-	response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+	response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
 	if (!check_mfa || check_mfa === undefined) {
-		response.end(JSON.stringify({"Response": "Failed"}));
+		response.raw.end(JSON.stringify({"Response": "Failed"}));
 		return -2;
 	}
 	await mfa_db.update_mfa_value(`${search_value}`, '', userid);
@@ -531,7 +532,7 @@ async function clear_settings_mfa(userid, search_value, response) {
 	}
 	if (!found)
 		await mfa_db.update_mfa_value('prefered', 0, userid);
-	response.end(JSON.stringify({"Response": "Success"}));
+	response.raw.end(JSON.stringify({"Response": "Success"}));
 	return true;
 }
 
@@ -961,6 +962,21 @@ async function replace_all_templates(request, response, state) {
 	index_html += friends_html_raw;
 	index_html += menu_raw;
 	// index_html += game_raw;
+	const [keys, values] = modules.get_cookies(request);
+	if (keys?.includes('lang')) {
+		const lang_decrypted = modules.get_jwt(values[keys.indexOf('lang')]);
+		if (lang_decrypted.userid != "en")
+			index_html = translator.cycle_translations(index_html, lang_decrypted.userid);
+	}
+	console.log("-------------");
+	console.log(keys,values)
+	console.log("-------------");
+	// const user_decrypted = modules.get_jwt(values[keys.indexOf('token')]);
+	// const check_user = await users_db.get_users_value('self', user_decrypted.userid);
+	// index_html = index_html.replace("{{userid}}", check_user.username);
+	// console.log("-------------");
+	// console.log(user_decrypted);
+	// console.log("-------------");
 	return index_html_raw.replace("{{replace}}", index_html);
 }
 
@@ -983,11 +999,24 @@ function show_page(data, tag_name) {
 
 async function get_data(request, response) {
 	try {
-      	const link = request.body;
+		const link = request.body;
 		if (link.get == "{{userid}}") {
 			const userid_decrypted = modules.get_jwt(link.search);
 			const search_user = await users_db.get_users_value('self', userid_decrypted.userid);
 			return response.code(200).send({ "username": search_user.username });
+		} else if (link.get == "cookies") {
+			const [keys, values] = modules.get_cookies(request, response);
+			if (keys.length == 0 && values.length == 0)
+				return response.code(200).send({'content': "empty"});
+			return response.code(200).send({'content': "full"});
+		} else if (link.get == "username") {
+			const [keys, values] = modules.get_cookies(request, response);
+			if (keys.length == 0 && values.length == 0)
+				return response.code(200).send({'content': "empty"});
+			const username = modules.get_jwt(values[keys.indexOf('token')]);
+			console.log(username);
+			const check_user = await users_db.get_users_value('self', username.userid);
+			return response.code(200).send({'username': check_user.username});
 		}
 		return response.code(404).send({ "error": "Not found" });
 	} catch (err) {

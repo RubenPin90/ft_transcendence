@@ -1,5 +1,6 @@
 // server.js
 import Fastify from 'fastify';
+import fastifyCookie from 'fastify-cookie'; 
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fastifyStatic from '@fastify/static';
@@ -29,6 +30,8 @@ await fastify.register(fastifyStatic, {
   root: path.join(__dirname, '../client/js'),
   prefix: '/client/js/',
 });
+
+await fastify.register(fastifyCookie);
 
 // Register routes from urls.js
 await fastify.register(urlsPlugin);
