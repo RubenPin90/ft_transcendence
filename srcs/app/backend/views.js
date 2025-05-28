@@ -62,7 +62,7 @@ async function login(request, response) {
     if (!check_login || check_login === undefined || check_login < -1)
         return `4_${check_login}`;
     await send.send_html('index.html', response, 200, async (data) => {
-        data = await utils.replace_all_templates(request, response);
+        data = await utils.replace_all_templates(request, response, 1);
         data = utils.show_page(data, "login_div");
         return data;
     });
@@ -108,7 +108,7 @@ async function register(request, response) {
     if (!check_login || check_login === undefined || check_login < -1)
         return `6_${check_login}`;
     const check = await send.send_html('index.html', response, 200, async (data) => {
-        data = await utils.replace_all_templates(request, response);
+        data = await utils.replace_all_templates(request, response, 1);
         data = utils.show_page(data, "register_div");
         return data;
     })
@@ -119,13 +119,6 @@ async function home(request, response) {
     var [keys, values] = modules.get_cookies(request.headers.cookie);
     if (request.url === '/' && !keys?.includes('token'))
         return send.redirect(response, '/login', 302);
-    if (request.method == 'POST') {
-        const data = await utils.encrypt_google(request);
-        if (data < 0)
-            return `1_${data}`;
-        response.code(200).type('application/json').send(data);
-        return true;
-    }
     // } else if (request.url !== '/') {
     //     const data = await utils.encrypt_github(request, response);
     //     if (data < 0) {

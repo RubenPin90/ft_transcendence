@@ -292,11 +292,11 @@ function get_decrypted_userid(request, response) {
 		const err_string = String(err);
 		console.log(err_string);
 		if (err_string.includes("jwt expired")) {
-			response.writeHead(302, {
+			response.raw.writeHead(302, {
 				'Set-Cookie': 'token=; HttpOnly; Secure; SameSite=Strict; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
 				'Location': '/login'
 			});
-			response.end();
+			response.raw.end();
 			return -2;
 		}
 	}
@@ -611,7 +611,7 @@ function split_DOM_elemets(row) {
     return {indent, open_tag, text, closing_tag};
 }
 
-async function replace_all_templates(request, response) {
+async function replace_all_templates(request, response, state) {
 	const github_login = github_input_handler();
 	const google_login = google_input_handler();
 
@@ -942,23 +942,26 @@ async function replace_all_templates(request, response) {
 	const menu_raw = await fs.readFile("./backend/templates/menu.html", 'utf8');
 
 	const index_html_raw = await fs.readFile("./backend/templates/index.html", 'utf8')
-	var index_html = index_html_raw.replace("{{home}}", home_html_raw);
-	index_html = index_html.replace("{{login}}", login_html);
-	index_html = index_html.replace("{{register}}", register_html);
-	index_html = index_html.replace("{{profile}}", profile_html_raw);
-	index_html = index_html.replace("{{settings}}", settings_html_default);
-	index_html = index_html.replace("{{settings_mfa}}", settings_html_mfa);
-	index_html = index_html.replace("{{settings_user}}", settings_html_user);
-	index_html = index_html.replace("{{settings_select_language}}", settings_html_user_select_language_raw);
-	index_html = index_html.replace("{{settings_profile}}", settings_html_user_profile_settings_raw);
-	index_html = index_html.replace("{{settings_profile_change_username}}", settings_html_user_profile_username_raw);
-	index_html = index_html.replace("{{settings_profile_change_login_data}}", settings_html_user_profile_credential_raw);
-	index_html = index_html.replace("{{settings_profile_change_avatar}}", settings_html_user_profile_avatar_raw);
-	// index_html = index_html.replace("{{game}}", game_raw);
-	index_html = index_html.replace("{{friends}}", friends_html_raw);
-	index_html = index_html.replace("{{menu}}", menu_raw);
 
-	return index_html;
+	if (state == 1) {
+		var final_string = login_html;
+		final_string += register_html;
+		return index_html_raw.replace("{{replace}}", final_string);
+	}
+	var index_html = home_html_raw;
+	index_html += profile_html_raw;
+	index_html += settings_html_default;
+	index_html += settings_html_mfa;
+	index_html += settings_html_user;
+	index_html += settings_html_user_select_language_raw;
+	index_html += settings_html_user_profile_settings_raw;
+	index_html += settings_html_user_profile_username_raw;
+	index_html += settings_html_user_profile_credential_raw;
+	index_html += settings_html_user_profile_avatar_raw;
+	index_html += friends_html_raw;
+	index_html += menu_raw;
+	// index_html += game_raw;
+	return index_html_raw.replace("{{replace}}", index_html);
 }
 
 function show_page(data, tag_name) {
@@ -978,361 +981,6 @@ function show_page(data, tag_name) {
 }
 
 
-
-
-
-
-async function hahahihihoho(request, response, page) {
-	const github_login = github_input_handler();
-	const google_login = google_input_handler();
-
-	const friends_html_raw = await fs.readFile("./backend/templates/friends.html", 'utf8');
-	// const friends_html = friends_html_raw.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
-	const home_html_raw = await fs.readFile("./backend/templates/home.html", 'utf8');
-	const login_html_raw = await fs.readFile("./backend/templates/login.html", 'utf8');
-	var login_html = login_html_raw.replace("{{google_login}}", google_login);
-	login_html = login_html.replace("{{github_login}}", github_login);
-	const register_html_raw = await fs.readFile("./backend/templates/register.html", 'utf8');
-	var register_html = register_html_raw.replace("{{google_login}}", google_login);
-	register_html = register_html.replace("{{github_login}}", github_login);
-	const profile_html_raw = await fs.readFile("./backend/templates/profile.html", 'utf8');
-	const settings_html_raw = await fs.readFile("./backend/templates/settings.html", 'utf8');
-
-	var settings_html_default_string = "";
-	settings_html_default_string += '<div><a href="/settings/mfa" data-link><div class="buttons mb-6"></a></div>';
-	settings_html_default_string += '<button class="block w-full mb-6 mt-6">';
-	settings_html_default_string += '<span class="button_text">MFA</span>';
-	settings_html_default_string += '</button></div>';
-	settings_html_default_string += '<div><a href="/settings/user" data-link><div class="buttons mb-6"></a></div>';
-	settings_html_default_string += '<button class="block w-full mb-6 mt-6">';
-	settings_html_default_string += '<span class="button_text">User</span>';
-	settings_html_default_string += '</button></div>';
-	settings_html_default_string += '<div class="flex mt-12 gap-4 w-full">';
-	settings_html_default_string += '<a class="flex-1" href="/" data-link>';
-	settings_html_default_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-	settings_html_default_string += '<span class="button_text">Back</span>';
-	settings_html_default_string += '</button></a>';
-	settings_html_default_string += '<a class="flex-1">';
-	settings_html_default_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-	settings_html_default_string += '<span class="button_text">Logout</span>';
-	settings_html_default_string += '</button></a></div>';
-	const settings_html_default = settings_html_raw.replace("{{mfa-button}}", settings_html_default_string);
-
-	var settings_html_mfa_string = "";
-	settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_otc()">';
-	settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
-	settings_html_mfa_string += '<span class="button_text">Create OTC</span>';
-	settings_html_mfa_string += '</button></div>';
-	settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_custom_code()">';
-	settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
-	settings_html_mfa_string += '<span class="button_text">Create custom 6 diggit code</span>';
-	settings_html_mfa_string += '</button></div>';
-	settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_email()">';
-	settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
-	settings_html_mfa_string += '<span class="button_text">Enable email authentication</span>';
-	settings_html_mfa_string += '</button></div>';
-	settings_html_mfa_string += '<div class="flex mt-12 gap-4 w-full">';
-	settings_html_mfa_string += '<a class="flex-1" href="/settings" data-link>';
-	settings_html_mfa_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-	settings_html_mfa_string += '<span class="font-bold text-lg">Back</span>';
-	settings_html_mfa_string += '</button></a>';
-	settings_html_mfa_string += '<a class="flex-1">';
-	settings_html_mfa_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-	settings_html_mfa_string += '<span class="font-bold text-lg">Logout</span>';
-	settings_html_mfa_string += '</button></a></div>';
-	const settings_html_mfa = settings_html_raw.replace("{{mfa-button}}", settings_html_mfa_string);
-
-	var settings_html_user_string = "";
-	settings_html_user_string += '<div><a href="/settings/user/select_language" data-link><div class="buttons mb-6"></a></div>';
-	settings_html_user_string += '<button class="block w-full mb-6 mt-6">';
-	settings_html_user_string += '<span class="button_text">Select Language</span>';
-	settings_html_user_string += '</button></div>';
-	settings_html_user_string += '<div><a href="/settings/user/profile_settings" data-link><div class="buttons mb-6"></a></div>';
-	settings_html_user_string += '<button class="block w-full mb-6 mt-6">';
-	settings_html_user_string += '<span class="button_text">Profile changes</span>';
-	settings_html_user_string += '</button></div>';
-	settings_html_user_string += '<div class="flex mt-12 gap-4 w-full">';
-	settings_html_user_string += '<a class="flex-1" href="/settings" data-link>';
-	settings_html_user_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-	settings_html_user_string += '<span class="button_text">Back</span>';
-	settings_html_user_string += '</button></a>';
-	settings_html_user_string += '<a class="flex-1">';
-	settings_html_user_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-	settings_html_user_string += '<span class="button_text">Logout</span>';
-	settings_html_user_string += '</button></a></div>';
-	const settings_html_user = settings_html_raw.replace("{{mfa-button}}", settings_html_user_string);
-
-	var settings_html_user_select_language_string = '<button onclick="change_language()">Change language</button><br></br>';
-	settings_html_user_select_language_string += `
-	<form id="language">
-		<select name="lang" id="lang">
-			<option value="" selected disabled hidden>Choose your main language</option>
-			<option value="af">Afrikaans</option>
-			<option value="az">Azərbaycanca</option>
-			<option value="id">Bahasa Indonesia</option>
-			<option value="ms">Bahasa Melayu</option>
-			<option value="jw">Basa Jawa</option>
-			<option value="su">Basa Sunda</option>
-			<option value="bs">Bosanski</option>
-			<option value="ca">Català</option>
-			<option value="ceb">Cebuano</option>
-			<option value="sn">ChiShona</option>
-			<option value="ny">Chichewa</option>
-			<option value="co">Corsu</option>
-			<option value="cy">Cymraeg</option>
-			<option value="da">Dansk</option>
-			<option value="de">Deutsch</option>
-			<option value="et">Eesti</option>
-			<option value="en">English</option>
-			<option value="es">Español</option>
-			<option value="eo">Esperanto</option>
-			<option value="eu">Euskara</option>
-			<option value="fr">Français</option>
-			<option value="fy">Frysk</option>
-			<option value="ga">Gaeilge</option>
-			<option value="sm">Gagana Samoa</option>
-			<option value="gl">Galego</option>
-			<option value="gd">Gàidhlig</option>
-			<option value="ha">Hausa</option>
-			<option value="hmn">Hmoob</option>
-			<option value="hr">Hrvatski</option>
-			<option value="ig">Igbo</option>
-			<option value="it">Italiano</option>
-			<option value="sw">Kiswahili</option>
-			<option value="ht">Kreyòl Ayisyen</option>
-			<option value="ku">Kurdî</option>
-			<option value="la">Latina</option>
-			<option value="lv">Latviešu</option>
-			<option value="lt">Lietuvių</option>
-			<option value="lb">Lëtzebuergesch</option>
-			<option value="hu">Magyar</option>
-			<option value="mg">Malagasy</option>
-			<option value="mt">Malti</option>
-			<option value="mi">Māori</option>
-			<option value="nl">Nederlands</option>
-			<option value="no">Norsk</option>
-			<option value="uz">Oʻzbekcha</option>
-			<option value="pl">Polski</option>
-			<option value="pt">Português</option>
-			<option value="ro">Română</option>
-			<option value="st">Sesotho</option>
-			<option value="sq">Shqip</option>
-			<option value="sk">Slovenčina</option>
-			<option value="sl">Slovenščina</option>
-			<option value="so">Soomaali</option>
-			<option value="fi">Suomi</option>
-			<option value="sv">Svenska</option>
-			<option value="tl">Tagalog</option>
-			<option value="vi">Tiếng Việt</option>
-			<option value="tr">Türkçe</option>
-			<option value="yo">Yorùbá</option>
-			<option value="xh">isiXhosa</option>
-			<option value="zu">isiZulu</option>
-			<option value="is">Íslenska</option>
-			<option value="cs">Čeština</option>
-			<option value="haw">ʻŌlelo Hawaiʻi</option>
-			<option value="el">Ελληνικά</option>
-			<option value="be">Беларуская</option>
-			<option value="bg">Български</option>
-			<option value="ky">Кыргызча</option>
-			<option value="mk">Македонски</option>
-			<option value="mn">Монгол</option>
-			<option value="ru">Русский</option>
-			<option value="sr">Српски</option>
-			<option value="tg">Тоҷикӣ</option>
-			<option value="uk">Українська</option>
-			<option value="kk">Қазақша</option>
-			<option value="hy">Հայերեն</option>
-			<option value="yi">ייִדיש</option>
-			<option value="iw">עברית</option>
-			<option value="ur">اردو</option>
-			<option value="ar">العربية</option>
-			<option value="sd">سنڌي</option>
-			<option value="fa">فارسی</option>
-			<option value="ps">پښتو</option>
-			<option value="ne">नेपाली</option>
-			<option value="mr">मराठी</option>
-			<option value="hi">हिन्दी</option>
-			<option value="bn">বাংলা</option>
-			<option value="gu">ગુજરાતી</option>
-			<option value="ta">தமிழ்</option>
-			<option value="te">తెలుగు</option>
-			<option value="kn">ಕನ್ನಡ</option>
-			<option value="ml">മലയാളം</option>
-			<option value="si">සිංහල</option>
-			<option value="th">ไทย</option>
-			<option value="lo">ລາວ</option>
-			<option value="my">မြန်မာ</option>
-			<option value="ka">ქართული</option>
-			<option value="km">ភាសាខ្មែរ</option>
-			<option value="ja">日本語</option>
-			<option value="zh-cn">简体中文</option>
-			<option value="zh-tw">繁體中文</option>
-			<option value="ko">한국어</option>
-		</select>
-		<button type="submit">Submit</button>
-	</form>`
-	settings_html_user_select_language_string += '<a href="/settings" data-link>'
-	settings_html_user_select_language_string += '<button>back</button></a> \
-	<button onclick="logout()">Logout</button>';
-	const settings_html_user_select_language_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_select_language_string);
-
-	var settings_html_user_profile_settings_string = "";
-	settings_html_user_profile_settings_string += `<div class="flex flex-col mt-8 gap-6">
-        <a href="/settings/user/change_user" class="buttons" data-link>
-            <button class="block w-full mb-4 mt-6">
-                <span class="button_text">change username</span>
-            </button>
-        </a>
-        <a href="/settings/user/change_login" class="buttons" data-link>
-            <button class="block w-full mb-4 mt-6">
-                <span class="button_text">change login data</span>
-            </button>
-        </a>
-        <a href="/settings/user/change_avatar" class="buttons" data-link>
-            <button class="block w-full mb-4 mt-6">
-                <span class="button_text">change avatar</span>
-            </button>
-        </a>
-    </div>
-    <div class="flex mt-12 w-1/2">
-        <a href="/" class="flex-1" data-link>
-            <button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
-                <span class="font-bold text-lg">Main Page</span>
-            </button>
-        </a>
-    </div>`
-	const settings_html_user_profile_settings_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_settings_string);
-
-	const settings_html_user_profile_username_string = `
-	<div id="user_field" class="relative input_total">
-        <div class="input_svg">
-            <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
-                <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd" />
-                </svg>
-        </div>
-        <input type="text" id="username" placeholder="Username" required class="input_field" />
-    </div>
-    <div class="flex mt-12 gap-4 w-full">
-        <a class="flex-1">
-            <button onclick="change_user()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
-                <span class="font-bold text-lg">Submit</span>
-            </button>
-        </a>
-        <a href="/settings/user/profile_settings" class="flex-1" data-link>
-            <button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
-                <span class="font-bold text-lg">Back</span>
-            </button>
-        </a>
-    </div>
-	`
-	var settings_html_user_profile_username_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_username_string);
-
-
-	const settings_html_user_profile_credential_string = `
-	<label for="email" class="label_text">Email</label>
-    <div id="email_field" class="relative input_total">
-        <div class="input_svg">
-            <svg class="w-6 h-6 text-gray-500 justify-center" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 16">
-                <path d="m10.036 8.278 9.258-7.79A1.979 1.979 0 0 0 18 0H2A1.987 1.987 0 0 0 .641.541l9.395 7.737Z"/>
-                <path d="M11.241 9.817c-.36.275-.801.425-1.255.427-.428 0-.845-.138-1.187-.395L0 2.6V14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2.5l-8.759 7.317Z"/>
-            </svg>
-        </div>
-        <input type="text" id="email" placeholder="example@gmail.com" required class="input_field" />
-    </div>
-    <label for="password-input" class="label_text">Password</label>
-    <div id="password_field" class="relative input_total">
-        <div class="input_svg">
-            <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
-                <path fill-rule="evenodd" d="M15.75 1.5a6.75 6.75 0 0 0-6.651 7.906c.067.39-.032.717-.221.906l-6.5 6.499a3 3 0 0 0-.878 2.121v2.818c0 .414.336.75.75.75H6a.75.75 0 0 0 .75-.75v-1.5h1.5A.75.75 0 0 0 9 19.5V18h1.5a.75.75 0 0 0 .53-.22l2.658-2.658c.19-.189.517-.288.906-.22A6.75 6.75 0 1 0 15.75 1.5Zm0 3a.75.75 0 0 0 0 1.5A2.25 2.25 0 0 1 18 8.25a.75.75 0 0 0 1.5 0 3.75 3.75 0 0 0-3.75-3.75Z" clip-rule="evenodd" />
-            </svg>
-        </div>
-        <button onclick="toggle_eye(1)" id="password_eye" class="password_eye" tabindex="-1">
-            <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
-                <path d="M3.53 2.47a.75.75 0 0 0-1.06 1.06l18 18a.75.75 0 1 0 1.06-1.06l-18-18ZM22.676 12.553a11.249 11.249 0 0 1-2.631 4.31l-3.099-3.099a5.25 5.25 0 0 0-6.71-6.71L7.759 4.577a11.217 11.217 0 0 1 4.242-.827c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113Z" />
-                <path d="M15.75 12c0 .18-.013.357-.037.53l-4.244-4.243A3.75 3.75 0 0 1 15.75 12ZM12.53 15.713l-4.243-4.244a3.75 3.75 0 0 0 4.244 4.243Z" />
-                <path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 0 0-2.63 4.31c-.12.362-.12.752 0 1.114 1.489 4.467 5.704 7.69 10.675 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 0 1 6.75 12Z" />
-                </svg>
-        </button>
-        <input type="password" id="password-input" placeholder="Password" required class="input_field" />
-    </div>
-    <label for="password-input2" class="label_text">Repeat Password</label>
-    <div id="repeat_field" class="relative input_total">
-        <div class="input_svg">
-            <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
-                <path fill-rule="evenodd" d="M15.75 1.5a6.75 6.75 0 0 0-6.651 7.906c.067.39-.032.717-.221.906l-6.5 6.499a3 3 0 0 0-.878 2.121v2.818c0 .414.336.75.75.75H6a.75.75 0 0 0 .75-.75v-1.5h1.5A.75.75 0 0 0 9 19.5V18h1.5a.75.75 0 0 0 .53-.22l2.658-2.658c.19-.189.517-.288.906-.22A6.75 6.75 0 1 0 15.75 1.5Zm0 3a.75.75 0 0 0 0 1.5A2.25 2.25 0 0 1 18 8.25a.75.75 0 0 0 1.5 0 3.75 3.75 0 0 0-3.75-3.75Z" clip-rule="evenodd" />
-            </svg>
-        </div>
-        <button onclick="toggle_eye(2)" id="password_eye2" class="password_eye" tabindex="-1">
-            <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
-                <path d="M3.53 2.47a.75.75 0 0 0-1.06 1.06l18 18a.75.75 0 1 0 1.06-1.06l-18-18ZM22.676 12.553a11.249 11.249 0 0 1-2.631 4.31l-3.099-3.099a5.25 5.25 0 0 0-6.71-6.71L7.759 4.577a11.217 11.217 0 0 1 4.242-.827c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113Z" />
-                <path d="M15.75 12c0 .18-.013.357-.037.53l-4.244-4.243A3.75 3.75 0 0 1 15.75 12ZM12.53 15.713l-4.243-4.244a3.75 3.75 0 0 0 4.244 4.243Z" />
-                <path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 0 0-2.63 4.31c-.12.362-.12.752 0 1.114 1.489 4.467 5.704 7.69 10.675 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 0 1 6.75 12Z" />
-            </svg>
-        </button>
-        <input type="password" id="password-input2" placeholder="Repeat password" required class="input_field" />
-    </div>
-    <div class="flex mt-12 gap-4 w-full">
-        <a class="flex-1">
-            <button onclick="change_logindata()" id="submit_button" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
-                <span class="font-bold text-lg">Submit</span>
-            </button>
-        </a>
-        <a href="/settings/user/profile_settings" class="flex-1" data-link>
-            <button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
-                <span class="font-bold text-lg">Back</span>
-            </button>
-        </a>
-    </div>
-	`;
-	const settings_html_user_profile_credential_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_credential_string);
-
-	
-	const settings_html_user_profile_avatar_string = `
-	<div class="to-[#d16e1d] from-[#e0d35f] bg-gradient-to-br rounded-lg">
-        <label class="pl-2 block mb-2 font-medium text-gray-900 text-2xl" for="file_input">Upload file</label>
-        <input class="block w-full text-sm text-gray-900 border border-[#e0d35f] to-[#d16e1d] from-[#e0d35f] bg-gradient-to-br  rounded-lg cursor-pointer" id="file_input" type="file">
-    </div>
-    <div class="flex mt-12 gap-4 w-full">
-        <a class="flex-1">
-            <button onclick="change_avatar()" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
-                <span class="font-bold text-lg">Submit</span>
-            </button>
-        </a>
-        <a href="/settings/user/profile_settings" class="flex-1" data-link>
-            <button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
-                <span class="font-bold text-lg">Back</span>
-            </button>
-        </a>
-    </div>
-	`;
-	const settings_html_user_profile_avatar_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_avatar_string);
-
-	// const game_raw = await fs.readFile("./backend/templates/game.html", 'utf8');
-
-	const menu_raw = await fs.readFile("./backend/templates/menu.html", 'utf8');
-
-	// console.log(page);
-	const index_html_raw = await fs.readFile(page, 'utf8')
-	var index_html = index_html_raw.replace("{{home}}", home_html_raw);
-	index_html = index_html.replace("{{login}}", login_html);
-	index_html = index_html.replace("{{register}}", register_html);
-	index_html = index_html.replace("{{profile}}", profile_html_raw);
-	index_html = index_html.replace("{{settings}}", settings_html_default);
-	index_html = index_html.replace("{{settings_mfa}}", settings_html_mfa);
-	index_html = index_html.replace("{{settings_user}}", settings_html_user);
-	index_html = index_html.replace("{{settings_select_language}}", settings_html_user_select_language_raw);
-	index_html = index_html.replace("{{settings_profile}}", settings_html_user_profile_settings_raw);
-	index_html = index_html.replace("{{settings_profile_change_username}}", settings_html_user_profile_username_raw);
-	index_html = index_html.replace("{{settings_profile_change_login_data}}", settings_html_user_profile_credential_raw);
-	index_html = index_html.replace("{{settings_profile_change_avatar}}", settings_html_user_profile_avatar_raw);
-	// index_html = index_html.replace("{{game}}", game_raw);
-	index_html = index_html.replace("{{friends}}", friends_html_raw);
-	index_html = index_html.replace("{{menu}}", menu_raw);
-
-	return index_html;
-}
-
 async function get_data(request, response) {
 	try {
       	const link = request.body;
@@ -1344,11 +992,16 @@ async function get_data(request, response) {
 		return response.code(404).send({ "error": "Not found" });
 	} catch (err) {
       	console.error('Error:', err);
-      	return response.code(500).send({ response: 'fail' });
+      	return response.code(500).send({ "response": 'fail' });
     }
 }
 
 
+// async function temp(request, response){
+// 	const body = request.body;
+
+
+// }
 
 
 
@@ -1375,7 +1028,6 @@ export {
 	DOM_text,
 	split_DOM_elemets,
 	replace_all_templates,
-	hahahihihoho,
 	show_page,
 	get_data
 }
