@@ -29,6 +29,9 @@ function create_username(email) {
 	return modified_sliced;
 }
 
+const client_id = "120580817734-tr50q5s7mu9clbb7olk85h78tkdpsokl.apps.googleusercontent.com"; //TODO REMOVE
+const client_secret = "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"; //TODO REMOVE
+
 function google_input_handler() {
 	const client_id = "120580817734-tr50q5s7mu9clbb7olk85h78tkdpsokl.apps.googleusercontent.com";
 	const redirect_uri = "https://localhost/";
@@ -669,11 +672,11 @@ async function replace_all_templates(request, response) {
 	const settings_html_mfa = settings_html_raw.replace("{{mfa-button}}", settings_html_mfa_string);
 
 	var settings_html_user_string = "";
-	settings_html_user_string += '<div><a href="/settings/user/select_language" data-link><div class="buttons mb-6"></a></div>';
+	settings_html_user_string += '<div><a href="/settings/user/select_language" data-link><div class="buttons mb-6"></div></a>';
 	settings_html_user_string += '<button class="block w-full mb-6 mt-6">';
 	settings_html_user_string += '<span class="button_text">Select Language</span>';
 	settings_html_user_string += '</button></div>';
-	settings_html_user_string += '<div><a href="/settings/user/profile_settings" data-link><div class="buttons mb-6"></a></div>';
+	settings_html_user_string += '<div><a href="/settings/user/profile_settings" data-link><div class="buttons mb-6"></div></a>';
 	settings_html_user_string += '<button class="block w-full mb-6 mt-6">';
 	settings_html_user_string += '<span class="button_text">Profile changes</span>';
 	settings_html_user_string += '</button></div>';
@@ -688,7 +691,7 @@ async function replace_all_templates(request, response) {
 	settings_html_user_string += '</button></a></div>';
 	const settings_html_user = settings_html_raw.replace("{{mfa-button}}", settings_html_user_string);
 
-	var settings_html_user_select_language_string = '<button onclick="change_language()">Change language</button><br></br>';
+	var settings_html_user_select_language_string = '<button onclick="change_language()">Change language</button>';
 	settings_html_user_select_language_string += `
 	<form id="language">
 		<select name="lang" id="lang">
@@ -799,11 +802,12 @@ async function replace_all_templates(request, response) {
 		<button type="submit">Submit</button>
 	</form>`
 	settings_html_user_select_language_string += '<div><a href="/settings" data-link><button>back</button></a><div> \
-	<button onclick="logout()">Logout</button>';
+	<button onclick="logout()">Logout</button></div></div>';
 	const settings_html_user_select_language_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_select_language_string);
 
 	var settings_html_user_profile_settings_string = "";
-	settings_html_user_profile_settings_string += `<div class="flex flex-col mt-8 gap-6">
+	settings_html_user_profile_settings_string += `
+	<div class="flex flex-col mt-8 gap-6">
         <a href="/settings/user/change_user" class="buttons" data-link>
             <button class="block w-full mb-4 mt-6">
                 <span class="button_text">change username</span>
