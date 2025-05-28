@@ -116,6 +116,7 @@ async function register(request, response) {
 }
 
 async function home(request, response) {
+    console.log("Home request received");
     var [keys, values] = modules.get_cookies(request.headers.cookie);
     if (request.url === '/' && !keys?.includes('token'))
         return send.redirect(response, '/login', 302);
@@ -160,8 +161,9 @@ async function home(request, response) {
     }
     const check = await send.send_html('index.html', response, 200, async (data) => {
         data = await utils.replace_all_templates(request, response);
-        // data = utils.show_page(data, "home_div");//changed from register to home?
-        data = utils.show_page(data, "register_div");//changed from register to home?
+        //check if should be commented out or in
+        data = utils.show_page(data, "home_div");//changed from register to home?
+        // data = utils.show_page(data, "register_div");//changed from register to home?
         return data;
     });
     if (!check || check === undefined || check == false)

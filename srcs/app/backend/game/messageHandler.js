@@ -3,9 +3,10 @@ import WebSocket from 'ws';
 import { createGameAI } from './matchMaking.js';
 import { joinQueue1v1, joinQueueTournament } from './matchMaking.js';
 import { MatchManager } from './matchManager.js';
-import { tournamentManager } from './tournamentManager.js';
 
-export function handleClientMessage(ws, rawMsg, matchManager) {
+const getPlayerId = p => (typeof p === 'string' ? p : p.id);
+
+export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager) {
   let data;
   try {
     data = JSON.parse(rawMsg);
@@ -87,7 +88,7 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
       }
     
       // 1. Make sure this socket really belongs in the room
-      if (!room.players.some(p => tournamentManager.getPlayerId(p) === userId)) {
+      if (!room.players.some(p => getPlayerId(p) === userId)) {
         ws.send(JSON.stringify({
           type: 'error',
           payload: { message: 'You are not a member of this match.' }
@@ -101,7 +102,7 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
       room.sockets.set(userId, ws);
       room.readySet.add(userId);
     
-      //console.log(`[${matchId}] ${userId} joined (${room.readySet.size}/2)`);
+      // console.log(`[${matchId}] ${userId} joined (${room.readySet.size}/2)`);
     
       // 3. If both players are in, flip the switch
       if (room.readySet.size === 2) {
@@ -113,7 +114,7 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
             tournamentId,
             matchId,
             players: room.players.map(p => ({
-              id:   tournamentManager.getPlayerId(p),
+              id:   getPlayerId(p),
               name: p.name,
             })),
           },
@@ -126,7 +127,7 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
           }
         }
     
-        //console.log(`[${matchId}] matchStart sent`);
+        console.log(`[${matchId}] matchStart sent`);
       }
     
       break;
@@ -180,6 +181,6 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
       break;
 
     default:
-      //console.log('Unknown message type:', data.type);
+      console.log('Unknown message type:', data.type);
   }
 }

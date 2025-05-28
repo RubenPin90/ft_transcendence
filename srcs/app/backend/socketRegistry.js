@@ -2,7 +2,7 @@
 import { EventEmitter } from 'events';
 
 export class SocketRegistry extends EventEmitter {
-  #sockets = new Map();          // приватное поле
+  #sockets = new Map();
 
   add(userId, ws) {
     this.#sockets.set(userId, ws);

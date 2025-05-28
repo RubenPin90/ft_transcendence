@@ -25,7 +25,7 @@ export function setupButtonsDelegated(
           navigate('/matchmaking');
           break;
 
-        case 'Tournament-btn':
+        case 'tournament-btn':
           navigate('/tournament');
           break;
 

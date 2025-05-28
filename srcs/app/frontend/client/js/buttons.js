@@ -15,7 +15,7 @@ export function setupButtonsDelegated(navigate, TLobbySocket) {
                 case 'one-vs-one-btn':
                     navigate('/matchmaking');
                     break;
-                case 'Tournament-btn':
+                case 'tournament-btn':
                     navigate('/tournament');
                     break;
                 case 'settings-btn':

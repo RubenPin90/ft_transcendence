@@ -9,18 +9,18 @@ export const GAME_MODES = {
 
 export class MatchManager extends EventEmitter {
   static GAME_MODES = GAME_MODES
-  static MAX_BOUNCE_ANGLE = Math.PI / 4 // 45°
+  static MAX_BOUNCE_ANGLE = Math.PI / 4
   static TICK_RATE = 60
-  static BOT_PIXELS_PER_SECOND = 300   // Desired bot speed in pixels/sec
-  static BOT_MIN_REACTION_MS = 100     // Bot reaction delay range (min)
-  static BOT_MAX_REACTION_MS = 200     // Bot reaction delay range (max)
-  static get BOT_MAX_SPEED () {        // Normalised units per tick
-    return matchManager.BOT_PIXELS_PER_SECOND /
-           matchManager.TICK_RATE
+  static BOT_PIXELS_PER_SECOND = 300
+  static BOT_MIN_REACTION_MS = 100
+  static BOT_MAX_REACTION_MS = 200
+  static get BOT_MAX_SPEED () {
+    return MatchManager.BOT_PIXELS_PER_SECOND /
+           MatchManager.TICK_RATE
   }
 
   static GAME_MODES           = GAME_MODES
-  static MAX_BOUNCE_ANGLE     = Math.PI / 4 // 45°
+  static MAX_BOUNCE_ANGLE     = Math.PI / 4
   static TICK_RATE            = 60
   static MAX_BALL_SPEED       = 0.7
 
@@ -29,8 +29,8 @@ export class MatchManager extends EventEmitter {
   static BALL_BROADCAST_FRAMES= 10
 
   static getRandomReactionDelay () {
-    return matchManager.BOT_MIN_REACTION_MS +
-           Math.random() * (matchManager.BOT_MAX_REACTION_MS - matchManager.BOT_MIN_REACTION_MS)
+    return MatchManager.BOT_MIN_REACTION_MS +
+           Math.random() * (MatchManager.BOT_MAX_REACTION_MS - MatchManager.BOT_MIN_REACTION_MS)
   }
 
   constructor(socketRegistry) {
@@ -75,7 +75,7 @@ export class MatchManager extends EventEmitter {
       status: 'waiting',
       updateInterval: null,
       pauseTimeout: null,
-      FPS: matchManager.TICK_RATE,
+      FPS: MatchManager.TICK_RATE,
       maxScore: 5,
       isMaxSpeedReached: false,
       hitsSinceMaxSpeed: 0,
@@ -119,11 +119,11 @@ export class MatchManager extends EventEmitter {
   }
 
   removeFromQueue(userId) {
-    const q      = this.queues[matchManager.GAME_MODES.PVP];
+    const q      = this.queues[MatchManager.GAME_MODES.PVP];
     const before = q.length;
-    this.queues[matchManager.GAME_MODES.PVP] =
+    this.queues[MatchManager.GAME_MODES.PVP] =
     q.filter(entry => entry.userId !== userId);
-    const after  = this.queues[matchManager.GAME_MODES.PVP].length;
+    const after  = this.queues[MatchManager.GAME_MODES.PVP].length;
     console.log(
       `Removed user ${userId} from queue. ` +
       `Queue size: ${before} → ${after}`
@@ -183,13 +183,13 @@ export class MatchManager extends EventEmitter {
     if (bot.aiNextMoveTime && now < bot.aiNextMoveTime) return
     const { y: ballY } = room.ballState
     const dy = ballY - bot.paddleY
-    if (Math.abs(dy) <= matchManager.BOT_MAX_SPEED) {
+    if (Math.abs(dy) <= MatchManager.BOT_MAX_SPEED) {
       bot.paddleY = ballY
     } else {
-      bot.paddleY += matchManager.BOT_MAX_SPEED * Math.sign(dy)
+      bot.paddleY += MatchManager.BOT_MAX_SPEED * Math.sign(dy)
     }
     bot.paddleY = Math.max(0, Math.min(1, bot.paddleY))
-    bot.aiNextMoveTime = now + matchManager.getRandomReactionDelay()
+    bot.aiNextMoveTime = now + MatchManager.getRandomReactionDelay()
   }
 
   _initBall (roomId) {
@@ -214,14 +214,14 @@ export class MatchManager extends EventEmitter {
     const paddleSize = 0.2
 
     const includeBall = () => {
-      if (!room.isMaxSpeedReached || room.hitsSinceMaxSpeed < matchManager.MIN_HITS_AFTER_MAX) {
+      if (!room.isMaxSpeedReached || room.hitsSinceMaxSpeed < MatchManager.MIN_HITS_AFTER_MAX) {
         return true
       }
       return room.ballBroadcastCountdown > 0
     }
 
     room.updateInterval = setInterval(() => {
-      if (room.mode === matchManager.GAME_MODES.PVE && room.status === 'running') {
+      if (room.mode === MatchManager.GAME_MODES.PVE && room.status === 'running') {
         this._updateBotPaddle(room)
       }
 
@@ -238,35 +238,35 @@ export class MatchManager extends EventEmitter {
         if (hit && withinY) {
           const incomingAngle = Math.atan2(b.vy, Math.abs(b.vx))
           const relY          = (b.y - p.paddleY) / (paddleSize/2)
-          const deflectAngle  = relY * matchManager.MAX_BOUNCE_ANGLE
+          const deflectAngle  = relY * MatchManager.MAX_BOUNCE_ANGLE
           const spinFactor    = 0.9
           const bounceAngle   = incomingAngle * (1 - spinFactor) + deflectAngle * spinFactor
 
           let speed = Math.hypot(b.vx, b.vy) * 1.03
-          if (speed > matchManager.MAX_BALL_SPEED) speed = matchManager.MAX_BALL_SPEED
+          if (speed > MatchManager.MAX_BALL_SPEED) speed = MatchManager.MAX_BALL_SPEED
 
           const dir = idx === 0 ? 1 : -1
           b.vx = speed * Math.cos(bounceAngle) * dir
           b.vy = speed * Math.sin(bounceAngle)
           b.x  = idx === 0 ? 0.02 : 0.98
 
-          const atMax = Math.abs(speed - matchManager.MAX_BALL_SPEED) < 1e-6
+          const atMax = Math.abs(speed - MatchManager.MAX_BALL_SPEED) < 1e-6
           if (atMax) {
             if (!room.isMaxSpeedReached) {
               room.isMaxSpeedReached = true
               room.hitsSinceMaxSpeed = 0
             }
             room.hitsSinceMaxSpeed++
-            if (room.hitsSinceMaxSpeed >= matchManager.MIN_HITS_AFTER_MAX) {
-              room.ballBroadcastCountdown = matchManager.BALL_BROADCAST_FRAMES
+            if (room.hitsSinceMaxSpeed >= MatchManager.MIN_HITS_AFTER_MAX) {
+              room.ballBroadcastCountdown = MatchManager.BALL_BROADCAST_FRAMES
             }
           }
         }
       })
 
       const speed = Math.hypot(b.vx, b.vy)
-      if (speed > matchManager.MAX_BALL_SPEED) {
-        const scl = matchManager.MAX_BALL_SPEED / speed
+      if (speed > MatchManager.MAX_BALL_SPEED) {
+        const scl = MatchManager.MAX_BALL_SPEED / speed
         b.vx *= scl
         b.vy *= scl
       }
