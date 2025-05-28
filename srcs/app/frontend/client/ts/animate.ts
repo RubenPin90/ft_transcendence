@@ -292,12 +292,6 @@ function returnSignUp() : string {
 
 // }
 
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Seite wurde initial geladen');
-    
-    // Hier können Sie Initialisierungscode platzieren
-});
-
 document.addEventListener('click', (event) => {
     const target = event.target as HTMLElement;
 
