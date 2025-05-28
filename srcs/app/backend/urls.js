@@ -2,10 +2,13 @@ import path, { dirname } from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import fastifyPlugin from 'fastify-plugin';
+import * as utils from './utils.js';
 
 import * as views from './views.js';
 import * as mimes from './mimes.js';
 import * as send from './responses.js';
+import * as modules from './modules.js';
+import * as user_db from '../database/db_users_functions.js'
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,9 +74,30 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.post('/accept_friend', (req, reply) => views.accept_friend(req, reply));
   fastify.post('/reject_friend', (req, reply) => views.reject_friend(req, reply));
   fastify.post('/block_friend', (req, reply) => views.block_friend(req, reply));
+  fastify.post('/encript_google', (req, reply) => views.home(req.raw, reply.raw));
 
+  fastify.post('/field_login', (req, reply) => views.field_login(req, reply));
+  fastify.post('/field_signup', (req, reply) => views.field_signup(req, reply));
 
-  fastify.post('/initial_load', (req, reply) => views.test(req, reply));
+  fastify.post('/home', async (request, reply) => {
+    try {
+      const link = request.body;
+      // check if google or github
+      // if google {
+        const response = await utils.encrypt_google(link);
+        const decoded_user = modules.get_jwt(response.token);
+        const user_data = await user_db.get_users_value('self', decoded_user.userid);
+        var new_response = {"response": response.response, "token": response.token, "lang": response.lang, "name": user_data.username}
+        return reply.code(200).send(new_response);
+    // } else {
+    // }
+    } catch (err) {
+      console.error('Error:', err);
+      return reply.code(500).send({ response: 'fail' });
+    }
+  });
+
+  fastify.post("/get_data", async (request, reply) => utils.get_data(request, reply));
 
   // --- 404 fallback ---
   fastify.setNotFoundHandler((req, reply) => {

@@ -1,6 +1,7 @@
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import * as modules from '../backend/mimes.js';
+import { promises as fs } from 'fs';
 
 const max_loop_size = 1000000000;
 
@@ -11,10 +12,10 @@ async function get_settings_value(search_value, value) {
         return -1;
 
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
-    
+
     try {
         var row = await db.get(`
         SELECT * FROM settings
@@ -31,7 +32,7 @@ async function get_settings_value(search_value, value) {
 // Tested: all working
 async function get_settings() {
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -49,10 +50,9 @@ async function get_settings() {
 // Not tested: But working propperly so far
 async function create_settings_value(password, pfp, mfa, email, lang, google, github) {
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
-    
     
     try {
         let check_github;
@@ -139,7 +139,7 @@ async function update_settings_value(search_value, value, self) {
     if (!valid_values.includes(search_value))
         return null;
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -168,7 +168,7 @@ async function update_settings_value(search_value, value, self) {
 
 async function delete_settings_value(self) {
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 

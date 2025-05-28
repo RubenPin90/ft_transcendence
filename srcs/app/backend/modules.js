@@ -21,10 +21,12 @@ function get_cookies(request) {
 	return [key, value];
 }
 
+const JWT_KEY = "3x@mpl3S3cr3tK3y!2023"; //TODO REMOVE
+
 function create_jwt(data, expire) {
 	var token;
 	try {
-		token = jwt.sign({ userid: data }, process.env.JWT_KEY, {expiresIn: expire});
+		token = jwt.sign({ userid: data }, JWT_KEY, {expiresIn: expire});
 	} catch (err) {
 		return -1;
 	}
@@ -34,8 +36,9 @@ function create_jwt(data, expire) {
 function get_jwt(token) {
 	var token;
 	try {
-		token = jwt.verify(token, process.env.JWT_KEY);
+		token = jwt.verify(token, JWT_KEY);
 	} catch (err) {
+		console.log(err);
 		return -1;
 	}
 	return token;

@@ -45,7 +45,7 @@ async function get_chatrooms_value(search_value, value) {
 // Not tested
 async function create_chatrooms_value(name, self) {
     const db = await open({
-        filename: 'db.sqlite',
+        filename: 'database/db.sqlite',
         driver: sqlite3.Database
     })
 

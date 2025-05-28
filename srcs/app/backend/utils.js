@@ -29,9 +29,12 @@ function create_username(email) {
 	return modified_sliced;
 }
 
+const client_id = "120580817734-tr50q5s7mu9clbb7olk85h78tkdpsokl.apps.googleusercontent.com"; //TODO REMOVE
+const client_secret = "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"; //TODO REMOVE
+
 function google_input_handler() {
-	const client_id = process.env.google_client_id;
-	const redirect_uri = "http://localhost:8080";
+	const client_id = "120580817734-tr50q5s7mu9clbb7olk85h78tkdpsokl.apps.googleusercontent.com";
+	const redirect_uri = "https://localhost/";
 	const scope = "openid email profile";
 	const url = `https://accounts.google.com/o/oauth2/auth?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&scope=${encodeURIComponent(scope)}&response_type=code&access_type=offline&approval_prompt=force`;
 	return url;
@@ -51,7 +54,6 @@ async function encrypt_github(request) {
 	const client_secret = process.env.github_client_secret;
 	const redirect = "http://localhost:8080/";
 	const base_code = request.url;
-
 	const sliced_code = base_code.slice(7);
 	if (!sliced_code || sliced_code === undefined || sliced_code.length == 0)
 		return -1;
@@ -68,7 +70,7 @@ async function encrypt_github(request) {
 	const fetch_response_bearer = await modules.easyfetch('https://github.com/login/oauth/access_token', 'POST', header, body);
 	if (!fetch_response_bearer || fetch_response_bearer === undefined || fetch_response_bearer < 0)
 		return -4;
-
+	
 	header = {"Authorization": `Bearer ${fetch_response_bearer.access_token}`, "Accept": 'application/json'};
 	const fetch_response_user = await modules.easyfetch('https://api.github.com/user', 'GET', header);
 	if (!fetch_response_user || fetch_response_user === undefined || fetch_response_user < 0)
@@ -77,7 +79,7 @@ async function encrypt_github(request) {
 	const fetch_response_email = await modules.easyfetch('https://api.github.com/user/emails', 'GET', header);
 	if (!fetch_response_email || fetch_response_email === undefined || fetch_response_email < 0)
 		return -6;
-
+	
 	const user_email = fetch_response_email[0].email;
 	const userid = fetch_response_user.id;
 	const pfp = fetch_response_user.avatar_url;
@@ -101,9 +103,11 @@ async function encrypt_github(request) {
 }
 
 async function encrypt_google(request) {
-	const client_secret = process.env.google_client_secret;
-	const base_code = request.url;
-	const sliced_code = base_code.slice(7);
+	const client_id = "120580817734-tr50q5s7mu9clbb7olk85h78tkdpsokl.apps.googleusercontent.com";
+	const client_secret = "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";
+	// const client_secret = process.env.google_client_secret;
+	const base_code = request.link;
+	const sliced_code = base_code.slice(6);
 	if (!sliced_code || sliced_code === undefined || sliced_code.length == 0)
 		return -1;
 	const subbed_code = sliced_code.substring(0, sliced_code.indexOf("&scope"));
@@ -115,7 +119,7 @@ async function encrypt_google(request) {
 	
 	try {
 		const header = {"Accept": 'application/json', "Content-Type": 'application/json'};
-		const body = JSON.stringify({'code': code, 'client_id': process.env.google_client_id, 'client_secret': client_secret, 'redirect_uri': 'http://localhost:8080', 'grant_type': 'authorization_code'})
+		const body = JSON.stringify({'code': code, 'client_id': client_id, 'client_secret': client_secret, 'redirect_uri': 'https://localhost/', 'grant_type': 'authorization_code'})
 		const token_data = await modules.easyfetch("https://oauth2.googleapis.com/token", 'POST', header, body);
 		if (!token_data || token_data === undefined || token_data == -1)
 			return -4;
@@ -134,18 +138,21 @@ async function encrypt_google(request) {
 		if (username < 0)
 			return -8;
 		const db_return = await settings_db.create_settings_value('', pfp, 0, email, 'en', userid, 0);
-		console.log(db_return);
-		if (db_return.self === undefined || db_return.return === undefined)
-			return userid;
+		const userid_encode = modules.create_jwt(userid, '1h');
+		if (db_return.self === undefined || db_return.return === undefined) {
+			const lang_encode = modules.create_jwt(db_return.lang, '1h');
+			return {"response": "success", "token": userid_encode, "lang": lang_encode};
+		}
 		if (db_return < 0)
 			return -9;
-		const check_setting = await settings_db.get_settings_value(userid);
-		if (!check_setting || check_setting === undefined)
+		const check_setting = await settings_db.get_settings_value('self', userid);
+		if (!check_setting || check_setting === undefined || check_setting < 0)
 			return -10;
 		const check_username = await users_db.create_users_value(0, username, userid);
-		if (check_username < 0 || check_username === undefined)
+		if (!check_username || check_username === undefined || check_username < 0)
 			return -11;
-		return userid;
+		const lang_encode = modules.create_jwt('en', '1h');
+		return {"response": "success", "token": userid_encode, "lang": lang_encode};
 	} catch (error) {
 		console.error("Error during Google OAuth:", error);
 		return -12;
@@ -772,11 +779,11 @@ async function replace_all_templates(request, response) {
 	const settings_html_mfa = settings_html_raw.replace("{{mfa-button}}", settings_html_mfa_string);
 
 	var settings_html_user_string = "";
-	settings_html_user_string += '<div><a href="/settings/user/select_language" data-link><div class="buttons mb-6"></a></div>';
+	settings_html_user_string += '<div><a href="/settings/user/select_language" data-link><div class="buttons mb-6"></div></a>';
 	settings_html_user_string += '<button class="block w-full mb-6 mt-6">';
 	settings_html_user_string += '<span class="button_text">Select Language</span>';
 	settings_html_user_string += '</button></div>';
-	settings_html_user_string += '<div><a href="/settings/user/profile_settings" data-link><div class="buttons mb-6"></a></div>';
+	settings_html_user_string += '<div><a href="/settings/user/profile_settings" data-link><div class="buttons mb-6"></div></a>';
 	settings_html_user_string += '<button class="block w-full mb-6 mt-6">';
 	settings_html_user_string += '<span class="button_text">Profile changes</span>';
 	settings_html_user_string += '</button></div>';
@@ -791,6 +798,119 @@ async function replace_all_templates(request, response) {
 	settings_html_user_string += '</button></a></div>';
 	const settings_html_user = settings_html_raw.replace("{{mfa-button}}", settings_html_user_string);
 
+
+	var settings_html_user_select_language_string = '<button onclick="change_language()">Change language</button>';
+	settings_html_user_select_language_string += `
+	<form id="language">
+		<select name="lang" id="lang">
+			<option value="" selected disabled hidden>Choose your main language</option>
+			<option value="af">Afrikaans</option>
+			<option value="az">Azərbaycanca</option>
+			<option value="id">Bahasa Indonesia</option>
+			<option value="ms">Bahasa Melayu</option>
+			<option value="jw">Basa Jawa</option>
+			<option value="su">Basa Sunda</option>
+			<option value="bs">Bosanski</option>
+			<option value="ca">Català</option>
+			<option value="ceb">Cebuano</option>
+			<option value="sn">ChiShona</option>
+			<option value="ny">Chichewa</option>
+			<option value="co">Corsu</option>
+			<option value="cy">Cymraeg</option>
+			<option value="da">Dansk</option>
+			<option value="de">Deutsch</option>
+			<option value="et">Eesti</option>
+			<option value="en">English</option>
+			<option value="es">Español</option>
+			<option value="eo">Esperanto</option>
+			<option value="eu">Euskara</option>
+			<option value="fr">Français</option>
+			<option value="fy">Frysk</option>
+			<option value="ga">Gaeilge</option>
+			<option value="sm">Gagana Samoa</option>
+			<option value="gl">Galego</option>
+			<option value="gd">Gàidhlig</option>
+			<option value="ha">Hausa</option>
+			<option value="hmn">Hmoob</option>
+			<option value="hr">Hrvatski</option>
+			<option value="ig">Igbo</option>
+			<option value="it">Italiano</option>
+			<option value="sw">Kiswahili</option>
+			<option value="ht">Kreyòl Ayisyen</option>
+			<option value="ku">Kurdî</option>
+			<option value="la">Latina</option>
+			<option value="lv">Latviešu</option>
+			<option value="lt">Lietuvių</option>
+			<option value="lb">Lëtzebuergesch</option>
+			<option value="hu">Magyar</option>
+			<option value="mg">Malagasy</option>
+			<option value="mt">Malti</option>
+			<option value="mi">Māori</option>
+			<option value="nl">Nederlands</option>
+			<option value="no">Norsk</option>
+			<option value="uz">Oʻzbekcha</option>
+			<option value="pl">Polski</option>
+			<option value="pt">Português</option>
+			<option value="ro">Română</option>
+			<option value="st">Sesotho</option>
+			<option value="sq">Shqip</option>
+			<option value="sk">Slovenčina</option>
+			<option value="sl">Slovenščina</option>
+			<option value="so">Soomaali</option>
+			<option value="fi">Suomi</option>
+			<option value="sv">Svenska</option>
+			<option value="tl">Tagalog</option>
+			<option value="vi">Tiếng Việt</option>
+			<option value="tr">Türkçe</option>
+			<option value="yo">Yorùbá</option>
+			<option value="xh">isiXhosa</option>
+			<option value="zu">isiZulu</option>
+			<option value="is">Íslenska</option>
+			<option value="cs">Čeština</option>
+			<option value="haw">ʻŌlelo Hawaiʻi</option>
+			<option value="el">Ελληνικά</option>
+			<option value="be">Беларуская</option>
+			<option value="bg">Български</option>
+			<option value="ky">Кыргызча</option>
+			<option value="mk">Македонски</option>
+			<option value="mn">Монгол</option>
+			<option value="ru">Русский</option>
+			<option value="sr">Српски</option>
+			<option value="tg">Тоҷикӣ</option>
+			<option value="uk">Українська</option>
+			<option value="kk">Қазақша</option>
+			<option value="hy">Հայերեն</option>
+			<option value="yi">ייִדיש</option>
+			<option value="iw">עברית</option>
+			<option value="ur">اردو</option>
+			<option value="ar">العربية</option>
+			<option value="sd">سنڌي</option>
+			<option value="fa">فارسی</option>
+			<option value="ps">پښتو</option>
+			<option value="ne">नेपाली</option>
+			<option value="mr">मराठी</option>
+			<option value="hi">हिन्दी</option>
+			<option value="bn">বাংলা</option>
+			<option value="gu">ગુજરાતી</option>
+			<option value="ta">தமிழ்</option>
+			<option value="te">తెలుగు</option>
+			<option value="kn">ಕನ್ನಡ</option>
+			<option value="ml">മലയാളം</option>
+			<option value="si">සිංහල</option>
+			<option value="th">ไทย</option>
+			<option value="lo">ລາວ</option>
+			<option value="my">မြန်မာ</option>
+			<option value="ka">ქართული</option>
+			<option value="km">ភាសាខ្មែរ</option>
+			<option value="ja">日本語</option>
+			<option value="zh-cn">简体中文</option>
+			<option value="zh-tw">繁體中文</option>
+			<option value="ko">한국어</option>
+		</select>
+		<button type="submit">Submit</button>
+	</form>`
+	settings_html_user_select_language_string += '<div><a href="/settings" data-link><button>back</button></a><div> \
+	<button onclick="logout()">Logout</button></div></div>';
 	var settings_html_user_select_language_string = '';
 	settings_html_user_select_language_string += '<div id="mfa-button" class="flex flex-col items-center w-full mx-auto">';
 	settings_html_user_select_language_string += '<label for="language" class="justify-center font-bold text-2xl pb-5 text-yellow-100">Choose your main language</label>';
@@ -808,7 +928,8 @@ async function replace_all_templates(request, response) {
 	const settings_html_user_select_language_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_select_language_string);
 
 	var settings_html_user_profile_settings_string = "";
-	settings_html_user_profile_settings_string += `<div class="flex flex-col mt-8 gap-6">
+	settings_html_user_profile_settings_string += `
+	<div class="flex flex-col mt-8 gap-6">
         <a href="/settings/user/change_user" class="buttons" data-link>
             <button class="block w-full mb-4 mt-6">
                 <span class="button_text">change username</span>
@@ -1334,6 +1455,21 @@ async function hahahihihoho(request, response, page) {
 	return index_html;
 }
 
+async function get_data(request, response) {
+	try {
+      	const link = request.body;
+		if (link.get == "{{userid}}") {
+			const userid_decrypted = modules.get_jwt(link.search);
+			const search_user = await users_db.get_users_value('self', userid_decrypted.userid);
+			return response.code(200).send({ "username": search_user.username });
+		}
+		return response.code(404).send({ "error": "Not found" });
+	} catch (err) {
+      	console.error('Error:', err);
+      	return response.code(500).send({ response: 'fail' });
+    }
+}
+
 
 
 
@@ -1362,5 +1498,6 @@ export {
 	split_DOM_elemets,
 	replace_all_templates,
 	hahahihihoho,
-	show_page
+	show_page,
+	get_data
 }
