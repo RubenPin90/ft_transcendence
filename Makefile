@@ -1,5 +1,6 @@
 CMD := docker compose
 FLAG := -f
+# SHELL := /bin/bash
 
 ROOT_DIR := $(shell pwd)
 SRC_DIR := $(ROOT_DIR)/srcs
@@ -8,8 +9,12 @@ ENV_FILE := $(SRC_DIR)/.env
 ENV_TMP_FILE := $(SRC_DIR)/.env.example
 
 USER_NAME := $(shell whoami)
-SECRETS_DIR := $(ROOT_DIR)/secrets
 DATA_GRAFANA := $(SRC_DIR)/monitoring/grafana/data
+
+SECRETS_DIR := $(ROOT_DIR)/secrets
+ENC_FILE := $(SRC_DIR)/secrets.yml.enc
+OAUTH_KEY := $(SRC_DIR)/secrets.key
+OAUTH_FILE := $(SRC_DIR)/secrets.yml
 
 all: compose
 
@@ -31,9 +36,12 @@ re: .init_setup
 .secrets:
 	echo "Generating secret files"
 	mkdir -p $(SECRETS_DIR)
-	openssl rand -base64 24 > $(SECRETS_DIR)/prometheus.txt
-	openssl rand -base64 24 > $(SECRETS_DIR)/grafana.txt
-	echo "Successfully created all password files"
+
+.decrypt:
+	echo "Decrypting secrets file..."
+	openssl enc -d -aes256 -salt -pbkdf2 -iter 100000 \
+	-in $(ENC_FILE) -out $(OAUTH_FILE) -pass file:$(OAUTH_KEY)
+	./srcs/setup.sh
 
 .data_grafana:
 	echo "Generating data directories"
@@ -53,15 +61,24 @@ re: .init_setup
 	@if [ ! -d $(SECRETS_DIR) ]; then \
 		$(MAKE) -s .secrets; \
 	fi
+	@if [ ! -f "$(OAUTH_FILE)" ] && [ -f "$(OAUTH_KEY)" ]; then \
+		echo "Secrets provided proceeding with decryption"; \
+		$(MAKE) -s .decrypt; \
+	fi
 	@if [ ! -d $(DATA_GRAFANA) ]; then \
 		$(MAKE) -s .data_grafana; \
 	fi
+	echo "Initial setup completed!"
 
 clean:
 	@$(CMD) $(FLAG) $(COMPOSE_FILE) down -v
 	@if [ -f $(ENV_FILE) ]; then \
 		echo "Removing .env file..."; \
 		rm -rf $(ENV_FILE); \
+    fi
+	@if [ -f $(OAUTH_FILE) ]; then \
+		echo "Removing secrets.yml..."; \
+		rm -rf $(OAUTH_FILE); \
     fi
 	@if [ -d $(SECRETS_DIR) ]; then \
 		echo "Removing secrets directory..."; \
