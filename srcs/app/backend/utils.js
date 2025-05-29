@@ -40,20 +40,25 @@ function google_input_handler() {
 	const url = `https://accounts.google.com/o/oauth2/auth?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&scope=${encodeURIComponent(scope)}&response_type=code&access_type=offline&approval_prompt=force`;
 	return url;
 }
+const github_client_id = "Ov23lixPpotS1gyX9qKy";
+const github_client_secret = "3f6f479d39df1383e3ecae2da90da74f6fc4edcd";
 
 function github_input_handler() {
-	const client_id = process.env.github_client_id;
-	const redirect = "http://localhost:8080/";
+	// const client_id = process.env.github_client_id;
+	const redirect = "https://localhost/";
 	const scope = "user:email";
-	const state = process.env.github_state;
-	const github_string = `https://github.com/login/oauth/authorize?client_id=${client_id}&redirect_uri=${redirect}&scope=${scope}&state=${state}`
+	// const state = process.env.github_state;
+	const state = generate_random_state();
+	const github_string = `https://github.com/login/oauth/authorize?client_id=${github_client_id}&redirect_uri=${redirect}&scope=${scope}&state=${state}`
 	return github_string;
 }
 
 async function encrypt_github(request) {
-	const client_id = process.env.github_client_id;
-	const client_secret = process.env.github_client_secret;
-	const redirect = "http://localhost:8080/";
+	// const client_id = process.env.github_client_id;
+	const client_id = github_client_id;
+	// const client_secret = process.env.github_client_secret;
+	const client_secret = github_client_secret;
+	const redirect = "https://localhost/";
 	const base_code = request.url;
 	const sliced_code = base_code.slice(7);
 	if (!sliced_code || sliced_code === undefined || sliced_code.length == 0)
@@ -89,9 +94,12 @@ async function encrypt_github(request) {
 		return -7;
 	username = username.replace(/\./g, '-');
 	const db_return = await settings_db.create_settings_value('', pfp, 0, user_email, 'en', 0, userid);
-	console.log(db_return);
-	if (db_return.self === undefined || db_return.return === undefined)
-		return userid;
+	const userid_encode = modules.create_jwt(userid, '1h');
+	if (db_return.self === undefined || db_return.return === undefined) {
+		const lang_check = await settings_db.get_settings_value('self', userid);
+		const lang_encode = modules.create_jwt(lang_check.lang, '1h');
+		return {"response": "success", "token": userid_encode, "lang": lang_encode};
+	}
 	if (db_return < 0)
 		return -8;
 	const check_setting = await settings_db.get_settings_value(userid);
@@ -100,7 +108,8 @@ async function encrypt_github(request) {
 	const check_username = await users_db.create_users_value(0, username, userid);
 	if (check_username < 0)
 		return -10;
-	return userid;
+	const lang_encode = modules.create_jwt('en', '1h');
+	return {"response": "success", "token": userid_encode, "lang": lang_encode};
 }
 
 async function encrypt_google(request) {
@@ -162,7 +171,14 @@ async function encrypt_google(request) {
 	}
 }
 
-
+function generate_random_state(length = 32) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let state = '';
+    for (let i = 0; i < length; i++) {
+        state += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return state;
+}
 
 function decodeJWT(idToken) {
 	if (!idToken || idToken === undefined || idToken.length == 0)
@@ -1060,5 +1076,6 @@ export {
 	split_DOM_elemets,
 	replace_all_templates,
 	show_page,
-	get_data
+	get_data,
+	generate_random_state
 }
