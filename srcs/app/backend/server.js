@@ -44,7 +44,7 @@ const wss = new WebSocketServer({ noServer: true });
 // Instantiate managers
 const socketRegistry = new SocketRegistry();
 const matchManager = new MatchManager(socketRegistry);
-const tournamentManager = new TournamentManager(socketRegistry);
+const tournamentManager = new TournamentManager(socketRegistry, matchManager);
 
 tournamentManager.matchManager = matchManager; // Wire matchManager into tournamentManager if needed
 matchManager.tournamentManager = tournamentManager; // Optional: wire back if needed

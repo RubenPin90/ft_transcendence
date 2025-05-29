@@ -90,10 +90,8 @@ export function stopGame(): void {
       type: 'leaveGame',
       payload: { roomId: currentRoomId, userId }
     }));
-    // ws.close();
   }
-  // ws = null;
-}
+  }
 
 function drawFrame(state: GameState): void {
   if (!ctx) return;

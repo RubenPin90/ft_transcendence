@@ -83,8 +83,8 @@ export function setupButtonsDelegated(
         case 't-start-btn':
           if (TLobby) {
             TLobbySocket.send(JSON.stringify({
-              type: 'startTournament',
-              payload: { id: TLobby.id }
+              type: 'generateBracket',
+              payload: { tournamentId: TLobby.id }
             }));
           }
           break;

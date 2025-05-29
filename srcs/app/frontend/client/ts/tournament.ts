@@ -1,6 +1,6 @@
 // tournaments.ts
 
-import type { TLobbyState } from './types.js';
+import type { TLobbyState, PlayerStub, MatchStub } from './types.js';
 import { getMyId, setCurrentTLobby } from './state.js';
 import { hideAllPages } from './helpers.js';
 declare const socket: WebSocket | undefined;
@@ -9,49 +9,85 @@ function send<T extends object>(sock: WebSocket, msg: T) {
   sock.readyState === WebSocket.OPEN && sock.send(JSON.stringify(msg));
 }
 
-export function renderBracketOverlay(rounds: { matchId: string; players: { id: string; name: string }[] }[]) {
+export function renderBracketOverlay(rounds: MatchStub[][]) {
   let el = document.getElementById('bracket-overlay');
   if (!el) {
     el = document.createElement('div');
     el.id = 'bracket-overlay';
     el.style.cssText = `
-      position:fixed;inset:0;z-index:9999;
-      background:rgba(0,0,0,.9);color:#fff;
-      display:flex;align-items:center;justify-content:center;
-      font-family:sans-serif;overflow:auto;
+      position:fixed; inset:0; z-index:9999;
+      background:rgba(0,0,0,.9); color:#fff;
+      display:flex; gap:2rem; padding:2rem; overflow:auto;
+      font-family:sans-serif;
     `;
     document.body.appendChild(el);
   } else {
     el.innerHTML = '';
   }
 
-  const wrapper = document.createElement('div');
-  wrapper.style.display = 'flex';
-  wrapper.style.flexDirection = 'column';
-  wrapper.style.gap = '1rem';
+  // одна колонка = один раунд
+  rounds.forEach((round, rIdx) => {
+    const col = document.createElement('div');
+    col.style.display = 'flex';
+    col.style.flexDirection = 'column';
+    col.style.gap = '1rem';
+    col.innerHTML = `<h3 style="margin:0 0 .5rem 0">Round ${rIdx + 1}</h3>`;
 
-  rounds.forEach((match) => {
-    const card = document.createElement('div');
-    card.style.padding = '0.6rem 1rem';
-    card.style.background = '#222';
-    card.style.borderRadius = '6px';
-    card.innerHTML = `
-      <div>${match.players[0]?.name ?? 'BYE'}</div>
-      <div style="text-align:center;">vs</div>
-      <div>${match.players[1]?.name ?? 'BYE'}</div>
-    `;
-    wrapper.appendChild(card);
+    round.forEach((match, mIdx) => {
+      // пропускаем placeholders без массива players
+      if (!match || !Array.isArray(match.players)) return;
+
+      const [p1, p2] = match.players;
+
+      const card = document.createElement('div');
+      card.style.cssText = `
+        background:#222; border-radius:6px; padding:.6rem 1rem;
+        display:flex; flex-direction:column; align-items:center; min-width:160px;
+      `;
+
+      const name = (p: any) =>
+        p && !('pendingMatchId' in p)
+          ? p.name ?? p.id?.slice(0, 4)
+          : '— TBD —';
+
+      card.innerHTML = `
+        <div>${name(p1) || 'BYE'}</div>
+        <div style="opacity:.6; margin:.3rem 0;">vs</div>
+        <div>${name(p2) || 'BYE'}</div>
+      `;
+      col.appendChild(card);
+    });
+
+    el.appendChild(col);
   });
-
-  el.appendChild(wrapper);
-  el.style.opacity = '1';
-
-  setTimeout(() => {
-    el.style.transition = 'opacity .3s';
-    el.style.opacity = '0';
-  }, 4700);
-  setTimeout(() => el.remove(), 5100);
+  try {
+    // ① Определяем, я ли хост
+    const TLobby = (window as any).getCurrentTLobby?.();
+    const myId   = (window as any).getMyId?.();
+    const amHost = TLobby && myId && TLobby.hostId === myId;
+  
+    if (amHost && typeof socket !== 'undefined') {
+      const btn = document.createElement('button');
+      btn.textContent = 'Begin round 1';
+      btn.style.cssText = `
+        margin-top:2rem; align-self:center; padding:.6rem 1.4rem;
+        font-size:1rem; background:#357; color:#fff; border:none;
+        border-radius:6px; cursor:pointer;
+      `;
+      btn.onclick = () => {
+        socket!.send(JSON.stringify({
+          type   : 'beginFirstRound',
+          payload: { tournamentId: TLobby.id }
+        }));
+        // убираем оверлей сразу после клика
+        el?.remove();
+      };
+      el.appendChild(btn);
+    }
+  } catch (_) { /* no-op if helpers are not available */ }
+  
 }
+
 
 
 

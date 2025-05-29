@@ -26,3 +26,13 @@ export interface TournamentBracketMsg {
     }[];
   };
 }
+
+export interface PlayerStub {
+  id: string;
+  name: string;
+}
+
+export interface MatchStub {
+  matchId: string;
+  players: (PlayerStub | null | { pendingMatchId: string })[];
+}

@@ -153,16 +153,7 @@ export class MatchManager extends EventEmitter {
     const winner = room.players.find(p => p.playerId !== leaverId)
     room.status  = 'finished'
 
-    this._broadcastFor(roomId)({
-      roomId,
-      players : room.players.map(p => ({ id: p.playerId, y: p.paddleY })),
-      ball    : null,
-      scores  : room.scoreBoard,
-      status  : room.status,
-      winner  : winner?.playerId ?? null,
-      reason  : 'opponent_disconnect',
-    })
-    setTimeout(() => this.removeRoom(roomId), 500)
+    this._endMatch(roomId, winner?.playerId ?? null, 'opponent_disconnect')
   }
 
   _endMatch(roomId, winnerId, reason = 'normal') {
@@ -172,6 +163,7 @@ export class MatchManager extends EventEmitter {
     clearTimeout(room.pauseTimeout);
     room.status = 'finished';
     this._broadcastFor(roomId)({ roomId, winner: winnerId, status: 'finished' });
+    console.log(`[${roomId}] Match finished. Winner: ${winnerId}, Reason: ${reason}`);
     this.emit('matchFinished', { roomId, winnerId, reason });
     setTimeout(() => this.removeRoom(roomId), 500);
   }
@@ -205,25 +197,32 @@ export class MatchManager extends EventEmitter {
     room.ballBroadcastCountdown = 0
   }
 
-  _mainLoop (roomId) {
-    const room = this.rooms.get(roomId)
-    if (!room) return
-
-    const broadcast  = this._broadcastFor(roomId)
-    const { FPS }    = room
-    const paddleSize = 0.2
-
+  _mainLoop(roomId) {
+    const room = this.rooms.get(roomId);
+    if (!room) return;
+  
+    const broadcast   = this._broadcastFor(roomId);
+    const { FPS }     = room;
+    const paddleSize  = 0.2;
+    const halfPaddle  = paddleSize / 2;
+  
     const includeBall = () => {
       if (!room.isMaxSpeedReached || room.hitsSinceMaxSpeed < MatchManager.MIN_HITS_AFTER_MAX) {
-        return true
+        return true;
       }
-      return room.ballBroadcastCountdown > 0
-    }
-
+      return room.ballBroadcastCountdown > 0;
+    };
+  
     room.updateInterval = setInterval(() => {
+  
       if (room.mode === MatchManager.GAME_MODES.PVE && room.status === 'running') {
-        this._updateBotPaddle(room)
+        this._updateBotPaddle(room);
       }
+  
+      room.players.forEach(p => {
+        p.paddleY = Math.max(halfPaddle, Math.min(1 - halfPaddle, p.paddleY));
+      });
+  
 
       const b = room.ballState
       b.x += b.vx / FPS
@@ -291,9 +290,8 @@ export class MatchManager extends EventEmitter {
           status : undefined,
         }
         if (room.scoreBoard[scorer] >= room.maxScore) {
-          room.status = 'finished'
-          finalState.status = room.status
-          finalState.winner = scorer
+          this._endMatch(roomId, scorer, 'normal')
+          return
         } else {
           room.status = 'paused'
           finalState.status = room.status
