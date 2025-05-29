@@ -131,10 +131,10 @@ async function home(request, response) {
         return await login(request, response);
     }
     const code = request.query.code;
-    if (code != undefined) {
+    if (code != undefined && !request.url.includes('&state=')) {
         const google_return = await encrypt_google(code);
-        console.log(google_return);
-        console.log(google_return.token);
+        if (google_return < 0)
+            return `5_${google_return}`;
         response.setCookie('token', google_return.token, {
             path: '/',
             httpOnly: true,
@@ -148,27 +148,24 @@ async function home(request, response) {
             maxAge: 3600       // Cookie läuft in 1 Stunde ab
         });
         response.redirect("https://localhost/");
+    } else if (request.url !== '/') {
+        const github_return = await utils.encrypt_github(request, response);
+        if (github_return < 0)
+            return `5_${github_return}`;
+        response.setCookie('token', github_return.token, {
+            path: '/',
+            httpOnly: true,
+            secure: true,     // auf true setzen, wenn du HTTPS verwendest
+            maxAge: 3600       // Cookie läuft in 1 Stunde ab
+        });
+        response.setCookie('lang', github_return.lang, {
+            path: '/',
+            httpOnly: true,
+            secure: true,     // auf true setzen, wenn du HTTPS verwendest
+            maxAge: 3600       // Cookie läuft in 1 Stunde ab
+        });
+        response.redirect("https://localhost/");
     }
-    // } else if (request.url !== '/') {
-    //     const data = await utils.encrypt_github(request, response);
-    //     if (data < 0) {
-    //         return `5_${data}`;
-    //     }
-    //     const check_settings = await settings_db.get_settings_value('github', data);
-    //     if (!check_settings || check_settings === undefined || check_settings < 0)
-    //         return `6_${check_settings}`;
-    //     const token = modules.create_jwt(check_settings.self, '1h');
-    //     if (!token || token === undefined || token < 0)
-    //         return `7_${token}`
-    //     const lang = modules.create_jwt(check_settings.lang, '1h');
-    //     if (!lang || lang === undefined || lang < 0)
-    //         return `8_${lang}`;
-        
-    //     modules.set_cookie(response, 'token', token, true, true, 'strict');
-    //     modules.set_cookie(response, 'lang', lang, true, true, 'strict');
-	// 	// Here was a redirect(response, '/', 302);
-    //     return true;
-    // }
     const check = await send.send_html('index.html', response, 200, async (data) => {
         data = await utils.replace_all_templates(request, response);
         // data = utils.show_page(data, "home_div");//changed from register to home?
