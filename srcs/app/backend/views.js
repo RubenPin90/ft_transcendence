@@ -9,6 +9,7 @@ import * as friends_request from '../database/db_friend_request.js'
 import qrcode from 'qrcode';
 import { json } from 'stream/consumers';
 import { response } from 'express';
+import { encrypt_google } from './utils.js';
 
 async function login(request, response) {
     const check_login = utils.check_login(request, response);
@@ -119,6 +120,25 @@ async function home(request, response) {
     var [keys, values] = modules.get_cookies(request);
     if (request.url === '/' && !keys?.includes('token')) {
         return await login(request, response);
+    }
+    const code = request.query.code;
+    if (code != undefined) {
+        const google_return = await encrypt_google(code);
+        console.log(google_return);
+        console.log(google_return.token);
+        response.setCookie('token', google_return.token, {
+            path: '/',
+            httpOnly: true,
+            secure: false,     // auf true setzen, wenn du HTTPS verwendest
+            maxAge: 3600       // Cookie läuft in 1 Stunde ab
+        });
+        response.setCookie('lang', google_return.lang, {
+            path: '/',
+            httpOnly: true,
+            secure: false,     // auf true setzen, wenn du HTTPS verwendest
+            maxAge: 3600       // Cookie läuft in 1 Stunde ab
+        });
+        response.redirect("https://localhost/");
     }
     // } else if (request.url !== '/') {
     //     const data = await utils.encrypt_github(request, response);

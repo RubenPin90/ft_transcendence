@@ -107,16 +107,17 @@ async function encrypt_google(request) {
 	const client_id = "120580817734-tr50q5s7mu9clbb7olk85h78tkdpsokl.apps.googleusercontent.com";
 	const client_secret = "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";
 	// const client_secret = process.env.google_client_secret;
-	const base_code = request.link;
-	const sliced_code = base_code.slice(6);
-	if (!sliced_code || sliced_code === undefined || sliced_code.length == 0)
-		return -1;
-	const subbed_code = sliced_code.substring(0, sliced_code.indexOf("&scope"));
-	if (!subbed_code || subbed_code === undefined || subbed_code.length == 0)
-		return -2;
-	const code = subbed_code.replace("%2F", "/");
-	if (!code || code === undefined || code == subbed_code)
-		return -3;
+	// const base_code = request;
+	// const sliced_code = base_code.slice(6);
+	// if (!sliced_code || sliced_code === undefined || sliced_code.length == 0)
+		// return -1;
+	// const subbed_code = sliced_code.substring(0, sliced_code.indexOf("&scope"));
+	// if (!subbed_code || subbed_code === undefined || subbed_code.length == 0)
+		// return -2;
+	// const code = subbed_code.replace("%2F", "/");
+	// if (!code || code === undefined || code == subbed_code)
+		// return -3;
+	const code = request;
 	
 	try {
 		const header = {"Accept": 'application/json', "Content-Type": 'application/json'};

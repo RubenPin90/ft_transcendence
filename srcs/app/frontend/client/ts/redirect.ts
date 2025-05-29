@@ -15,6 +15,28 @@ function toggle_divs(render : string){
     }
 }
 
+async function check_cookie_fe(): Promise<boolean> {
+    const cookie_response = await fetch("/get_data", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        }, body: JSON.stringify({
+            "get": "cookies",
+        }),
+    })
+
+    var data;
+    try {
+        data = await cookie_response.json();
+    } catch (err) {
+        console.log(err);
+    }
+    console.log(data.content);
+    if (data.content != "full")
+        return false;
+    return true;
+}
+
 //TODO add more routes
 //TODO change window.location.href since it force refreshes the webpage
 async function where_am_i(path : string) : Promise<string> {
@@ -23,32 +45,16 @@ async function where_am_i(path : string) : Promise<string> {
         case '/home': return 'home_div';
         case '/profile': return 'profile_div';
         // add more routes here
-        case '/login': return 'login_div';
-        case '/':
-        if (document.cookie.length < 1) {
-            history.pushState({}, '', '/login');
+        case '/login':
+            if (await check_cookie_fe())
+                return 'home_div';
             return 'login_div';
-        }
-        const returned = await fetch("/get_data", {
-            method: "POST",
-            headers: {
-                "Content-Type": 'application/json',
-            },
-            body: JSON.stringify({
-                "get": "username"
-            })
-        });
-        var data;
-        try {
-            data = await returned.json();
-            const inner = document.getElementById("welcome-user-field");
-            if (!inner)
-                return "login_div";
-            inner.innerHTML = `Welcome home user<br>${data.username}`;
-        } catch (err) {
-            console.log(err)
-        }
-        return 'home_div';
+        case '/':
+            if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'home_div';
         case '/settings': return 'settings_div';
         case '/friends' : return 'friends_div';
         default: return 'home_div';
