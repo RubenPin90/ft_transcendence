@@ -631,6 +631,8 @@ async function replace_all_templates(request, response, state) {
 	const settings_html_raw = await fs.readFile("./backend/templates/settings.html", 'utf8');
 
 	var settings_html_default_string = "";
+	settings_html_default_string += '<div id="settings_main_div" class="hidden">';
+	settings_html_default_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>'
 	settings_html_default_string += '<div class="flex flex-col gap-6"><a class="buttons" href="/settings/mfa" data-link>';
 	settings_html_default_string += '<button class="block w-full mb-6 mt-6">';
 	settings_html_default_string += '<span class="button_text">MFA</span>';
@@ -647,10 +649,13 @@ async function replace_all_templates(request, response, state) {
 	settings_html_default_string += '<a class="flex-1">';
 	settings_html_default_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
 	settings_html_default_string += '<span class="button_text">Logout</span>';
-	settings_html_default_string += '</button></a></div>';
+	settings_html_default_string += '</button></a></div></div></div></div></div>';
 	const settings_html_default = settings_html_raw.replace("{{mfa-button}}", settings_html_default_string);
 
 	var settings_html_mfa_string = "";
+	settings_html_mfa_string += '<div id="mfa_div" class="hidden">';
+	settings_html_mfa_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
+
 	settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_otc()">';
 	settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
 	settings_html_mfa_string += '<span class="button_text">Create OTC</span>';
@@ -671,10 +676,12 @@ async function replace_all_templates(request, response, state) {
 	settings_html_mfa_string += '<a class="flex-1">';
 	settings_html_mfa_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
 	settings_html_mfa_string += '<span class="font-bold text-lg">Logout</span>';
-	settings_html_mfa_string += '</button></a></div>';
+	settings_html_mfa_string += '</button></a></div></div></div></div></div>';
 	const settings_html_mfa = settings_html_raw.replace("{{mfa-button}}", settings_html_mfa_string);
 
 	var settings_html_user_string = "";
+	settings_html_user_string += '<div id="lang_prof_div" class="hidden">';
+	settings_html_user_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
 	settings_html_user_string += '<div><a href="/settings/user/select_language" data-link><div class="buttons mb-6"></div></a>';
 	settings_html_user_string += '<button class="block w-full mb-6 mt-6">';
 	settings_html_user_string += '<span class="button_text">Select Language</span>';
@@ -691,10 +698,15 @@ async function replace_all_templates(request, response, state) {
 	settings_html_user_string += '<a class="flex-1">';
 	settings_html_user_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
 	settings_html_user_string += '<span class="button_text">Logout</span>';
-	settings_html_user_string += '</button></a></div>';
+	settings_html_user_string += '</button></a></div></div></div></div></div>';
 	const settings_html_user = settings_html_raw.replace("{{mfa-button}}", settings_html_user_string);
 
-	var settings_html_user_select_language_string = '<button onclick="change_language()">Change language</button>';
+
+	var settings_html_user_select_language_string = "";
+	settings_html_user_select_language_string += '<div id="lang_div" class="hidden">';
+	settings_html_user_select_language_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
+
+	settings_html_user_select_language_string += '<button onclick="change_language()">Change language</button>';
 	settings_html_user_select_language_string += `
 	<form id="language">
 		<select name="lang" id="lang">
@@ -805,10 +817,13 @@ async function replace_all_templates(request, response, state) {
 		<button type="submit">Submit</button>
 	</form>`
 	settings_html_user_select_language_string += '<div><a href="/settings" data-link><button>back</button></a><div> \
-	<button onclick="logout()">Logout</button></div></div>';
+	<button onclick="logout()">Logout</button></div></div></div></div></div></div>';
 	const settings_html_user_select_language_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_select_language_string);
 
 	var settings_html_user_profile_settings_string = "";
+	settings_html_user_profile_settings_string += '<div id="user_prof_div" class="hidden">';
+	settings_html_user_profile_settings_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
+
 	settings_html_user_profile_settings_string += `
 	<div class="flex flex-col mt-8 gap-6">
         <a href="/settings/user/change_user" class="buttons" data-link>
@@ -833,10 +848,10 @@ async function replace_all_templates(request, response, state) {
                 <span class="font-bold text-lg">Main Page</span>
             </button>
         </a>
-    </div>`
+    </div></div></div></div></div>`
 	const settings_html_user_profile_settings_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_settings_string);
 
-	const settings_html_user_profile_username_string = `
+	const settings_html_user_profile_username_string = `<div id="username_div" class="hidden"><div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>
 	<div id="user_field" class="relative input_total">
         <div class="input_svg">
             <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
@@ -856,12 +871,12 @@ async function replace_all_templates(request, response, state) {
                 <span class="font-bold text-lg">Back</span>
             </button>
         </a>
-    </div>
+    </div></div></div></div></div></div>
 	`
 	var settings_html_user_profile_username_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_username_string);
 
 
-	const settings_html_user_profile_credential_string = `
+	const settings_html_user_profile_credential_string = `<div id="userpass_div" class="hidden"><div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>
 	<label for="email" class="label_text">Email</label>
     <div id="email_field" class="relative input_total">
         <div class="input_svg">
@@ -915,12 +930,12 @@ async function replace_all_templates(request, response, state) {
                 <span class="font-bold text-lg">Back</span>
             </button>
         </a>
-    </div>
+    </div></div></div></div></div>
 	`;
 	const settings_html_user_profile_credential_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_credential_string);
 
 	
-	const settings_html_user_profile_avatar_string = `
+	const settings_html_user_profile_avatar_string = `<div id="useravatar_div" class="hidden"><div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>
 	<div class="to-[#d16e1d] from-[#e0d35f] bg-gradient-to-br rounded-lg">
         <label class="pl-2 block mb-2 font-medium text-gray-900 text-2xl" for="file_input">Upload file</label>
         <input class="block w-full text-sm text-gray-900 border border-[#e0d35f] to-[#d16e1d] from-[#e0d35f] bg-gradient-to-br  rounded-lg cursor-pointer" id="file_input" type="file">
@@ -936,7 +951,7 @@ async function replace_all_templates(request, response, state) {
                 <span class="font-bold text-lg">Back</span>
             </button>
         </a>
-    </div>
+    </div></div></div></div></div>
 	`;
 	const settings_html_user_profile_avatar_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_avatar_string);
 
