@@ -485,26 +485,26 @@ async function settings(request, response) {
         return await user(request, response);
 
     const status = await send.send_html('settings.html', response, 200, async  (data) => {
-        var replace_string = "";
-        replace_string += '<div><a href="/settings/mfa" data-link><div class="buttons mb-6"></a></div>';
-        replace_string += '<button class="block w-full mb-6 mt-6">';
-        replace_string += '<span class="button_text">MFA</span>';
-        replace_string += '</button></div>';
+        var replace_string = "<span>In here??????</span>";
+        // replace_string += '<div><a href="/settings/mfa" data-link><div class="buttons mb-6"></a></div>';
+        // replace_string += '<button class="block w-full mb-6 mt-6">';
+        // replace_string += '<span class="button_text">MFA</span>';
+        // replace_string += '</button></div>';
 
-        replace_string += '<div><a href="/settings/user" data-link><div class="buttons mb-6"></a></div>';
-        replace_string += '<button class="block w-full mb-6 mt-6">';
-        replace_string += '<span class="button_text">User</span>';
-        replace_string += '</button></div>';
+        // replace_string += '<div><a href="/settings/user" data-link><div class="buttons mb-6"></a></div>';
+        // replace_string += '<button class="block w-full mb-6 mt-6">';
+        // replace_string += '<span class="button_text">User</span>';
+        // replace_string += '</button></div>';
 
-        replace_string += '<div class="flex mt-12 gap-4 w-full">';
-        replace_string += '<a class="flex-1" href="/" data-link>';
-        replace_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-        replace_string += '<span class="button_text">Back</span>';
-        replace_string += '</button></a>';
-        replace_string += '<a class="flex-1">';
-        replace_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-        replace_string += '<span class="button_text">Logout</span>';
-        replace_string += '</button></a></div>';
+        // replace_string += '<div class="flex mt-12 gap-4 w-full">';
+        // replace_string += '<a class="flex-1" href="/" data-link>';
+        // replace_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+        // replace_string += '<span class="button_text">Back</span>';
+        // replace_string += '</button></a>';
+        // replace_string += '<a class="flex-1">';
+        // replace_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+        // replace_string += '<span class="button_text">Logout</span>';
+        // replace_string += '</button></a></div>';
         return data.replace('{{mfa-button}}', replace_string);
     });
     if (!status || status === undefined || status < 0)
