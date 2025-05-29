@@ -10,6 +10,7 @@ import qrcode from 'qrcode';
 import { json } from 'stream/consumers';
 import { response } from 'express';
 import { encrypt_google } from './utils.js';
+import http from 'http';
 
 async function login(request, response) {
     var [keys, values] = modules.get_cookies(request);
@@ -137,13 +138,13 @@ async function home(request, response) {
         response.setCookie('token', google_return.token, {
             path: '/',
             httpOnly: true,
-            secure: false,     // auf true setzen, wenn du HTTPS verwendest
+            secure: true,     // auf true setzen, wenn du HTTPS verwendest
             maxAge: 3600       // Cookie läuft in 1 Stunde ab
         });
         response.setCookie('lang', google_return.lang, {
             path: '/',
             httpOnly: true,
-            secure: false,     // auf true setzen, wenn du HTTPS verwendest
+            secure: true,     // auf true setzen, wenn du HTTPS verwendest
             maxAge: 3600       // Cookie läuft in 1 Stunde ab
         });
         response.redirect("https://localhost/");
@@ -694,29 +695,20 @@ async function profile(request, response){
 }
 
 async function logout(request, response) {
-    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    const [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token')) {
-        return // Here was a redirect(response, '/login', 302);
+        return;
     }
 
-    const tokenIndex = keys.findIndex((key) => key === 'token');
-    const token = values[tokenIndex];
-    let decoded;
-    try {
-        decoded = await modules.get_jwt(token);
-    } catch (err) {
-        return // Here was a redirect(response, '/login', 302);
+    for (var pos = 0; pos < keys.length; pos++) {
+        response.setCookie(keys[pos], '', {
+            path: '/',
+            httpOnly: true,
+            secure: true,
+            maxAge: 0
+        });
     }
-
-    const user = await users_db.get_users_value('self', decoded.userid);
-    if (!user || user === undefined){
-        return send.send_error_page('404.html', response, 404);
-    }
-
-    await users_db.update_users_value('status', 0, decoded.userid);
-
-    response.raw.writeHead(200, { 'Content-Type': 'application/json' });
-    response.raw.end(JSON.stringify({ message: 'Logged out successfully' }));
+    response.code(200).send({ message: 'Logged out successfully' });
 }
 
 

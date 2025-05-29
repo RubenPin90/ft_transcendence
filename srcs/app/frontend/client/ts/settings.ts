@@ -322,14 +322,14 @@ async function change_language() {
     }
 }
 
-async function logout() {
-    delete_cookie("token");
-    location.reload();
-}
+// async function logout() {
+//     delete_cookie("token");
+//     location.reload();
+// }
 
-async function delete_cookie(name : string) {
-    document.cookie = name  + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-}
+// async function delete_cookie(name : string) {
+//     document.cookie = name  + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+// }
 
 
 
