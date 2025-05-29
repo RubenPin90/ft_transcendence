@@ -45,6 +45,12 @@ async function where_am_i(path : string) : Promise<string> {
         case '/home': return 'home_div';
         case '/profile': return 'profile_div';
         // add more routes here
+        case '/register':
+            if (await check_cookie_fe()) {
+                history.pushState({}, '', '/');
+                return 'home_div';
+            }
+            return 'register_div';
         case '/login':
             if (await check_cookie_fe()) {
                 history.pushState({}, '', '/');
