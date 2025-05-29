@@ -142,7 +142,8 @@ async function encrypt_google(request) {
 		const db_return = await settings_db.create_settings_value('', pfp, 0, email, 'en', userid, 0);
 		const userid_encode = modules.create_jwt(userid, '1h');
 		if (db_return.self === undefined || db_return.return === undefined) {
-			const lang_encode = modules.create_jwt(db_return.lang, '1h');
+			const lang_check = await settings_db.get_settings_value('self', userid);
+			const lang_encode = modules.create_jwt(lang_check.lang, '1h');
 			return {"response": "success", "token": userid_encode, "lang": lang_encode};
 		}
 		if (db_return < 0)
@@ -964,21 +965,21 @@ async function replace_all_templates(request, response, state) {
 	index_html += menu_raw;
 	// index_html += game_raw;
 	const [keys, values] = modules.get_cookies(request);
+	// const user_encrypt = modules.get_jwt(values[0]);
+	// const lang_encrypt = modules.get_jwt(values[1]);
 	if (keys?.includes('lang')) {
-		const lang_decrypted = modules.get_jwt(values[keys.indexOf('lang')]);
+		const lang_encoded = values[keys.indexOf('lang')];
+		const lang_decrypted = modules.get_jwt(lang_encoded);
 		if (lang_decrypted.userid != "en")
-			index_html = translator.cycle_translations(index_html, lang_decrypted.userid);
+			index_html = await translator.cycle_translations(index_html, lang_decrypted.userid);
 	}
-	console.log("-------------");
-	console.log(keys,values)
-	console.log("-------------");
-	// const user_decrypted = modules.get_jwt(values[keys.indexOf('token')]);
-	// const check_user = await users_db.get_users_value('self', user_decrypted.userid);
-	// index_html = index_html.replace("{{userid}}", check_user.username);
-	// console.log("-------------");
-	// console.log(user_decrypted);
-	// console.log("-------------");
-	return index_html_raw.replace("{{replace}}", index_html);
+	const token = values[keys.indexOf('token')];
+	if (!token)
+		throw new Error("Token is not defined!");
+	const user_decrypted = modules.get_jwt(token);
+	const check_user = await users_db.get_users_value('self', user_decrypted.userid);
+	index_html = index_html.replace("{{userid}}", check_user.username.toString());
+	return index_html_raw.replace("{{replace}}", index_html.toString());
 }
 
 function show_page(data, tag_name) {
@@ -1007,7 +1008,7 @@ async function get_data(request, response) {
 			return response.code(200).send({ "username": search_user.username });
 		} else if (link.get == "cookies") {
 			const [keys, values] = modules.get_cookies(request, response);
-			if (keys.length == 0 && values.length == 0)
+			if (keys.length == 0 && values.length == 0 || keys == null && values == null)
 				return response.code(200).send({'content': "empty"});
 			return response.code(200).send({'content': "full"});
 		} else if (link.get == "username") {

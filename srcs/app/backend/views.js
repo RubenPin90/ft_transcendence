@@ -12,6 +12,10 @@ import { response } from 'express';
 import { encrypt_google } from './utils.js';
 
 async function login(request, response) {
+    var [keys, values] = modules.get_cookies(request);
+    if (keys?.includes('token')) {
+        return await home(request, response);
+    }
     const check_login = utils.check_login(request, response);
     if (check_login === true)
         return true;
@@ -71,6 +75,10 @@ async function login(request, response) {
 }
 
 async function register(request, response) {
+    var [keys, values] = modules.get_cookies(request);
+    if (keys?.includes('token')) {
+        return await home(request, response);
+    }
     const check_login = utils.check_login(request, response);
     if (check_login === true)
         return true;

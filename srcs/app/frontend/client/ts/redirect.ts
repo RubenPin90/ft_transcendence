@@ -32,9 +32,9 @@ async function check_cookie_fe(): Promise<boolean> {
         console.log(err);
     }
     console.log(data.content);
-    if (data.content != "full")
-        return false;
-    return true;
+    if (data.content == "full")
+        return true;
+    return false;
 }
 
 //TODO add more routes
@@ -46,8 +46,10 @@ async function where_am_i(path : string) : Promise<string> {
         case '/profile': return 'profile_div';
         // add more routes here
         case '/login':
-            if (await check_cookie_fe())
+            if (await check_cookie_fe()) {
+                history.pushState({}, '', '/');
                 return 'home_div';
+            }
             return 'login_div';
         case '/':
             if (!await check_cookie_fe()) {
