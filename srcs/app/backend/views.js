@@ -689,22 +689,18 @@ async function profile(request, response){
 async function logout(request, response) {
     const [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token')) {
-        return // Here was a redirect(response, '/login', 302);
+        return;
     }
 
     for (var pos = 0; pos < keys.length; pos++) {
         response.setCookie(keys[pos], '', {
             path: '/',
             httpOnly: true,
-            secure: true,  // true setzen bei HTTPS
-            maxAge: 0  // Ablaufdatum festlegen
+            secure: true,
+            maxAge: 0
         });
     }
-    console.log("Token sollte gelöscht sein");
-    console.log("+++++++++++++++++++++++++++");
-    // response.raw.writeHead(200, { 'Content-Type': 'application/json' });
-    // response.raw.end(JSON.stringify({ message: 'Logged out successfully' }));
-    response.code(200).send("test");
+    response.code(200).send({ message: 'Logged out successfully' });
 }
 
 
