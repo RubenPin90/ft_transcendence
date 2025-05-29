@@ -61,7 +61,8 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.get('/verify_custom', (req, reply) => views.verify_custom(req, reply));
 
   fastify.get('/profile', (req, reply) => views.profile(req, reply));
-  fastify.get('/logout', (req, reply) => views.logout(req, reply));
+  // fastify.get('/logout', (req, reply) => views.logout(req, reply));
+  fastify.post('/logout', (req, reply) => views.logout(req, reply));
   fastify.get('/update_user', (req, reply) => views.update_user(req, reply));
   fastify.post('/update_user', (req, reply) => views.update_user(req, reply));
   fastify.get('/update_settings', (req, reply) => views.update_settings(req, reply));
