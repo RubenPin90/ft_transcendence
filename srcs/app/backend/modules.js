@@ -8,16 +8,11 @@ dotenv.config();
 function get_cookies(request) {
 	if (!request || request === undefined)
 		return [null, null];
-	const values = request.split('; ');
-	if (!values || values === undefined)
-		return [null, null]
-	let key = [];
-	let value = [];
-	values.forEach(element => {
-		const [i_key, i_value] = element.split('=');
-		key.push(i_key);
-		value.push(i_value);
-	});
+	const cookies = request.cookies;
+	if (!cookies || cookies === undefined)
+		return [null, null];
+	const key = Object.keys(cookies);
+	const value = Object.values(cookies);
 	return [key, value];
 }
 
@@ -34,14 +29,14 @@ function create_jwt(data, expire) {
 }
 
 function get_jwt(token) {
-	var token;
+	var token2;
 	try {
-		token = jwt.verify(token, JWT_KEY);
+		token2 = jwt.verify(token, JWT_KEY);
 	} catch (err) {
 		console.log(err);
 		return -1;
 	}
-	return token;
+	return token2;
 }
 
 function set_cookie(response, key, value, HttpOnly = false, Secure = false, SameSite = null, path = '/') {

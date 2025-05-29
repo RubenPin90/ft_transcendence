@@ -15,24 +15,57 @@ function toggle_divs(render : string){
     }
 }
 
+async function check_cookie_fe(): Promise<boolean> {
+    const cookie_response = await fetch("/get_data", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        }, body: JSON.stringify({
+            "get": "cookies",
+        }),
+    })
+
+    var data;
+    try {
+        data = await cookie_response.json();
+    } catch (err) {
+        console.log(err);
+    }
+    console.log(data.content);
+    if (data.content == "full")
+        return true;
+    return false;
+}
+
 //TODO add more routes
 //TODO change window.location.href since it force refreshes the webpage
-function where_am_i(path : string) : string{
+async function where_am_i(path : string) : Promise<string> {
     console.log("PATH: ", path);
     switch (path) {
-      case '/home': return 'home_div';
-      case '/profile': return 'profile_div';
-      // add more routes here
-      case '/login': return 'login_div';
-      case '/settings': return 'settings_div';
-      case '/friends' : return 'friends_div';
-      default: return 'home_div';
+        case '/home': return 'home_div';
+        case '/profile': return 'profile_div';
+        // add more routes here
+        case '/login':
+            if (await check_cookie_fe()) {
+                history.pushState({}, '', '/');
+                return 'home_div';
+            }
+            return 'login_div';
+        case '/':
+            if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'home_div';
+        case '/settings': return 'settings_div';
+        case '/friends' : return 'friends_div';
+        default: return 'home_div';
     }
 }
 
-function handleRouteChange() {
+async function handleRouteChange() {
     const path = window.location.pathname;
-    const divId = where_am_i(path);
+    const divId = await where_am_i(path);
     toggle_divs(divId);
 }
 
