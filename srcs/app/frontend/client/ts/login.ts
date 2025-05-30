@@ -1,14 +1,17 @@
 async function login() {
-    const email2 = document.getElementById("email-input") as HTMLInputElement;
-    const password2 = document.getElementById("password-input") as HTMLInputElement;
-
+    console.log("HERE");
+    const email2 = document.getElementById("email-input_LogIn") as HTMLInputElement;
+    const password2 = document.getElementById("password-input_LogIn") as HTMLInputElement;
     if (!email2 && !password2) {
+        alert("NO THIS");
         return;
     }
-
-
+    
+    
     const email = email2.value;
     const password = password2.value;
+    console.log("EMAIL: ", email);
+    console.log("PASSWORD: ", password);
     const response = await fetch('/login', {
         method: 'POST',
         headers: {
@@ -55,86 +58,86 @@ async function login() {
     }
 }
 
-async function email_login(userid : string) {
-    const code2 = document.getElementById("email-input") as HTMLInputElement;
-    if (!code2)
-        return;
+// async function email_login(userid : string) {
+//     const code2 = document.getElementById("email-input") as HTMLInputElement;
+//     if (!code2)
+//         return;
 
-    const code = code2.value;
-    // console.log(userid);
-    const response = await fetch('/verify_email', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userid, code }),
-    });
+//     const code = code2.value;
+//     // console.log(userid);
+//     const response = await fetch('/verify_email', {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify({ userid, code }),
+//     });
 
-    let data;
-    try {
-        data = await response.json();
-        // console.log(data);
-        if (data.Response === "reload") {
-            window.location.reload();
-        } else {
-            alert("2FA failed. Please try again.");
-        }
-    } catch (jsonError) {
-        alert("Fehler beim Parsen der JSON-Antwort");
-    }
-}
+//     let data;
+//     try {
+//         data = await response.json();
+//         // console.log(data);
+//         if (data.Response === "reload") {
+//             window.location.reload();
+//         } else {
+//             alert("2FA failed. Please try again.");
+//         }
+//     } catch (jsonError) {
+//         alert("Fehler beim Parsen der JSON-Antwort");
+//     }
+// }
 
-async function mfa_login(userid : string) {
-    const code2 = document.getElementById("otc-input") as HTMLInputElement;
-    if (!code2)
-        return;
+// async function mfa_login(userid : string) {
+//     const code2 = document.getElementById("otc-input") as HTMLInputElement;
+//     if (!code2)
+//         return;
 
-    const code = code2.value;
-    const response = await fetch('/verify_2fa', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userid, code }),
-    });
+//     const code = code2.value;
+//     const response = await fetch('/verify_2fa', {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify({ userid, code }),
+//     });
 
-    let data;
-    try {
-        data = await response.json();
-        if (data.Response === "reload") {
-            window.location.reload();
-        } else {
-            alert("2FA failed. Please try again.");
-        }
-    } catch (jsonError) {
-        alert("Fehler beim Parsen der JSON-Antwort");
-    }
-}
+//     let data;
+//     try {
+//         data = await response.json();
+//         if (data.Response === "reload") {
+//             window.location.reload();
+//         } else {
+//             alert("2FA failed. Please try again.");
+//         }
+//     } catch (jsonError) {
+//         alert("Fehler beim Parsen der JSON-Antwort");
+//     }
+// }
 
-async function custom_login(userid : string) {
-    const code2 = document.getElementById("custom-input") as HTMLInputElement;
-    if (!code2)
-        return;
+// async function custom_login(userid : string) {
+//     const code2 = document.getElementById("custom-input") as HTMLInputElement;
+//     if (!code2)
+//         return;
 
-    const code = code2.value;
+//     const code = code2.value;
 
-    const response = await fetch('/verify_custom', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userid, code }),
-    });
+//     const response = await fetch('/verify_custom', {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify({ userid, code }),
+//     });
 
-    let data;
-    try {
-        data = await response.json();
-        if (data.Response === "reload") {
-            window.location.reload();
-        } else {
-            alert("2FA failed. Please try again.");
-        }
-    } catch (jsonError) {
-        alert("Fehler beim Parsen der JSON-Antwort");
-    }
-}
+//     let data;
+//     try {
+//         data = await response.json();
+//         if (data.Response === "reload") {
+//             window.location.reload();
+//         } else {
+//             alert("2FA failed. Please try again.");
+//         }
+//     } catch (jsonError) {
+//         alert("Fehler beim Parsen der JSON-Antwort");
+//     }
+// }
