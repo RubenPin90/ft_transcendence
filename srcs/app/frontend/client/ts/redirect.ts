@@ -1,4 +1,4 @@
-const available_divs = ['change_avatar_div', 'user_settings_div', 'settings_div', 'register_div', 'profile_div', 'menu_div', 'login_div', 'home_div', 'game_div', 'friends_div', 'change_user_div', 'change_login_div']
+const available_divs = ['change_avatar_div','user_prof_div', 'userpass_div', 'useravatar_div', 'username_div' ,'lang_prof_div' ,'settings_main_div', 'mfa_div','user_settings_div', 'register_div', 'profile_div', 'menu_div', 'login_div', 'home_div', 'game_div', 'friends_div', 'change_user_div', 'change_login_div']
 
 function toggle_divs(render : string){
     available_divs.forEach(divs => {
@@ -63,8 +63,48 @@ async function where_am_i(path : string) : Promise<string> {
                 return 'login_div';
             }
             return 'home_div';
-        case '/settings': return 'settings_div';
-        case '/friends' : return 'friends_div';
+        case '/settings': 
+            if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'settings_main_div';
+        case '/settings/user': 
+        if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'user_prof_div';
+        case '/settings/mfa': 
+        if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'mfa_div';
+        case '/settings/user/change_user': 
+        if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'username_div';
+        case '/settings/user/change_login': 
+        if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'userpass_div';
+        case '/settings/user/change_avatar': 
+        if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'useravatar_div';
+        case '/friends' : 
+        if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'friends_div';
         default: return 'home_div';
     }
 }

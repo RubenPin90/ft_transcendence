@@ -387,43 +387,43 @@ async function select_language(request, response){
     return true;
 }
 
-async function user(request, response){
-    var [keys, values] = modules.get_cookies(request.headers.cookie);
-    if (!keys?.includes('token'))
-        return // Here was a redirect(response, '/login', 302);
-    var request_url = request.url.slice(14);
-    if (request_url == '/select_language')
-        return await select_language(request, response);
-    if (request_url == '/profile_settings')
-        return await user_settings(request, response);
+// async function user(request, response){
+//     var [keys, values] = modules.get_cookies(request.headers.cookie);
+//     if (!keys?.includes('token'))
+//         return // Here was a redirect(response, '/login', 302);
+//     var request_url = request.url.slice(14);
+//     if (request_url == '/select_language')
+//         return await select_language(request, response);
+//     if (request_url == '/profile_settings')
+//         return await user_settings(request, response);
 
-    const status = await send.send_html('settings.html', response, 200, async  (data) => {
-        var replace_string = "";
-        replace_string += '<div><a href="/settings/user/select_language" data-link><div class="buttons mb-6"></a></div>';
-        replace_string += '<button class="block w-full mb-6 mt-6">';
-        replace_string += '<span class="button_text">Select Language</span>';
-        replace_string += '</button></div>';
+//     const status = await send.send_html('settings.html', response, 200, async  (data) => {
+//         var replace_string = "";
+//         replace_string += '<div><a href="/settings/user/select_language" data-link><div class="buttons mb-6"></a></div>';
+//         replace_string += '<button class="block w-full mb-6 mt-6">';
+//         replace_string += '<span class="button_text">Select Language</span>';
+//         replace_string += '</button></div>';
 
-        replace_string += '<div><a href="/settings/user/profile_settings" data-link><div class="buttons mb-6"></a></div>';
-        replace_string += '<button class="block w-full mb-6 mt-6">';
-        replace_string += '<span class="button_text">Profile changes</span>';
-        replace_string += '</button></div>';
+//         replace_string += '<div><a href="/settings/user" data-link><div class="buttons mb-6"></a></div>';
+//         replace_string += '<button class="block w-full mb-6 mt-6">';
+//         replace_string += '<span class="button_text">Profile changes</span>';
+//         replace_string += '</button></div>';
 
-        replace_string += '<div class="flex mt-12 gap-4 w-full">';
-        replace_string += '<a class="flex-1" href="/settings" data-link>';
-        replace_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-        replace_string += '<span class="button_text">Back</span>';
-        replace_string += '</button></a>';
-        replace_string += '<a class="flex-1">';
-        replace_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-        replace_string += '<span class="button_text">Logout</span>';
-        replace_string += '</button></a></div>';
-        return data.replace('{{mfa-button}}', replace_string);
-    });
-    if (!status || status === undefined || status < 0)
-        return `_${status}`
-    return true;
-}
+//         replace_string += '<div class="flex mt-12 gap-4 w-full">';
+//         replace_string += '<a class="flex-1" href="/settings" data-link>';
+//         replace_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+//         replace_string += '<span class="button_text">Back</span>';
+//         replace_string += '</button></a>';
+//         replace_string += '<a class="flex-1">';
+//         replace_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+//         replace_string += '<span class="button_text">Logout</span>';
+//         replace_string += '</button></a></div>';
+//         return data.replace('{{mfa-button}}', replace_string);
+//     });
+//     if (!status || status === undefined || status < 0)
+//         return `_${status}`
+//     return true;
+// }
 
 async function settings(request, response) {
     var [keys, values] = modules.get_cookies(request.headers.cookie);
@@ -440,26 +440,26 @@ async function settings(request, response) {
         return await user(request, response);
 
     const status = await send.send_html('settings.html', response, 200, async  (data) => {
-        var replace_string = "";
-        replace_string += '<div><a href="/settings/mfa" data-link><div class="buttons mb-6"></a></div>';
-        replace_string += '<button class="block w-full mb-6 mt-6">';
-        replace_string += '<span class="button_text">MFA</span>';
-        replace_string += '</button></div>';
+        var replace_string = "<span>In here??????</span>";
+        // replace_string += '<div><a href="/settings/mfa" data-link><div class="buttons mb-6"></a></div>';
+        // replace_string += '<button class="block w-full mb-6 mt-6">';
+        // replace_string += '<span class="button_text">MFA</span>';
+        // replace_string += '</button></div>';
 
-        replace_string += '<div><a href="/settings/user" data-link><div class="buttons mb-6"></a></div>';
-        replace_string += '<button class="block w-full mb-6 mt-6">';
-        replace_string += '<span class="button_text">User</span>';
-        replace_string += '</button></div>';
+        // replace_string += '<div><a href="/settings/user" data-link><div class="buttons mb-6"></a></div>';
+        // replace_string += '<button class="block w-full mb-6 mt-6">';
+        // replace_string += '<span class="button_text">User</span>';
+        // replace_string += '</button></div>';
 
-        replace_string += '<div class="flex mt-12 gap-4 w-full">';
-        replace_string += '<a class="flex-1" href="/" data-link>';
-        replace_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-        replace_string += '<span class="button_text">Back</span>';
-        replace_string += '</button></a>';
-        replace_string += '<a class="flex-1">';
-        replace_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-        replace_string += '<span class="button_text">Logout</span>';
-        replace_string += '</button></a></div>';
+        // replace_string += '<div class="flex mt-12 gap-4 w-full">';
+        // replace_string += '<a class="flex-1" href="/" data-link>';
+        // replace_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+        // replace_string += '<span class="button_text">Back</span>';
+        // replace_string += '</button></a>';
+        // replace_string += '<a class="flex-1">';
+        // replace_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+        // replace_string += '<span class="button_text">Logout</span>';
+        // replace_string += '</button></a></div>';
         return data.replace('{{mfa-button}}', replace_string);
     });
     if (!status || status === undefined || status < 0)
@@ -1023,7 +1023,7 @@ async function field_signup(request, reply){
     <div class="input_svg">
     <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
     <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd" /></svg></div>
-    <input type="text" id="username" placeholder="Username" required class="input_field" /></div>
+    <input type="text" id="username_signup" placeholder="Username" required class="input_field" /></div>
     <label for="email" class="label_text">Email</label>
     <div id="email_field" class="relative input_total">
     <div class="input_svg">
