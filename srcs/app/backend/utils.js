@@ -209,15 +209,19 @@ function decodeJWT(idToken) {
 async function process_login(request, response) {
 	const data = request.body;
 	const check_settings = await settings_db.get_settings_value('email', data.email);
-	if (!check_settings || check_settings === undefined || check_settings < 0)
-		return response.code(200).send({ "response": "Email not found" });
+	if (!check_settings || check_settings === undefined || check_settings < 0) {
+		response.code(200).send({ "Response": "Email not found" });
+		return -1;
+	}
 	const pw = await modules.check_encrypted_password(data.password, check_settings.password);
-	if (!pw || pw === undefined || pw < 0)
-		return response.code(200).send({ "response": "Password incorrect" });
+	if (!pw || pw === undefined || pw < 0) {
+		response.code(200).send({ "Response": "Password incorrect" });
+		return -2;
+	}
 	const mfa = await mfa_db.get_mfa_value('self', check_settings.self);
 	if (!mfa || mfa === undefined || mfa < 0 || ((mfa.otc && mfa.otc.endsWith('_temp')) && (mfa.email && mfa.email.endsWith('_temp')) && (mfa.custom && mfa.custom.endsWith('_temp')) ))
-		return response.code(200).send({ "response": "success", "settings": check_settings, 'mfa': null });
-	return response.code(200).send({ "response": "success", "settings": check_settings, 'mfa': mfa });
+		return {'settings': check_settings, 'mfa': null};
+	return {'settings': check_settings, 'mfa': mfa};
 }
 
 async function get_frontend_content(request) {
