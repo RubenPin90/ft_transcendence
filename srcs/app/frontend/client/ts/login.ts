@@ -1,5 +1,4 @@
 async function login() {
-    console.log("HERE");
     const email2 = document.getElementById("email-input_LogIn") as HTMLInputElement;
     const password2 = document.getElementById("password-input_LogIn") as HTMLInputElement;
     if (!email2 && !password2) {
@@ -10,8 +9,6 @@ async function login() {
     
     const email = email2.value;
     const password = password2.value;
-    console.log("EMAIL: ", email);
-    console.log("PASSWORD: ", password);
     const response = await fetch('/login', {
         method: 'POST',
         headers: {

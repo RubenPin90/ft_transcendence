@@ -29,7 +29,7 @@ async function check_cookie_fe(): Promise<boolean> {
     try {
         data = await cookie_response.json();
     } catch (err) {
-        console.log(err);
+        console.error(err);
     }
     console.log(data.content);
     if (data.content == "full")
@@ -40,7 +40,6 @@ async function check_cookie_fe(): Promise<boolean> {
 //TODO add more routes
 //TODO change window.location.href since it force refreshes the webpage
 async function where_am_i(path : string) : Promise<string> {
-    console.log("PATH: ", path);
     switch (path) {
         case '/home': return 'home_div';
         case '/profile': return 'profile_div';
@@ -120,7 +119,6 @@ document.querySelectorAll('[data-link]').forEach(link => {
     link.addEventListener('click', function (e) {
         e.preventDefault();
         const href = (link as HTMLAnchorElement).getAttribute('href');
-        console.log("Link clicked:", href);
         if (href !== window.location.pathname) {
             history.pushState({route: href}, '', href);
             handleRouteChange();
