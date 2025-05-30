@@ -15,7 +15,7 @@ import {
   renderBracketOverlay
 } from './tournament.js';
 import { setupButtonsDelegated } from './buttons.js';
-import type { TLobbyState } from './types.js';
+import type { TLobbyState, MatchStub, BracketRounds, TournamentBracketMsg } from './types.js';
 import { setMyId, setCurrentTLobby, getCurrentTLobby } from './state.js';
 import { hideAllPages } from './helpers.js';
 import { setupMatchmakingHandlers } from './matchmaking.js';
@@ -25,6 +25,9 @@ import { on, send, getSocket } from './socket.js';
 //  1.  guarantee we have a socket right away and recover userId
 // ────────────────────────────────────────────────────────────
 const socket = getSocket(); // getSocket() now builds WS with stored playerId as sub-protocol
+
+let currentRoomId: string | null = null;
+
 
 on('welcome', (msg) => {
   // server confirms what userId it finally assigned to this tab
@@ -56,9 +59,15 @@ on('joinedTLobby', (msg) => {
   }
 });
 
-on<'tournamentBracketMsg'>('tournamentBracketMsg', (msg) => {
-  renderBracketOverlay(msg.payload.rounds);
-});
+
+on('tournamentBracketMsg', (msg) => {
+  let rounds = msg.payload.rounds as unknown;
+  if (Array.isArray(rounds) && !Array.isArray(rounds[0])) {
+   rounds = [rounds];
+  }
+  renderBracketOverlay(rounds as BracketRounds);
+  });
+
 
 on('tournamentCreated', (msg) => {
   const TLobby: TLobbyState = msg.payload;
@@ -103,18 +112,25 @@ on('matchFound', (msg) => {
 
 on<'matchAssigned'>('matchAssigned', (msg) => {
   const { tournamentId, matchId, players } = msg.payload;
+
   // fall back to the freshly received socket.userId if LS is empty (first load)
   const myId = localStorage.getItem('playerId') ?? (socket as any).userId;
   const me    = players.find(p => p.id === myId);
   const rival = players.find(p => p.id !== myId);
   if (!me || !rival) return;
+
+  // ▒▒ NEW ▒▒ – make the match the current room
+  localStorage.setItem('currentGameId', matchId);
+  currentRoomId = matchId;
+
   showVersusOverlay(me.name, rival.name);
   send({ type: 'joinMatchRoom', payload: { tournamentId, matchId } });
+
   setTimeout(() => {
-    localStorage.setItem('currentGameId', matchId);
     navigate('/game/1v1');
   }, 3000);
 });
+
 
 // ────────────────────────────────────────────────────────────
 //  5.  UI helpers & routing (original code, lightly trimmed)

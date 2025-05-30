@@ -4,7 +4,6 @@ export function setupMatchmakingHandlers(
   navigate: (path: string) => void,
   socket: WebSocket,
 ) {
-  const cancelBtn = document.getElementById('cancel-matchmaking-btn')!;
 
   window.addEventListener('popstate', tryQueue);
 
@@ -17,12 +16,6 @@ export function setupMatchmakingHandlers(
       queued = true;
     }
   }
-
-  cancelBtn.addEventListener('click', () => {
-    if (queued) socket.send(JSON.stringify({ type: 'leaveQueue' }));
-    queued = false;
-    navigate('/');
-  });
 
   return {
     markQueued: (v: boolean) => { queued = v; }

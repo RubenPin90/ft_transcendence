@@ -16,17 +16,6 @@ export interface MatchAssignedMsg {
   };
 }
 
-export interface TournamentBracketMsg {
-  type: 'tournamentBracket';
-  payload: {
-    tournamentId: string;
-    rounds: {
-      matchId: string;
-      players: { id: string; name: string }[];
-    }[];
-  };
-}
-
 export interface PlayerStub {
   id: string;
   name: string;
@@ -35,4 +24,15 @@ export interface PlayerStub {
 export interface MatchStub {
   matchId: string;
   players: (PlayerStub | null | { pendingMatchId: string })[];
+}
+
+export type BracketRounds = MatchStub[][];
+
+
+export interface TournamentBracketMsg {
+  type: 'tournamentBracketMsg';
+  payload: {
+    tournamentId: string;
+    rounds: BracketRounds;
+  };
 }

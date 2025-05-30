@@ -341,17 +341,22 @@ export class TournamentManager {
 
     tourney.rounds = buildBracket(tourney.players);
     tourney.status = 'bracket';
-
+  
     this.#broadcastToUsers(
       tourney.players.map(getPlayerId),
       {
-        type: 'tournamentBracketMsg',
-        payload: {
-          tournamentId,
-          rounds: tourney.rounds
-        }
+        type   : 'tournamentBracketMsg',
+        payload: { tournamentId, rounds: tourney.rounds }
       }
     );
+  
+    /* ---------- NEW:  automatic 5-second countdown ------------ */
+    setTimeout(() => {
+      // start only if nobody has cancelled / deleted the tourney in the meantime
+      if (this.tournaments[tournamentId]?.status === 'bracket') {
+        this.beginFirstRound(tournamentId);
+      }
+    }, 5000);  
   }
 
   beginFirstRound(tournamentId) {

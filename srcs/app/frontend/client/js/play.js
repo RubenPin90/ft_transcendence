@@ -6,6 +6,7 @@ import { hideAllPages } from './helpers.js';
 import { setupMatchmakingHandlers } from './matchmaking.js';
 import { on, send, getSocket } from './socket.js';
 const socket = getSocket();
+let currentRoomId = null;
 on('welcome', (msg) => {
     const { userId } = msg.payload;
     localStorage.setItem('playerId', userId);
@@ -27,7 +28,11 @@ on('joinedTLobby', (msg) => {
     }
 });
 on('tournamentBracketMsg', (msg) => {
-    renderBracketOverlay(msg.payload.rounds);
+    let rounds = msg.payload.rounds;
+    if (Array.isArray(rounds) && !Array.isArray(rounds[0])) {
+        rounds = [rounds];
+    }
+    renderBracketOverlay(rounds);
 });
 on('tournamentCreated', (msg) => {
     const TLobby = msg.payload;
@@ -70,10 +75,11 @@ on('matchAssigned', (msg) => {
     const rival = players.find(p => p.id !== myId);
     if (!me || !rival)
         return;
+    localStorage.setItem('currentGameId', matchId);
+    currentRoomId = matchId;
     showVersusOverlay(me.name, rival.name);
     send({ type: 'joinMatchRoom', payload: { tournamentId, matchId } });
     setTimeout(() => {
-        localStorage.setItem('currentGameId', matchId);
         navigate('/game/1v1');
     }, 3000);
 });

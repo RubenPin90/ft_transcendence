@@ -2,20 +2,13 @@ import WebSocket from 'ws';
 import { createGameAI }          from './matchMaking.js';
 import { joinQueue1v1 }          from './matchMaking.js';
 
-// вспом-функция, которую будем переиспользовать
 const getPlayerId = p => (typeof p === 'string' ? p : p.id);
 
-/**
- * Проверка: принадлежит ли текущий сокет хосту конкретного турнира
- */
 function isHost(userId, tournamentId, tournamentManager) {
   const t = tournamentManager.tournaments[tournamentId];
   return !!t && t.host === userId;
 }
 
-/**
- * Главный обработчик входящих сообщений от клиента
- */
 export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager) {
   let data;
   try {
@@ -26,8 +19,6 @@ export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager)
   }
 
   switch (data.type) {
-
-    /* ─────────────────────────  турниры  ───────────────────────── */
 
     case 'createTournament': {
       tournamentManager.createTournament(ws, ws.userId);
@@ -52,7 +43,6 @@ export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager)
       break;
     }
 
-    /* --- НОВЫЕ ДВА ШАГА ---------------------------------------- */
 
     case 'generateBracket': {
       const { tournamentId } = data.payload;
@@ -70,7 +60,6 @@ export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager)
       break;
     }
 
-    /* ───────────────────────── матчи  ───────────────────────── */
 
     case 'joinMatchRoom': {
       const { tournamentId, matchId } = data.payload;
@@ -80,7 +69,6 @@ export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager)
         break;
       }
 
-      // убедимся, что этот пользователь действительно участник
       if (!room.players.some(p => getPlayerId(p) === ws.userId)) {
         ws.send(JSON.stringify({ type: 'error', payload: { message: 'You are not a member of this match.' }}));
         break;
@@ -92,7 +80,6 @@ export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager)
       room.sockets.set(ws.userId, ws);
       room.readySet.add(ws.userId);
 
-      // если оба игрока на месте — запускаем матч
       if (room.readySet.size === 2) {
         room.status = 'inProgress';
         const startPayload = {
@@ -109,8 +96,6 @@ export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager)
       break;
     }
 
-    /* ───────────────────────  матчмейкинг  ───────────────────── */
-
     case 'joinQueue': {
       const { mode } = data.payload;
       if (mode === 'pve')      createGameAI(matchManager, ws.userId, ws);
@@ -122,8 +107,6 @@ export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager)
       matchManager.removeFromQueue(ws.userId);
       break;
     }
-
-    /* ─────────────────────────  прочее  ───────────────────────── */
 
     case 'movePaddle': {
       const { direction, active } = data.payload;

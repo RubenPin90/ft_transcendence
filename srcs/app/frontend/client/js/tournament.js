@@ -5,74 +5,56 @@ function send(sock, msg) {
 }
 export function renderBracketOverlay(rounds) {
     var _a, _b, _c, _d;
-    let el = document.getElementById('bracket-overlay');
-    if (!el) {
-        el = document.createElement('div');
-        el.id = 'bracket-overlay';
-        el.style.cssText = `
-      position:fixed; inset:0; z-index:9999;
-      background:rgba(0,0,0,.9); color:#fff;
-      display:flex; gap:2rem; padding:2rem; overflow:auto;
-      font-family:sans-serif;
-    `;
-        document.body.appendChild(el);
+    const overlay = document.getElementById('bracket-overlay');
+    const beginBtn = document.getElementById('bracket-begin-btn');
+    const cardTpl = document.getElementById('match-card-tpl').content;
+    if (!overlay || !beginBtn || !cardTpl) {
+        console.error('Bracket overlay HTML missing');
+        return;
     }
-    else {
-        el.innerHTML = '';
-    }
+    overlay.replaceChildren(beginBtn);
     rounds.forEach((round, rIdx) => {
         const col = document.createElement('div');
-        col.style.display = 'flex';
-        col.style.flexDirection = 'column';
-        col.style.gap = '1rem';
-        col.innerHTML = `<h3 style="margin:0 0 .5rem 0">Round ${rIdx + 1}</h3>`;
-        round.forEach((match, mIdx) => {
+        col.className = 'round-col';
+        const h3 = document.createElement('h3');
+        h3.textContent = `Round ${rIdx + 1}`;
+        col.appendChild(h3);
+        round.forEach(match => {
             if (!match || !Array.isArray(match.players))
                 return;
-            const [p1, p2] = match.players;
-            const card = document.createElement('div');
-            card.style.cssText = `
-        background:#222; border-radius:6px; padding:.6rem 1rem;
-        display:flex; flex-direction:column; align-items:center; min-width:160px;
-      `;
-            const name = (p) => {
-                var _a, _b;
-                return p && !('pendingMatchId' in p)
-                    ? (_a = p.name) !== null && _a !== void 0 ? _a : (_b = p.id) === null || _b === void 0 ? void 0 : _b.slice(0, 4)
-                    : '— TBD —';
-            };
-            card.innerHTML = `
-        <div>${name(p1) || 'BYE'}</div>
-        <div style="opacity:.6; margin:.3rem 0;">vs</div>
-        <div>${name(p2) || 'BYE'}</div>
-      `;
+            const card = cardTpl.cloneNode(true);
+            const p1El = card.querySelector('.p1');
+            const p2El = card.querySelector('.p2');
+            if (!p1El || !p2El) {
+                console.warn('Match-card template is missing .p1 or .p2');
+                return;
+            }
+            const nam = (p) => { var _a, _b; return p && !('pendingMatchId' in p) ? (_a = p.name) !== null && _a !== void 0 ? _a : (_b = p.id) === null || _b === void 0 ? void 0 : _b.slice(0, 4) : '— TBD —'; };
+            p1El.textContent = nam(match.players[0]) || 'BYE';
+            p2El.textContent = nam(match.players[1]) || 'BYE';
             col.appendChild(card);
         });
-        el.appendChild(col);
+        overlay.insertBefore(col, beginBtn);
     });
     try {
         const TLobby = (_b = (_a = window).getCurrentTLobby) === null || _b === void 0 ? void 0 : _b.call(_a);
         const myId = (_d = (_c = window).getMyId) === null || _d === void 0 ? void 0 : _d.call(_c);
         const amHost = TLobby && myId && TLobby.hostId === myId;
-        if (amHost && typeof socket !== 'undefined') {
-            const btn = document.createElement('button');
-            btn.textContent = 'Begin round 1';
-            btn.style.cssText = `
-        margin-top:2rem; align-self:center; padding:.6rem 1.4rem;
-        font-size:1rem; background:#357; color:#fff; border:none;
-        border-radius:6px; cursor:pointer;
-      `;
-            btn.onclick = () => {
-                socket.send(JSON.stringify({
+        beginBtn.hidden = !amHost;
+        if (amHost) {
+            beginBtn.onclick = () => {
+                socket === null || socket === void 0 ? void 0 : socket.send(JSON.stringify({
                     type: 'beginFirstRound',
                     payload: { tournamentId: TLobby.id }
                 }));
-                el === null || el === void 0 ? void 0 : el.remove();
+                overlay.hidden = true;
             };
-            el.appendChild(btn);
         }
     }
-    catch (_) { }
+    catch (_e) {
+        beginBtn.hidden = true;
+    }
+    overlay.hidden = false;
 }
 export function joinByCode(socket, codeFromBtn) {
     var _a;
@@ -97,13 +79,13 @@ export function renderTournamentList(list, onJoin) {
         const card = document.createElement('div');
         card.className = 't-card';
         card.innerHTML = `
-      <div>
-        <div>${t.name}</div>
-        <div>${t.slots}</div>
-      </div>
-      <button class="join-btn" ${t.joinable ? '' : 'disabled'} data-code="${t.code}">
-        ${t.joinable ? 'JOIN' : 'FULL'}
-      </button>`;
+        <div>
+          <div>${t.name}</div>
+          <div>${t.slots}</div>
+        </div>
+        <button class="join-btn" ${t.joinable ? '' : 'disabled'} data-code="${t.code}">
+          ${t.joinable ? 'JOIN' : 'FULL'}
+        </button>`;
         (_a = card.querySelector('.join-btn')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', (e) => {
             const btn = e.currentTarget;
             if (btn.disabled)

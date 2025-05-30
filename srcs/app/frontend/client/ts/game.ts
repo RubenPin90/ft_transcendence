@@ -62,7 +62,7 @@ export function startGame(mode: GameMode): void {
     if (msg.type === 'matchFound') {
       currentRoomId = msg.payload.gameId;
       userId = msg.payload.userId;
-      //console.log(`Match ready: room=${currentRoomId}, user=${userId}`);
+      console.log(`Match ready: room=${currentRoomId}, user=${userId}`);
     } else if (msg.type === 'state') {
       drawFrame(msg.state);
       if (msg.state.status === 'finished') {
@@ -94,6 +94,13 @@ export function stopGame(): void {
   }
 
 function drawFrame(state: GameState): void {
+  if (
+    state == null ||
+    typeof state !== 'object' ||
+    !Array.isArray(state.players) ||
+    state.players.length !== 2
+  ) return;
+
   if (!ctx) return;
   const canvas = ctx.canvas;
   const toX = (u: number) => u * canvas.width;
