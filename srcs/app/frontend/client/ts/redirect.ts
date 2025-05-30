@@ -63,13 +63,48 @@ async function where_am_i(path : string) : Promise<string> {
                 return 'login_div';
             }
             return 'home_div';
-        case '/settings': return 'settings_main_div';
-        case '/settings/user': return 'user_prof_div';
-        case '/settings/mfa': return 'mfa_div';
-        case '/settings/user/change_user': return 'username_div';
-        case '/settings/user/change_login': return 'userpass_div';
-        case '/settings/user/change_avatar': return 'useravatar_div';
-        case '/friends' : return 'friends_div';
+        case '/settings': 
+            if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'settings_main_div';
+        case '/settings/user': 
+        if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'user_prof_div';
+        case '/settings/mfa': 
+        if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'mfa_div';
+        case '/settings/user/change_user': 
+        if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'username_div';
+        case '/settings/user/change_login': 
+        if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'userpass_div';
+        case '/settings/user/change_avatar': 
+        if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'useravatar_div';
+        case '/friends' : 
+        if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'friends_div';
         default: return 'home_div';
     }
 }
