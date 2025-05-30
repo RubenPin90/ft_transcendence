@@ -51,6 +51,7 @@ export default fastifyPlugin(async function routes(fastify) {
   // --- Views ---
   fastify.get('/', (req, reply) => views.home(req, reply));
   fastify.get('/login', (req, reply) => views.login(req, reply));
+  fastify.post('/login', (req, reply) => views.login(req, reply));
   fastify.get('/register', (req, reply) => views.register(req, reply));
   fastify.post('/register', (req, reply) => views.register(req, reply));
 

@@ -17,14 +17,17 @@ async function login(request, response) {
     if (keys?.includes('token'))
         return await home(request, response);
     if (request.method === "POST") {
+        const parsed = await utils.process_login(request, response);
+        if (!parsed || parsed === undefined || parsed < 0)
+            return true;
         // recv from frontend to get the cookies saaved in the browser
-        // const token = modules.create_jwt(parsed.settings.self, '1h');
-        // const lang = modules.create_jwt(parsed.settings.lang, '1h');
+        const token = modules.create_jwt(parsed.settings.self, '1h');
+        const lang = modules.create_jwt(parsed.settings.lang, '1h');
 
-        // modules.set_cookie(response, 'token', token, true, true, 'strict');
-        // modules.set_cookie(response, 'lang', lang, true, true, 'strict');
-        // response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'success', "Content": null});
-        // return true;
+        modules.set_cookie(response, 'token', token, true, true, 'strict');
+        modules.set_cookie(response, 'lang', lang, true, true, 'strict');
+        response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'success', "Settings": parsed.settings, "Mfa": parsed.mfa});
+        return true;
     }
     await send.send_html('index.html', response, 200, async (data) => {
         data = await utils.replace_all_templates(request, response, 1);
