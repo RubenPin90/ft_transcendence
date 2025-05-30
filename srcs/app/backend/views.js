@@ -42,41 +42,39 @@ async function register(request, response) {
     if (keys?.includes('token'))
         return await home(request, response);
     if (request.method == 'POST') {
-        // const replace_data = request.body;
-        // const check_settings = await settings_db.get_settings_value('email', replace_data.email);
-        // if (check_settings || check_settings !== undefined) {
-        //     response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'User already exists', "Content": null});
-        //     return true;
-        // }
-        // if (replace_data.password.length > 71) {
-        //     response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Password to long', "Content": null});
-        //     return true;
-        // }
-        // const hashed = await modules.create_encrypted_password(replace_data.password);
-        // if (!hashed || hashed === undefined || hashed < 0) {
-        //     response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Bcrypt error', "Content": null});
-        //     return true;
-        // }
-        // const settings = await settings_db.create_settings_value(hashed, '', 0, replace_data.email, 'en', '', '');
-        // if (!settings || settings === undefined || settings < 0) {
-        //     response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Failed creating table in settings', "Content": null});
-        //     return true;
-        // }
-        // const user = await users_db.create_users_value(0, replace_data.username, settings.self);
-        // if (!user || user === undefined || user < 0) {
-        //     await settings_db.delete_settings_value(settings.self);
-        //     response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Failed creating table in user', "Content": null});
-        //     return true;
-        // }
-        // const token = modules.create_jwt(settings.self, '1h');
-        // const lang = modules.create_jwt(parsed.settings.lang, '1h');
+        const replace_data = request.body;
+        const check_settings = await settings_db.get_settings_value('email', replace_data.email);
+        if (check_settings || check_settings !== undefined) {
+            response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'User already exists', "Content": null});
+            return true;
+        }
+        if (replace_data.password.length > 71) {
+            response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Password to long', "Content": null});
+            return true;
+        }
+        const hashed = await modules.create_encrypted_password(replace_data.password);
+        if (!hashed || hashed === undefined || hashed < 0) {
+            response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Bcrypt error', "Content": null});
+            return true;
+        }
+        const settings = await settings_db.create_settings_value(hashed, '', 0, replace_data.email, 'en', '', '');
+        if (!settings || settings === undefined || settings < 0) {
+            response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Failed creating table in settings', "Content": null});
+            return true;
+        }
+        const user = await users_db.create_users_value(0, replace_data.username, settings.self);
+        if (!user || user === undefined || user < 0) {
+            await settings_db.delete_settings_value(settings.self);
+            response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Failed creating table in user', "Content": null});
+            return true;
+        }
+        const token = modules.create_jwt(settings.self, '1h');
+        const lang = modules.create_jwt(parsed.settings.lang, '1h');
         
-        // modules.set_cookie(response, 'token', token, true, true, 'strict');
-        // modules.set_cookie(response, 'lang', lang, true, true, 'strict');
-        // response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-        // response.raw.end(JSON.stringify({"Response": 'reload', "Content": null}));
-        // response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send(JSON.stringify({"Response": 'success', "Content": null}))
-        // return true;
+        modules.set_cookie(response, 'token', token, true, true, 'strict');
+        modules.set_cookie(response, 'lang', lang, true, true, 'strict');
+        response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send(JSON.stringify({"Response": 'success', "Content": null}))
+        return true;
     }
     const check = await send.send_html('index.html', response, 200, async (data) => {
         data = await utils.replace_all_templates(request, response, 1);
