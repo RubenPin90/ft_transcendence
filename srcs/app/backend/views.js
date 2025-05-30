@@ -14,21 +14,16 @@ import http from 'http';
 
 async function login(request, response) {
     var [keys, values] = modules.get_cookies(request);
-    if (keys?.includes('token')) {
+    if (keys?.includes('token'))
         return await home(request, response);
-    }
     if (request.method === "POST") {
         // recv from frontend to get the cookies saaved in the browser
         // const token = modules.create_jwt(parsed.settings.self, '1h');
-        // if (!token || token === undefined || token < 0)
-        //     return `2_${token}`;
         // const lang = modules.create_jwt(parsed.settings.lang, '1h');
-        // if (!lang || lang === undefined || lang < 0)
-        //     return `3_${lang}`;
 
         // modules.set_cookie(response, 'token', token, true, true, 'strict');
         // modules.set_cookie(response, 'lang', lang, true, true, 'strict');
-        // response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'reload', "Content": null});
+        // response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'success', "Content": null});
         // return true;
     }
     await send.send_html('index.html', response, 200, async (data) => {
@@ -41,46 +36,45 @@ async function login(request, response) {
 
 async function register(request, response) {
     var [keys, values] = modules.get_cookies(request);
-    if (keys?.includes('token')) {
+    if (keys?.includes('token'))
         return await home(request, response);
-    }
-    const check_login = utils.check_login(request, response);
-    if (check_login === true)
-        return true;
     if (request.method == 'POST') {
-        const replace_data = await utils.get_frontend_content(request);
-        const check_settings = await settings_db.get_settings_value('email', replace_data.email);
-        if (check_settings || check_settings !== undefined) {
-            response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-            response.raw.end(JSON.stringify({"Response": 'User already exists', "Content": null}));
-            return true;
-        }
-        const hashed = await modules.create_encrypted_password(replace_data.password);
-        if (!hashed || hashed === undefined || hashed < 0)
-            return `1_${hashed}`;
-        const settings = await settings_db.create_settings_value(hashed, '', 0, replace_data.email, 'en', '', '');
-        if (!settings || settings === undefined || settings < 0)
-            return `2_${settings}`;
-        const user = await users_db.create_users_value(0, replace_data.username, settings.self);
-        if (!user || user === undefined || user < 0) {
-            await settings_db.delete_settings_value(settings.self);
-            return `3_${user}`;
-        }
-        const token = modules.create_jwt(settings.self, '1h');
-        if (!token || token === undefined || token < 0)
-            return `4_${token}`;
-        const lang = modules.create_jwt(parsed.settings.lang, '1h');
-        if (!lang || lang === undefined || lang < 0)
-            return `5_${lang}`;
+        // const replace_data = request.body;
+        // const check_settings = await settings_db.get_settings_value('email', replace_data.email);
+        // if (check_settings || check_settings !== undefined) {
+        //     response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'User already exists', "Content": null});
+        //     return true;
+        // }
+        // if (replace_data.password.length > 71) {
+        //     response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Password to long', "Content": null});
+        //     return true;
+        // }
+        // const hashed = await modules.create_encrypted_password(replace_data.password);
+        // if (!hashed || hashed === undefined || hashed < 0) {
+        //     response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Bcrypt error', "Content": null});
+        //     return true;
+        // }
+        // const settings = await settings_db.create_settings_value(hashed, '', 0, replace_data.email, 'en', '', '');
+        // if (!settings || settings === undefined || settings < 0) {
+        //     response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Failed creating table in settings', "Content": null});
+        //     return true;
+        // }
+        // const user = await users_db.create_users_value(0, replace_data.username, settings.self);
+        // if (!user || user === undefined || user < 0) {
+        //     await settings_db.delete_settings_value(settings.self);
+        //     response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Failed creating table in user', "Content": null});
+        //     return true;
+        // }
+        // const token = modules.create_jwt(settings.self, '1h');
+        // const lang = modules.create_jwt(parsed.settings.lang, '1h');
         
-        modules.set_cookie(response, 'token', token, true, true, 'strict');
-        modules.set_cookie(response, 'lang', lang, true, true, 'strict');
-        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-        response.raw.end(JSON.stringify({"Response": 'reload', "Content": null}));
-        return true;
+        // modules.set_cookie(response, 'token', token, true, true, 'strict');
+        // modules.set_cookie(response, 'lang', lang, true, true, 'strict');
+        // response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+        // response.raw.end(JSON.stringify({"Response": 'reload', "Content": null}));
+        // response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send(JSON.stringify({"Response": 'success', "Content": null}))
+        // return true;
     }
-    if (!check_login || check_login === undefined || check_login < -1)
-        return `6_${check_login}`;
     const check = await send.send_html('index.html', response, 200, async (data) => {
         data = await utils.replace_all_templates(request, response, 1);
         data = utils.show_page(data, "register_div");
