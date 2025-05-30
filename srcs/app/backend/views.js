@@ -92,36 +92,16 @@ async function home(request, response) {
     if (code != undefined && !request.url.includes('&state=')) {
         const google_return = await encrypt_google(code);
         if (google_return < 0)
-            return `5_${google_return}`;
-        response.setCookie('token', google_return.token, {
-            path: '/',
-            httpOnly: true,
-            secure: true,     // auf true setzen, wenn du HTTPS verwendest
-            maxAge: 3600       // Cookie läuft in 1 Stunde ab
-        });
-        response.setCookie('lang', google_return.lang, {
-            path: '/',
-            httpOnly: true,
-            secure: true,     // auf true setzen, wenn du HTTPS verwendest
-            maxAge: 3600       // Cookie läuft in 1 Stunde ab
-        });
+            return `1_${google_return}`;
+        modules.set_cookie(response, 'token', google_return.token, 3600);
+        modules.set_cookie(response, 'lang', google_return.lang, 3600);
         response.redirect("https://localhost/");
     } else if (request.url !== '/') {
         const github_return = await utils.encrypt_github(request, response);
         if (github_return < 0)
-            return `5_${github_return}`;
-        response.setCookie('token', github_return.token, {
-            path: '/',
-            httpOnly: true,
-            secure: true,     // auf true setzen, wenn du HTTPS verwendest
-            maxAge: 3600       // Cookie läuft in 1 Stunde ab
-        });
-        response.setCookie('lang', github_return.lang, {
-            path: '/',
-            httpOnly: true,
-            secure: true,     // auf true setzen, wenn du HTTPS verwendest
-            maxAge: 3600       // Cookie läuft in 1 Stunde ab
-        });
+            return `2_${github_return}`;
+        modules.set_cookie(response, 'token', github_return.token, 3600);
+        modules.set_cookie(response, 'lang', github_return.lang, 3600);
         response.redirect("https://localhost/");
     }
     const check = await send.send_html('index.html', response, 200, async (data) => {
@@ -131,7 +111,7 @@ async function home(request, response) {
         return data;
     });
     if (!check || check === undefined || check == false)
-        return `9_${check}`
+        return `3_${check}`
     return true;
 }
 

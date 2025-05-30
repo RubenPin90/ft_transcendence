@@ -39,14 +39,13 @@ function get_jwt(token) {
 	return token2;
 }
 
-function set_cookie(response, key, value, HttpOnly = false, Secure = false, SameSite = null, path = '/') {
-	const prev = response.getHeader('Set-Cookie') || [];
-	let cookie = `${key}=${value}; Path=${path}`;
-	// if (HttpOnly) cookie += '; HttpOnly';
-	// if (Secure) cookie += '; Secure';
-	// if (SameSite) cookie += `; SameSite=${SameSite}`; // e.g., 'Lax', 'Strict', 'None'
-
-	response.setHeader('Set-Cookie', [...prev, cookie]);
+function set_cookie(response, key, value, maxAge) {
+	response.setCookie(key, value, {
+		path: '/',
+		httpOnly: true,
+		secure: true,     // auf true setzen, wenn du HTTPS verwendest
+		maxAge: maxAge       // Cookie läuft in 1 Stunde ab
+	});
 }
 
 function delete_cookie(response, key) {
