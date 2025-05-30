@@ -56,7 +56,9 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.post('/register', (req, reply) => views.register(req, reply));
 
   fastify.get('/settings', (req, reply) => views.settings(req, reply));
+  fastify.post('/settings', (req, reply) => views.settings(req, reply));
   fastify.get('/settings/*', (req, reply) => views.settings(req, reply));
+  fastify.post('/settings/*', (req, reply) => views.settings(req, reply));
   fastify.get('/verify_email', (req, reply) => views.verify_email(req, reply));
   fastify.get('/verify_2fa', (req, reply) => views.verify_2fa(req, reply));
   fastify.get('/verify_custom', (req, reply) => views.verify_custom(req, reply));

@@ -248,44 +248,12 @@ async function get_frontend_content(request) {
     });
 }
 
-function get_cookie(search, request) {
-	var [keys, values] = modules.get_cookies(request.headers.cookie);
-	const tokenIndex = keys?.find((key) => key === search);
-	if (!(keys && tokenIndex))
-		return {'keys': null, 'values': null, 'token': null};
-	const token = values?.at(tokenIndex);
-	if (!token)
-		return {'keys': null, 'values': null, 'token': null};
-	return {keys, values, token};
-}
-
-function check_login(request, response) {
-	const {keys, values, token} = get_cookie('token', request);
-	if (keys === null && values === null && token === null)
-		return -1;
-	try {
-		var decoded = modules.get_jwt(token);
-		if (!decoded || decoded === undefined)
-			return -2;
-		// Here was a redirect(response, '/', 302);
-		return true;
-	} catch (err) {
-		console.log(err);
-		return -3;
-	}
-}
-
 function get_decrypted_userid(request, response) {
-	const {keys, values, token} = get_cookie('token', request);
-	if (keys === null && values === null && token === null)
+	const [keys, values] = modules.get_cookies(request);
+	if (keys === null && values === null)
 		return -1;
-	var pos = 0;
-	for (var i = 0; i < keys.length; i++, pos++) {
-		if (keys[i] == 'token')
-			break;
-	}
 	try {
-		var self_decoded = modules.get_jwt(values[0]);
+		var self_decoded = modules.get_jwt(values[keys.indexOf('token')]);
 	} catch (err) {
 		const err_string = String(err);
 		console.log(err_string);
@@ -1070,8 +1038,6 @@ export {
 	process_login,
 	get_frontend_content,
 	otc_secret,
-	check_login,
-	get_cookie,
 	get_decrypted_userid,
 	get_otc_secret,
 	verify_otc,
