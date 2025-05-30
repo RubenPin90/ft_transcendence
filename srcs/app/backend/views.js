@@ -20,7 +20,6 @@ async function login(request, response) {
         const parsed = await utils.process_login(request, response);
         if (!parsed || parsed === undefined || parsed < 0)
             return true;
-        // recv from frontend to get the cookies saaved in the browser
         const token = modules.create_jwt(parsed.settings.self, '1h');
         const lang = modules.create_jwt(parsed.settings.lang, '1h');
 
@@ -94,11 +93,8 @@ async function register(request, response) {
 
 async function home(request, response) {
     var [keys, values] = modules.get_cookies(request);
-    if (request.url === '/' && !keys?.includes('token')) {
+    if (request.url === '/' && !keys?.includes('token'))
         return await login(request, response);
-    }
-
-
     const code = request.query.code;
     if (code != undefined && !request.url.includes('&state=')) {
         const google_return = await encrypt_google(code);
@@ -128,16 +124,14 @@ async function home(request, response) {
 
 async function mfa(request, response) {
     if (request.method === "POST") {
-        var replace_data = await utils.get_frontend_content(request);
-        if (!replace_data || replace_data === undefined)
-            return `1_${replace_data}`;
+        const data = request.body;
         const userid = await utils.get_decrypted_userid(request, response);
         if (!userid || userid === undefined || userid < 0)
-            return `2_${userid}`;
-        if (replace_data.Function == 'create_otc') {
+            return `1_${userid}`;
+        if (data.Function == 'create_otc') {
             const otc_return = await utils.create_otc(userid, response);
             if (!otc_return || otc_return === undefined || otc_return < 0)
-                return `3_${otc_return}`;
+                return `2_${otc_return}`;
             return true;
         } else if (replace_data.Function == 'verify') {
             response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
@@ -167,17 +161,17 @@ async function mfa(request, response) {
         } else if (replace_data.Function == 'remove_custom_code') {
             const clear_return = await utils.clear_settings_mfa(userid, 'custom', response);
             if (!clear_return || clear_return === undefined || clear_return < 0)
-                return `4_${clear_return}`;
+                return `3_${clear_return}`;
             return true;
         } else if (replace_data.Function === 'remove_otc') {
             const clear_return = await utils.clear_settings_mfa(userid, 'otc', response);
             if (!clear_return || clear_return === undefined || clear_return < 0)
-                return `5_${clear_return}`;
+                return `4_${clear_return}`;
             return true;
         } else if (replace_data.Function === 'remove_email') {
             const clear_return = await utils.clear_settings_mfa(userid, 'email', response);
             if (!clear_return || clear_return === undefined || clear_return < 0)
-                return `6_${clear_return}`;
+                return `5_${clear_return}`;
             return true;
         }
     }
@@ -417,9 +411,9 @@ async function select_language(request, response){
 // }
 
 async function settings(request, response) {
-    var [keys, values] = modules.get_cookies(request.headers.cookie);
+    var [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token'))
-        return // Here was a redirect(response, '/login', 302);
+        return login(request, response);// Here was a redirect(response, '/login', 302);
     const request_url = request.url.slice(9);
     if (request_url.startsWith("/mfa?"))
         return await settings_set_prefered_mfa(request, response);

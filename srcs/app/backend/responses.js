@@ -1,7 +1,8 @@
 import { promises as fs } from 'fs';
 
 function send(response, content, data, code) {
-    response.code(code).type(content).send(data)
+    response.raw.writeHead(code, content);
+    response.raw.end(data);
 }
 
 async function send_html(filename, response, status, func) {
