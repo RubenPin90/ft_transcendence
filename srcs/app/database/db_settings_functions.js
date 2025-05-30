@@ -57,7 +57,7 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
     try {
         let check_github;
         let check_google;
-        if (google !== 0) {
+        if (google != '') {
             check_google = await db.get(
                 `SELECT * FROM settings
                 WHERE google = ?
@@ -66,7 +66,7 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
             if (check_google)
                 return -1;
         }
-        if (github !== 0) {
+        if (github != '') {
             check_github = await db.get(
                 `SELECT * FROM settings
                 WHERE github = ?
@@ -76,11 +76,12 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
                 return -2;
         }
         var self;
-        if (google !== 0)
+        if (google != '')
             self = google;
-        else if (github !== 0)
+        else if (github != '')
             self = github;
         else {
+            var check;
             var random_self = Math.floor(Math.random() * 1000000000);
             // console.log(random_self);
             var it = 0

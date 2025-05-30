@@ -26,7 +26,9 @@ async function login(request, response) {
 
         modules.set_cookie(response, 'token', token, true, true, 'strict');
         modules.set_cookie(response, 'lang', lang, true, true, 'strict');
-        response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'success', "Settings": parsed.settings, "Mfa": parsed.mfa});
+
+        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+        response.raw.end(JSON.stringify({"Response": 'success', "Settings": parsed.settings, "Mfa": parsed.mfa, "Content": null}));
         return true;
     }
     await send.send_html('index.html', response, 200, async (data) => {
@@ -45,35 +47,41 @@ async function register(request, response) {
         const replace_data = request.body;
         const check_settings = await settings_db.get_settings_value('email', replace_data.email);
         if (check_settings || check_settings !== undefined) {
-            response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'User already exists', "Content": null});
+            response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            response.raw.end(JSON.stringify({"Response": 'User already exists', "Content": null}));
             return true;
         }
         if (replace_data.password.length > 71) {
-            response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Password to long', "Content": null});
+            response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            response.raw.end(JSON.stringify({"Response": 'Password to long', "Content": null}));
             return true;
         }
         const hashed = await modules.create_encrypted_password(replace_data.password);
         if (!hashed || hashed === undefined || hashed < 0) {
-            response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Bcrypt error', "Content": null});
+            response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            response.raw.end(JSON.stringify({"Response": 'Bcrypt error', "Content": null}));
             return true;
         }
         const settings = await settings_db.create_settings_value(hashed, '', 0, replace_data.email, 'en', '', '');
         if (!settings || settings === undefined || settings < 0) {
-            response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Failed creating table in settings', "Content": null});
+            response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            response.raw.end(JSON.stringify({"Response": 'Failed creating table in settings', "Content": null}));
             return true;
         }
         const user = await users_db.create_users_value(0, replace_data.username, settings.self);
         if (!user || user === undefined || user < 0) {
             await settings_db.delete_settings_value(settings.self);
-            response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Failed creating table in user', "Content": null});
+            response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            response.raw.end(JSON.stringify({"Response": 'Failed creating table in user', "Content": null}));
             return true;
         }
         const token = modules.create_jwt(settings.self, '1h');
-        const lang = modules.create_jwt(parsed.settings.lang, '1h');
+        const lang = modules.create_jwt(settings.lang, '1h');
         
         modules.set_cookie(response, 'token', token, true, true, 'strict');
         modules.set_cookie(response, 'lang', lang, true, true, 'strict');
-        response.code(200).content({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send(JSON.stringify({"Response": 'success', "Content": null}))
+        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+        response.raw.end(JSON.stringify({"Response": 'success', "Content": null}));
         return true;
     }
     const check = await send.send_html('index.html', response, 200, async (data) => {
@@ -89,6 +97,8 @@ async function home(request, response) {
     if (request.url === '/' && !keys?.includes('token')) {
         return await login(request, response);
     }
+
+
     const code = request.query.code;
     if (code != undefined && !request.url.includes('&state=')) {
         const google_return = await encrypt_google(code);
@@ -999,20 +1009,20 @@ async function field_signup(request, reply){
     const googleHref = utils.google_input_handler();
     const githubHref = utils.github_input_handler();
     let return_signup = `
-    <label for="username" class="label_text">Username</label>
+    <label for="username_SignUp" class="label_text">Username</label>
     <div id="user_field" class="relative input_total">
     <div class="input_svg">
     <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
     <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd" /></svg></div>
-    <input type="text" id="username_signup" placeholder="Username" required class="input_field" /></div>
-    <label for="email" class="label_text">Email</label>
+    <input type="text" id="username_SignUp" placeholder="Username" required class="input_field" /></div>
+    <label for="email_SignUp" class="label_text">Email</label>
     <div id="email_field" class="relative input_total">
     <div class="input_svg">
     <svg class="w-6 h-6 text-gray-500 justify-center" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 16">
     <path d="m10.036 8.278 9.258-7.79A1.979 1.979 0 0 0 18 0H2A1.987 1.987 0 0 0 .641.541l9.395 7.737Z"/>
     <path d="M11.241 9.817c-.36.275-.801.425-1.255.427-.428 0-.845-.138-1.187-.395L0 2.6V14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2.5l-8.759 7.317Z"/></svg></div>
-    <input type="text" id="email" placeholder="example@gmail.com" required class="input_field" /></div>
-    <label for="password-input" class="label_text">Password</label>
+    <input type="text" id="email_SignUp" placeholder="example@gmail.com" required class="input_field" /></div>
+    <label for="password-input_SignUp" class="label_text">Password</label>
     <div id="password_field" class="relative input_total">
     <div class="input_svg">
     <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
@@ -1022,9 +1032,9 @@ async function field_signup(request, reply){
     <path d="M3.53 2.47a.75.75 0 0 0-1.06 1.06l18 18a.75.75 0 1 0 1.06-1.06l-18-18ZM22.676 12.553a11.249 11.249 0 0 1-2.631 4.31l-3.099-3.099a5.25 5.25 0 0 0-6.71-6.71L7.759 4.577a11.217 11.217 0 0 1 4.242-.827c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113Z" />
     <path d="M15.75 12c0 .18-.013.357-.037.53l-4.244-4.243A3.75 3.75 0 0 1 15.75 12ZM12.53 15.713l-4.243-4.244a3.75 3.75 0 0 0 4.244 4.243Z" />
     <path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 0 0-2.63 4.31c-.12.362-.12.752 0 1.114 1.489 4.467 5.704 7.69 10.675 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 0 1 6.75 12Z" /></svg></button>
-    <input type="password" id="password-input" placeholder="Password" required class="input_field" />
+    <input type="password" id="password-input_SignUp" placeholder="Password" required class="input_field" />
     </div>
-    <label for="password-input2" class="label_text">Repeat Password</label>
+    <label for="password-input2_SignUp" class="label_text">Repeat Password</label>
     <div id="repeat_field" class="relative input_total">
     <div class="input_svg">
     <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
@@ -1034,7 +1044,7 @@ async function field_signup(request, reply){
     <path d="M3.53 2.47a.75.75 0 0 0-1.06 1.06l18 18a.75.75 0 1 0 1.06-1.06l-18-18ZM22.676 12.553a11.249 11.249 0 0 1-2.631 4.31l-3.099-3.099a5.25 5.25 0 0 0-6.71-6.71L7.759 4.577a11.217 11.217 0 0 1 4.242-.827c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113Z" />
     <path d="M15.75 12c0 .18-.013.357-.037.53l-4.244-4.243A3.75 3.75 0 0 1 15.75 12ZM12.53 15.713l-4.243-4.244a3.75 3.75 0 0 0 4.244 4.243Z" />
     <path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 0 0-2.63 4.31c-.12.362-.12.752 0 1.114 1.489 4.467 5.704 7.69 10.675 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 0 1 6.75 12Z" /></svg></button>
-    <input type="password" id="password-input2" placeholder="Repeat password" required class="input_field" /></div>
+    <input type="password" id="password-input2_SignUp" placeholder="Repeat password" required class="input_field" /></div>
     <span id="error_header" class="text-bold text-xl text-red-400"></span><br>
 
     <button id="login-button" onclick="create_account()" class="bg-violet-700 hover:bg-violet-800 text-white font-bold py-2 text-lg rounded-xl w-full mb-4">Sign Up</button>

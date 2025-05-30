@@ -1,26 +1,4 @@
-list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+TODO
+parse register
+look into views.js
 
-str = "";
-for i in Range(list) {
-    str += "<h1>User: {i}</h1>"
-}
-
-dispatchEvent.innerHTML = str;
-
-
-
-
-response = fetch ("server", list);
-
------ sever -----
-
-str = "";
-for i in Range(list) {
-    str += "<h1>User: {i}</h1>"
-}
-
-send(str)
-
------- client -------
-
-dispatchEvent.innerHTML = response.content

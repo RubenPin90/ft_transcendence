@@ -210,12 +210,15 @@ async function process_login(request, response) {
 	const data = request.body;
 	const check_settings = await settings_db.get_settings_value('email', data.email);
 	if (!check_settings || check_settings === undefined || check_settings < 0) {
-		response.code(200).send({ "Response": "Email not found" });
+
+		response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+		response.raw.end(JSON.stringify({"Response": 'Email not found', "Content": null}));
 		return -1;
 	}
 	const pw = await modules.check_encrypted_password(data.password, check_settings.password);
 	if (!pw || pw === undefined || pw < 0) {
-		response.code(200).send({ "Response": "Password incorrect" });
+		response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+		response.raw.end(JSON.stringify({"Response": 'Password incorrect', "Content": null}));
 		return -2;
 	}
 	const mfa = await mfa_db.get_mfa_value('self', check_settings.self);
