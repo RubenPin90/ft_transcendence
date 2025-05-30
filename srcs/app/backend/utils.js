@@ -619,26 +619,31 @@ async function replace_all_templates(request, response, state) {
 	const settings_html_raw = await fs.readFile("./backend/templates/settings.html", 'utf8');
 
 	var settings_html_default_string = "";
-	settings_html_default_string += '<div><a href="/settings/mfa" data-link><div class="buttons mb-6"></a></div>';
+	settings_html_default_string += '<div id="settings_main_div" class="hidden">';
+	settings_html_default_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>'
+	settings_html_default_string += '<div class="flex flex-col gap-6"><a class="buttons" href="/settings/mfa" data-link>';
 	settings_html_default_string += '<button class="block w-full mb-6 mt-6">';
 	settings_html_default_string += '<span class="button_text">MFA</span>';
-	settings_html_default_string += '</button></div>';
-	settings_html_default_string += '<div><a href="/settings/user" data-link><div class="buttons mb-6"></a></div>';
+	settings_html_default_string += '</button></a>';
+	settings_html_default_string += '<a class="buttons" href="/settings/user" data-link>';
 	settings_html_default_string += '<button class="block w-full mb-6 mt-6">';
 	settings_html_default_string += '<span class="button_text">User</span>';
-	settings_html_default_string += '</button></div>';
+	settings_html_default_string += '</button></a></div>';
 	settings_html_default_string += '<div class="flex mt-12 gap-4 w-full">';
 	settings_html_default_string += '<a class="flex-1" href="/" data-link>';
 	settings_html_default_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
 	settings_html_default_string += '<span class="button_text">Back</span>';
 	settings_html_default_string += '</button></a>';
-	settings_html_default_string += '<a class="flex-1">';
-	settings_html_default_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-	settings_html_default_string += '<span class="button_text">Logout</span>';
-	settings_html_default_string += '</button></a></div>';
+	settings_html_default_string += '<a href="/" class="flex-1" data-link>';
+	settings_html_default_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	settings_html_default_string += '<span class="button_text">Home</span>';
+	settings_html_default_string += '</button></a></div></div></div></div></div>';
 	const settings_html_default = settings_html_raw.replace("{{mfa-button}}", settings_html_default_string);
 
 	var settings_html_mfa_string = "";
+	settings_html_mfa_string += '<div id="mfa_div" class="hidden">';
+	settings_html_mfa_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
+
 	settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_otc()">';
 	settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
 	settings_html_mfa_string += '<span class="button_text">Create OTC</span>';
@@ -652,22 +657,24 @@ async function replace_all_templates(request, response, state) {
 	settings_html_mfa_string += '<span class="button_text">Enable email authentication</span>';
 	settings_html_mfa_string += '</button></div>';
 	settings_html_mfa_string += '<div class="flex mt-12 gap-4 w-full">';
-	settings_html_mfa_string += '<a class="flex-1" href="/settings">';
+	settings_html_mfa_string += '<a class="flex-1" href="/settings" data-link>';
 	settings_html_mfa_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
 	settings_html_mfa_string += '<span class="font-bold text-lg">Back</span>';
 	settings_html_mfa_string += '</button></a>';
-	settings_html_mfa_string += '<a class="flex-1">';
-	settings_html_mfa_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-	settings_html_mfa_string += '<span class="font-bold text-lg">Logout</span>';
-	settings_html_mfa_string += '</button></a></div>';
+	settings_html_mfa_string += '<a href="/" class="flex-1" data-link>';
+	settings_html_mfa_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	settings_html_mfa_string += '<span class="font-bold text-lg">Home</span>';
+	settings_html_mfa_string += '</button></a></div></div></div></div></div>';
 	const settings_html_mfa = settings_html_raw.replace("{{mfa-button}}", settings_html_mfa_string);
 
 	var settings_html_user_string = "";
+	settings_html_user_string += '<div id="lang_prof_div" class="hidden">';
+	settings_html_user_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
 	settings_html_user_string += '<div><a href="/settings/user/select_language" data-link><div class="buttons mb-6"></div></a>';
 	settings_html_user_string += '<button class="block w-full mb-6 mt-6">';
 	settings_html_user_string += '<span class="button_text">Select Language</span>';
 	settings_html_user_string += '</button></div>';
-	settings_html_user_string += '<div><a href="/settings/user/profile_settings" data-link><div class="buttons mb-6"></div></a>';
+	settings_html_user_string += '<div><a href="/settings/user" data-link><div class="buttons mb-6"></div></a>';
 	settings_html_user_string += '<button class="block w-full mb-6 mt-6">';
 	settings_html_user_string += '<span class="button_text">Profile changes</span>';
 	settings_html_user_string += '</button></div>';
@@ -679,10 +686,15 @@ async function replace_all_templates(request, response, state) {
 	settings_html_user_string += '<a class="flex-1">';
 	settings_html_user_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
 	settings_html_user_string += '<span class="button_text">Logout</span>';
-	settings_html_user_string += '</button></a></div>';
+	settings_html_user_string += '</button></a></div></div></div></div></div>';
 	const settings_html_user = settings_html_raw.replace("{{mfa-button}}", settings_html_user_string);
 
-	var settings_html_user_select_language_string = '<button onclick="change_language()">Change language</button>';
+
+	var settings_html_user_select_language_string = "";
+	settings_html_user_select_language_string += '<div id="lang_div" class="hidden">';
+	settings_html_user_select_language_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
+
+	settings_html_user_select_language_string += '<button onclick="change_language()">Change language</button>';
 	settings_html_user_select_language_string += `
 	<form id="language">
 		<select name="lang" id="lang">
@@ -792,11 +804,24 @@ async function replace_all_templates(request, response, state) {
 		</select>
 		<button type="submit">Submit</button>
 	</form>`
-	settings_html_user_select_language_string += '<div><a href="/settings" data-link><button>back</button></a><div> \
-	<button onclick="logout()">Logout</button></div></div>';
+	settings_html_user_select_language_string += '<div class="flex mt-12 w-1/2">';
+	settings_html_user_select_language_string += '<a href="/settings" class="flex-1" data-link>';
+	settings_html_user_select_language_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full"><span class="font-bold text-lg">Back</span></button></a>';
+	settings_html_user_select_language_string += `<a href="/" class="flex-1" data-link>
+            <button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
+                <span class="font-bold text-lg">Home</span>
+            </button>
+        </a>`;
+	settings_html_user_select_language_string += '';
+	settings_html_user_select_language_string += '';
+	settings_html_user_select_language_string += ' \
+	</div></div></div></div>';
 	const settings_html_user_select_language_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_select_language_string);
 
 	var settings_html_user_profile_settings_string = "";
+	settings_html_user_profile_settings_string += '<div id="user_prof_div" class="hidden">';
+	settings_html_user_profile_settings_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
+
 	settings_html_user_profile_settings_string += `
 	<div class="flex flex-col mt-8 gap-6">
         <a href="/settings/user/change_user" class="buttons" data-link>
@@ -815,23 +840,28 @@ async function replace_all_templates(request, response, state) {
             </button>
         </a>
     </div>
-    <div class="flex mt-12 w-1/2">
-        <a href="/" class="flex-1" data-link>
-            <button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
-                <span class="font-bold text-lg">Main Page</span>
+    <div class="flex mt-12 gap-4 w-full">
+		<a href="/settings" class="flex-1" data-link>
+            <button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
+                <span class="font-bold text-lg">Back</span>
             </button>
         </a>
-    </div>`
+        <a href="/" class="flex-1" data-link>
+            <button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
+                <span class="font-bold text-lg">Home</span>
+            </button>
+        </a>
+    </div></div></div></div></div>`
 	const settings_html_user_profile_settings_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_settings_string);
 
-	const settings_html_user_profile_username_string = `
+	const settings_html_user_profile_username_string = `<div id="username_div" class="hidden"><div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>
 	<div id="user_field" class="relative input_total">
         <div class="input_svg">
             <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
                 <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd" />
                 </svg>
         </div>
-        <input type="text" id="username" placeholder="Username" required class="input_field" />
+        <input type="text" id="username_sett" placeholder="Username" required class="input_field" />
     </div>
     <div class="flex mt-12 gap-4 w-full">
         <a class="flex-1">
@@ -839,17 +869,17 @@ async function replace_all_templates(request, response, state) {
                 <span class="font-bold text-lg">Submit</span>
             </button>
         </a>
-        <a href="/settings/user/profile_settings" class="flex-1" data-link>
+        <a href="/settings/user" class="flex-1" data-link>
             <button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
                 <span class="font-bold text-lg">Back</span>
             </button>
         </a>
-    </div>
+    </div></div></div></div></div></div>
 	`
 	var settings_html_user_profile_username_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_username_string);
 
 
-	const settings_html_user_profile_credential_string = `
+	const settings_html_user_profile_credential_string = `<div id="userpass_div" class="hidden"><div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>
 	<label for="email" class="label_text">Email</label>
     <div id="email_field" class="relative input_total">
         <div class="input_svg">
@@ -898,17 +928,17 @@ async function replace_all_templates(request, response, state) {
                 <span class="font-bold text-lg">Submit</span>
             </button>
         </a>
-        <a href="/settings/user/profile_settings" class="flex-1" data-link>
+        <a href="/settings/user" class="flex-1" data-link>
             <button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
                 <span class="font-bold text-lg">Back</span>
             </button>
         </a>
-    </div>
+    </div></div></div></div></div>
 	`;
 	const settings_html_user_profile_credential_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_credential_string);
 
 	
-	const settings_html_user_profile_avatar_string = `
+	const settings_html_user_profile_avatar_string = `<div id="useravatar_div" class="hidden"><div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>
 	<div class="to-[#d16e1d] from-[#e0d35f] bg-gradient-to-br rounded-lg">
         <label class="pl-2 block mb-2 font-medium text-gray-900 text-2xl" for="file_input">Upload file</label>
         <input class="block w-full text-sm text-gray-900 border border-[#e0d35f] to-[#d16e1d] from-[#e0d35f] bg-gradient-to-br  rounded-lg cursor-pointer" id="file_input" type="file">
@@ -919,12 +949,12 @@ async function replace_all_templates(request, response, state) {
                 <span class="font-bold text-lg">Submit</span>
             </button>
         </a>
-        <a href="/settings/user/profile_settings" class="flex-1" data-link>
+        <a href="/settings/user" class="flex-1" data-link>
             <button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
                 <span class="font-bold text-lg">Back</span>
             </button>
         </a>
-    </div>
+    </div></div></div></div></div>
 	`;
 	const settings_html_user_profile_avatar_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_avatar_string);
 
