@@ -207,45 +207,17 @@ function decodeJWT(idToken) {
 }
 
 async function process_login(request, response) {
-    let body = '';
-    
-    return new Promise((resolve) => {
-        request.on('data', chunk => {
-            body += chunk.toString();
-        });
-        
-        request.on('end', async () => {
-            try {
-                const data = JSON.parse(body);
-                const email = data.email;
-                if (!email) {
-					resolve(-1);
-                    return;
-                }
-                
-				const check_settings = await settings_db.get_settings_value('email', email);
-				if (!check_settings || check_settings === undefined) {
-					resolve(-2);
-					return;
-				}
-				const pw = await modules.check_encrypted_password(data.password, check_settings.password);
-				if (!pw || pw === undefined || pw < 0) {
-					console.log("Password incorrect");
-					resolve(-3);
-					return;
-				}
-
-                const mfa = await mfa_db.get_mfa_value('self', check_settings.self);
-				if (mfa === undefined || (mfa.otc && mfa.otc.endsWith('_temp'))) {
-					resolve({"settings": check_settings, "mfa": null});
-					return;
-				}
-				resolve({"settings": check_settings, "mfa": mfa});
-            } catch (error) {
-                resolve(null);
-            }
-        });
-    });
+	const data = request.body;
+	const check_settings = await settings_db.get_settings_value('email', data.email);
+	if (!check_settings || check_settings === undefined || check_settings < 0)
+		return response.code(200).send({ "response": "Email not found" });
+	const pw = await modules.check_encrypted_password(data.password, check_settings.password);
+	if (!pw || pw === undefined || pw < 0)
+		return response.code(200).send({ "response": "Password incorrect" });
+	const mfa = await mfa_db.get_mfa_value('self', check_settings.self);
+	if (!mfa || mfa === undefined || mfa < 0 || ((mfa.otc && mfa.otc.endsWith('_temp')) && (mfa.email && mfa.email.endsWith('_temp')) && (mfa.custom && mfa.custom.endsWith('_temp')) ))
+		return response.code(200).send({ "response": "success", "settings": check_settings, 'mfa': null });
+	return response.code(200).send({ "response": "success", "settings": check_settings, 'mfa': mfa });
 }
 
 async function get_frontend_content(request) {
