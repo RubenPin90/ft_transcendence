@@ -1023,11 +1023,23 @@ async function get_data(request, response) {
 			console.log(username);
 			const check_user = await users_db.get_users_value('self', username.userid);
 			return response.code(200).send({'username': check_user.username});
+		} else if (link.get == "site_content") {
+			console.log("IN SITE CONTNT");
+			const data = await utils.replace_all_templates(request, response);
+			response.writeHead(200, {'Content-Type': 'application/json'});
+			response.end(JSON.stringify({"Response": 'success', "Content": utils.show_page(data, "home_div")}));
+			return true;
 		}
-		return response.code(404).send({ "error": "Not found" });
+		response.writeHead(404, {'Content-Type': 'application/json'});
+		response.end(JSON.stringify({"Response": 'Not found', "Content": null}));
+		return true; //or false idk
+		// return response.code(404).send({ "error": "Not found" });
 	} catch (err) {
       	console.error('Error:', err);
-      	return response.code(500).send({ "response": 'fail' });
+		response.writeHead(500, {'Content-Type': 'application/json'});
+		response.end(JSON.stringify({"Response": 'fail', "Content": null}));
+      	// return response.code(500).send({ "response": 'fail' });
+		return true; //or false idk
     }
 }
 
