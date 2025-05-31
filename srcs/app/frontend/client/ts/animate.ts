@@ -68,37 +68,3 @@ function toggle_Eye(num : number){
     }
 }
 
-// document.addEventListener('click', (event) => {
-//     const target = event.target as HTMLElement;
-
-//     // Handle clicks on the login button
-//     if (target.id === 'loginBtn') {
-//         console.log("TARGET IS LOGIN: ", target.id);
-//         activate('login');
-//     }
-
-//     // Handle clicks on the sign-up button
-//     if (target.id === 'signupBtn') {
-//         console.log("TARGET IS SIGNUP: ", target.id);
-//         activate('signup');
-//     }
-// });
-
-// async function activate(tab: 'login' | 'signup') {
-//     let field = document.getElementById('login-signup-field');
-//     const fieldHighlight = document.getElementById('highlight');
-//     if (!fieldHighlight){
-//         console.error('could not find fieldHighlight for the Login | Signup field');
-//         return;
-//     }
-//     activeBtn = tab;
-//     if (tab === 'login'){ //clicked on login
-//         fieldHighlight.style.left = '0%';
-//         if (field)
-//             field.innerHTML = await returnLogin();
-//     }else { //clicked on sign up
-//         fieldHighlight.style.left = '50%';
-//         if (field)
-//             field.innerHTML = await returnSignUp();
-//     }
-// }
