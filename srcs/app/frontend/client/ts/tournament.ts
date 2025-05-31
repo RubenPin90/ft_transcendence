@@ -1,6 +1,6 @@
   // tournaments.ts
 
-  import type { TLobbyState, PlayerStub, MatchStub, BracketRounds } from './types.js';
+  import type { TLobbyState, PlayerStub, MatchStub, BracketRounds, TourneySummary } from './types.js';
   import { getMyId, setCurrentTLobby } from './state.js';
   import { hideAllPages } from './helpers.js';
   declare const socket: WebSocket | undefined;
@@ -18,7 +18,9 @@
       console.error('Bracket overlay HTML missing');
       return;
     }
-  
+    
+    console.log('Rendering tournament bracket overlay with rounds:', rounds);
+
     /* wipe previous columns but keep the button */
     overlay.replaceChildren(beginBtn);
   
@@ -79,18 +81,6 @@
     } catch { beginBtn.hidden = true; }
   
     overlay.hidden = false;
-  }
-  
-  
-  
-
-
-  export interface TourneySummary {
-    id: string;
-    code: string;
-    name: string;
-    slots: string;
-    joinable: boolean;
   }
 
   /** Join a tournament via its 4‑letter invitation code. */

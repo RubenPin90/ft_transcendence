@@ -25,6 +25,7 @@ export function setupButtonsDelegated(navigate, TLobbySocket) {
                     navigate('/profile');
                     break;
                 default:
+                    console.log('Main menu button clicked:', target.id);
                     break;
             }
         });
@@ -36,6 +37,7 @@ export function setupButtonsDelegated(navigate, TLobbySocket) {
             const target = event.target;
             const TLobby = getCurrentTLobby();
             const userId = getMyId();
+            console.log('Lobby button clicked:', target.id);
             switch (target.id) {
                 case 't-back-btn':
                     navigate('/');
@@ -67,6 +69,7 @@ export function setupButtonsDelegated(navigate, TLobbySocket) {
                     }
                     break;
                 default:
+                    console.log('Unknown lobby button clicked:', target.id);
                     break;
             }
         });

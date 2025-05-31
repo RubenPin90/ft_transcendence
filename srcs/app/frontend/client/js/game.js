@@ -1,13 +1,15 @@
-import { getSocket } from './socket.js';
+import { on, off, send, getSocket } from './socket.js';
 let ctx = null;
 let userId = null;
 let currentRoomId = null;
 let ws = null;
 let inputHandlersRegistered = false;
-let onGameEndCallback = null;
 const keysPressed = {};
+let gameEndCb = null;
+let matchFoundListener = null;
+let stateListener = null;
 export function setOnGameEnd(cb) {
-    onGameEndCallback = cb;
+    gameEndCb = cb;
 }
 export function initGameCanvas() {
     const canvas = document.getElementById('game');
@@ -24,35 +26,34 @@ export function startGame(mode) {
         userId = localStorage.getItem('playerId');
     }
     if (mode === 'pve') {
-        const sendJoinQueue = () => ws.send(JSON.stringify({
-            type: 'joinQueue',
-            payload: { mode }
-        }));
-        if (ws.readyState === WebSocket.OPEN)
+        const sendJoinQueue = () => send({ type: 'joinQueue', payload: { mode } });
+        if (ws.readyState === WebSocket.OPEN) {
             sendJoinQueue();
-        else
+        }
+        else {
             ws.addEventListener('open', sendJoinQueue, { once: true });
+        }
     }
-    const handleMessage = (ev) => {
-        const msg = JSON.parse(ev.data);
-        if (msg.type === 'matchFound') {
+    if (!matchFoundListener) {
+        matchFoundListener = (msg) => {
             currentRoomId = msg.payload.gameId;
             userId = msg.payload.userId;
             console.log(`Match ready: room=${currentRoomId}, user=${userId}`);
-        }
-        else if (msg.type === 'state') {
+        };
+        on('matchFound', matchFoundListener);
+    }
+    if (!stateListener) {
+        stateListener = (msg) => {
             drawFrame(msg.state);
             if (msg.state.status === 'finished') {
                 stopGame();
-                onGameEndCallback === null || onGameEndCallback === void 0 ? void 0 : onGameEndCallback(msg.state.winner);
+                if (msg.state.winner != null && gameEndCb) {
+                    gameEndCb(msg.state.winner);
+                }
             }
-        }
-        else {
-            console.error('Unknown message type:', msg);
-            return;
-        }
-    };
-    ws.addEventListener('message', handleMessage);
+        };
+        on('state', stateListener);
+    }
     if (!inputHandlersRegistered) {
         setupInputHandlers();
         inputHandlersRegistered = true;
@@ -60,18 +61,27 @@ export function startGame(mode) {
 }
 export function stopGame() {
     if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
+        send({
             type: 'leaveGame',
             payload: { roomId: currentRoomId, userId }
-        }));
+        });
+    }
+    if (matchFoundListener) {
+        off('matchFound', matchFoundListener);
+        matchFoundListener = null;
+    }
+    if (stateListener) {
+        off('state', stateListener);
+        stateListener = null;
     }
 }
-function drawFrame(state) {
+export function drawFrame(state) {
     if (state == null ||
         typeof state !== 'object' ||
         !Array.isArray(state.players) ||
-        state.players.length !== 2)
+        state.players.length !== 2) {
         return;
+    }
     if (!ctx)
         return;
     const canvas = ctx.canvas;
@@ -93,7 +103,7 @@ function drawFrame(state) {
     ctx.fillText(`${state.scores[state.players[0].id] || 0}`, canvas.width * 0.25, 30);
     ctx.fillText(`${state.scores[state.players[1].id] || 0}`, canvas.width * 0.75, 30);
 }
-function setupInputHandlers() {
+export function setupInputHandlers() {
     let moveInterval = null;
     function getDirection() {
         if (keysPressed['ArrowUp'] && !keysPressed['ArrowDown'])
@@ -106,7 +116,7 @@ function setupInputHandlers() {
         if (!currentRoomId || !userId)
             return;
         const direction = getDirection();
-        ws === null || ws === void 0 ? void 0 : ws.send(JSON.stringify({
+        send({
             type: 'movePaddle',
             payload: {
                 roomId: currentRoomId,
@@ -114,7 +124,7 @@ function setupInputHandlers() {
                 direction: active ? direction : 'stop',
                 active
             }
-        }));
+        });
     }
     window.addEventListener('keydown', (e) => {
         if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && userId && currentRoomId) {
@@ -135,7 +145,7 @@ function setupInputHandlers() {
             if (keysPressed[e.key]) {
                 keysPressed[e.key] = false;
             }
-            if (!keysPressed['ArrowUp'] && !keysPressed['ArrowDown'] && moveInterval != null) {
+            if (!keysPressed['ArrowUp'] && !keysPressed['ArrowDown'] && moveInterval !== null) {
                 clearInterval(moveInterval);
                 moveInterval = null;
                 sendMovement(false);

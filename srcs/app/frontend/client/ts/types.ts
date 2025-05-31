@@ -1,3 +1,5 @@
+export let onGameEndCallback: ((winnerId: string) => void) | null = null;
+
 export interface TLobbyState {
     id: string
     code: string
@@ -14,6 +16,14 @@ export interface MatchAssignedMsg {
     matchId: string;
     players: { id: string; name: string }[];
   };
+}
+
+export interface TourneySummary {
+  id: string;
+  code: string;
+  name: string;
+  slots: string;
+  joinable: boolean;
 }
 
 export interface PlayerStub {

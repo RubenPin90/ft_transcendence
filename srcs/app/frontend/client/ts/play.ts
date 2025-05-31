@@ -1,21 +1,25 @@
-// main.ts — fixed to keep the original `on()` event-bus style
-
 import {
   initGameCanvas,
   startGame,
   stopGame,
   setOnGameEnd,
-  GameMode
+  GameMode,
+  drawFrame,
 } from './game.js';
 import {
   renderTournamentList,
   joinByCode,
-  TourneySummary,
   renderTLobby,
   renderBracketOverlay
 } from './tournament.js';
 import { setupButtonsDelegated } from './buttons.js';
-import type { TLobbyState, MatchStub, BracketRounds, TournamentBracketMsg } from './types.js';
+import type {
+  TLobbyState,
+  MatchStub,
+  BracketRounds,
+  TournamentBracketMsg,
+  TourneySummary
+} from './types.js';
 import { setMyId, setCurrentTLobby, getCurrentTLobby } from './state.js';
 import { hideAllPages } from './helpers.js';
 import { setupMatchmakingHandlers } from './matchmaking.js';
@@ -24,21 +28,20 @@ import { on, send, getSocket } from './socket.js';
 // ────────────────────────────────────────────────────────────
 //  1.  guarantee we have a socket right away and recover userId
 // ────────────────────────────────────────────────────────────
-const socket = getSocket(); // getSocket() now builds WS with stored playerId as sub-protocol
+const socket = getSocket();
 
 let currentRoomId: string | null = null;
-
-
-on('welcome', (msg) => {
-  // server confirms what userId it finally assigned to this tab
-  const { userId } = msg.payload;
-  localStorage.setItem('playerId', userId);
-  (socket as any).userId = userId;           // keep a live copy on the WS object
-});
+let userId: string | null = null;
 
 // ────────────────────────────────────────────────────────────
 //  2.  generic error banner
 // ────────────────────────────────────────────────────────────
+on('welcome', (msg) => {
+  const { userId } = msg.payload;
+  localStorage.setItem('playerId', userId);
+  (socket as any).userId = userId;
+});
+
 on('error', (msg) => {
   const banner = document.getElementById('error-banner')!;
   banner.textContent = msg.payload.message;
@@ -59,15 +62,13 @@ on('joinedTLobby', (msg) => {
   }
 });
 
-
 on('tournamentBracketMsg', (msg) => {
   let rounds = msg.payload.rounds as unknown;
   if (Array.isArray(rounds) && !Array.isArray(rounds[0])) {
-   rounds = [rounds];
+    rounds = [rounds];
   }
   renderBracketOverlay(rounds as BracketRounds);
-  });
-
+});
 
 on('tournamentCreated', (msg) => {
   const TLobby: TLobbyState = msg.payload;
@@ -93,7 +94,7 @@ on('tournamentList', (msg) => {
 on('tLobbyState', (msg) => {
   const lobby = msg.payload as TLobbyState;
   const current = getCurrentTLobby();
-  if (current && current.id !== lobby.id) return; // ignore lobbies that are not ours
+  if (current && current.id !== lobby.id) return;
   setCurrentTLobby(lobby);
   renderTLobby(lobby, socket);
 });
@@ -112,14 +113,11 @@ on('matchFound', (msg) => {
 
 on<'matchAssigned'>('matchAssigned', (msg) => {
   const { tournamentId, matchId, players } = msg.payload;
-
-  // fall back to the freshly received socket.userId if LS is empty (first load)
   const myId = localStorage.getItem('playerId') ?? (socket as any).userId;
-  const me    = players.find(p => p.id === myId);
+  const me = players.find(p => p.id === myId);
   const rival = players.find(p => p.id !== myId);
   if (!me || !rival) return;
 
-  // ▒▒ NEW ▒▒ – make the match the current room
   localStorage.setItem('currentGameId', matchId);
   currentRoomId = matchId;
 
@@ -131,9 +129,10 @@ on<'matchAssigned'>('matchAssigned', (msg) => {
   }, 3000);
 });
 
+// Теперь мы не регистрируем on<'state'> в play.ts — за это отвечает game.ts.
 
 // ────────────────────────────────────────────────────────────
-//  5.  UI helpers & routing (original code, lightly trimmed)
+//  5.  UI helpers & routing
 // ────────────────────────────────────────────────────────────
 let markQueued: (v: boolean) => void;
 let currentMode: string | null = null;
@@ -160,6 +159,7 @@ function joinByCodeWithSocket(code?: string) {
   joinByCode(socket, code);
 }
 
+// Установим колбэк “игра окончена” через setOnGameEnd:
 setOnGameEnd((winnerId: string) => {
   alert(`Player ${winnerId} wins!`);
 });
@@ -192,11 +192,8 @@ function route() {
     if (currentMode && currentMode !== mode) stopGame();
     currentMode = mode;
     initGameCanvas();
+    // Теперь вызываем startGame и внутри game.ts подписываемся на `state` и `matchFound`.
     if (['pve', '1v1'].includes(mode)) startGame(mode as GameMode);
-    setOnGameEnd((winnerId) => {
-      stopGame();
-      alert(`Game over! Player ${winnerId} wins!`);
-    });
     return;
   }
   if (path.startsWith('/tournament/')) {

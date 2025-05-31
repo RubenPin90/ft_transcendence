@@ -1,1 +1,1 @@
-export {};
+export let onGameEndCallback = null;

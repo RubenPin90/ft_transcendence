@@ -12,6 +12,7 @@ export function renderBracketOverlay(rounds) {
         console.error('Bracket overlay HTML missing');
         return;
     }
+    console.log('Rendering tournament bracket overlay with rounds:', rounds);
     overlay.replaceChildren(beginBtn);
     rounds.forEach((round, rIdx) => {
         const col = document.createElement('div');

@@ -39,7 +39,7 @@ export function setupButtonsDelegated(
 
         default:
           // Unknown main-menu button
-          //console.log('Main menu button clicked:', target.id);
+          console.log('Main menu button clicked:', target.id);
           break;
       }
     });
@@ -53,7 +53,7 @@ export function setupButtonsDelegated(
       const TLobby = getCurrentTLobby();
       const userId = getMyId();
 
-      //console.log('Lobby button clicked:', target.id);
+      console.log('Lobby button clicked:', target.id);
 
       switch (target.id) {
         case 't-back-btn':
@@ -90,7 +90,7 @@ export function setupButtonsDelegated(
           break;
 
         default:
-          //console.log('Unknown lobby button clicked:', target.id);
+          console.log('Unknown lobby button clicked:', target.id);
           break;
       }
     });

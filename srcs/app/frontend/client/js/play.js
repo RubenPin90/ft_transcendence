@@ -1,4 +1,4 @@
-import { initGameCanvas, startGame, stopGame, setOnGameEnd } from './game.js';
+import { initGameCanvas, startGame, stopGame, setOnGameEnd, } from './game.js';
 import { renderTournamentList, joinByCode, renderTLobby, renderBracketOverlay } from './tournament.js';
 import { setupButtonsDelegated } from './buttons.js';
 import { setMyId, setCurrentTLobby, getCurrentTLobby } from './state.js';
@@ -7,6 +7,7 @@ import { setupMatchmakingHandlers } from './matchmaking.js';
 import { on, send, getSocket } from './socket.js';
 const socket = getSocket();
 let currentRoomId = null;
+let userId = null;
 on('welcome', (msg) => {
     const { userId } = msg.payload;
     localStorage.setItem('playerId', userId);
@@ -138,10 +139,6 @@ function route() {
         initGameCanvas();
         if (['pve', '1v1'].includes(mode))
             startGame(mode);
-        setOnGameEnd((winnerId) => {
-            stopGame();
-            alert(`Game over! Player ${winnerId} wins!`);
-        });
         return;
     }
     if (path.startsWith('/tournament/')) {

@@ -1,4 +1,7 @@
+// game.ts — полностью через шину событий из socket.ts
+
 import { on, off, send, getSocket } from './socket.js';
+import type { ServerMessage } from './socket.js'; // только тип для извлечения payload
 export type GameMode = 'pve' | '1v1' | 'Tournament';
 
 interface PlayerState {
@@ -18,26 +21,43 @@ export interface GameState {
 let ctx: CanvasRenderingContext2D | null = null;
 let userId: string | null = null;
 let currentRoomId: string | null = null;
-let ws: WebSocket | null = null;  // Declare ws globally
+let ws: WebSocket | null = null;  // Только для send(); слушатели идут через on()/off()
 let inputHandlersRegistered = false;
-
-let onGameEndCallback: ((winnerId: string) => void) | null = null;
 
 const keysPressed: Record<string, boolean> = {};
 
+// Локальная переменная, куда сохранится callback, переданный пользователем
+let gameEndCb: ((winnerId: string) => void) | null = null;
+
+// Колбэки для off(...)
+let matchFoundListener: ((msg: Extract<ServerMessage, { type: 'matchFound' }>) => void) | null = null;
+let stateListener:      ((msg: Extract<ServerMessage, { type: 'state' }>)      => void) | null = null;
+
+/**
+ * setOnGameEnd сохраняет колбэк, который будет вызван,
+ * когда игра завершится (status === 'finished').
+ */
 export function setOnGameEnd(cb: (winnerId: string) => void): void {
-  onGameEndCallback = cb;
+  gameEndCb = cb;
 }
 
+/**
+ * Инициализирует canvas для игры: получает контекст 2D.
+ */
 export function initGameCanvas(): void {
   const canvas = document.getElementById('game') as HTMLCanvasElement | null;
   if (!canvas) return;
   ctx = canvas.getContext('2d');
 }
 
+/**
+ * Запускает игру: подписывается на события matchFound и state через on().
+ * Если mode === 'pve', отправляет joinQueue.
+ */
 export function startGame(mode: GameMode): void {
-  ws = getSocket();
+  ws = getSocket(); // нужен только для send()
 
+  // Восстанавливаем из localStorage, если ещё не заданы
   if (!currentRoomId) {
     currentRoomId = localStorage.getItem('currentGameId');
   }
@@ -46,60 +66,85 @@ export function startGame(mode: GameMode): void {
   }
 
   if (mode === 'pve') {
-    const sendJoinQueue = () => ws!.send(JSON.stringify({
-      type: 'joinQueue',
-      payload: { mode }
-    }));
-    if (ws.readyState === WebSocket.OPEN) sendJoinQueue();
-    else ws.addEventListener('open', sendJoinQueue, { once: true });
+    const sendJoinQueue = () =>
+      send({ type: 'joinQueue', payload: { mode } });
+    if (ws.readyState === WebSocket.OPEN) {
+      sendJoinQueue();
+    } else {
+      // дождёмся открытия, потом отправим
+      ws.addEventListener('open', sendJoinQueue, { once: true });
+    }
   }
 
-  const handleMessage = (ev: MessageEvent) => {
-    const msg = JSON.parse(ev.data) as
-      | { type: 'matchFound'; payload: { gameId: string; mode: string; userId: string } }
-      | { type: 'state'; state: GameState };
-
-    if (msg.type === 'matchFound') {
+  // Подписываемся на matchFound, если ещё не подписаны
+  if (!matchFoundListener) {
+    matchFoundListener = (msg) => {
+      // msg.payload содержит { gameId, mode, userId }
       currentRoomId = msg.payload.gameId;
-      userId = msg.payload.userId;
+      userId        = msg.payload.userId;
       console.log(`Match ready: room=${currentRoomId}, user=${userId}`);
-    } else if (msg.type === 'state') {
+    };
+    on('matchFound', matchFoundListener);
+  }
+
+  // Подписываемся на state, если ещё не подписаны
+  if (!stateListener) {
+    stateListener = (msg) => {
       drawFrame(msg.state);
       if (msg.state.status === 'finished') {
-        //console.log('Game finished! Winner =', msg.state.winner);
+        // Игра окончена
         stopGame();
-        onGameEndCallback?.(msg.state.winner!);
+        if (msg.state.winner != null && gameEndCb) {
+          gameEndCb(msg.state.winner);
+        }
       }
-    }
-    else {
-      console.error('Unknown message type:', msg);
-      return;
-    }
-  };
+    };
+    on('state', stateListener);
+  }
 
-  ws.addEventListener('message', handleMessage);
+  // Устанавливаем обработчики ввода (клавиши), но только один раз
   if (!inputHandlersRegistered) {
     setupInputHandlers();
     inputHandlersRegistered = true;
   }
 }
 
+/**
+ * Останавливает игру: отправляет leaveGame и удаляет слушатели, чтобы
+ * при перезапуске не накапливались подписки.
+ */
 export function stopGame(): void {
   if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({
+    send({
       type: 'leaveGame',
       payload: { roomId: currentRoomId, userId }
-    }));
-  }
+    });
   }
 
-function drawFrame(state: GameState): void {
+  // Отписываемся от matchFound
+  if (matchFoundListener) {
+    off('matchFound', matchFoundListener);
+    matchFoundListener = null;
+  }
+  // Отписываемся от state
+  if (stateListener) {
+    off('state', stateListener);
+    stateListener = null;
+  }
+}
+
+/**
+ * Рисует текущее состояние игры в canvas.
+ */
+export function drawFrame(state: GameState): void {
   if (
     state == null ||
     typeof state !== 'object' ||
     !Array.isArray(state.players) ||
     state.players.length !== 2
-  ) return;
+  ) {
+    return;
+  }
 
   if (!ctx) return;
   const canvas = ctx.canvas;
@@ -108,6 +153,7 @@ function drawFrame(state: GameState): void {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  // Рисуем мяч
   if (state.ball) {
     const { x, y } = state.ball;
     ctx.beginPath();
@@ -116,11 +162,13 @@ function drawFrame(state: GameState): void {
     ctx.fill();
   }
 
+  // Рисуем ракетки
   state.players.forEach((p, i) => {
     const x = i === 0 ? 10 : canvas.width - 25;
     ctx?.fillRect(x, toY(p.y) - 50, 15, 100);
   });
 
+  // Рисуем счёт
   ctx.font = '20px sans-serif';
   ctx.fillText(
     `${state.scores[state.players[0].id] || 0}`,
@@ -134,7 +182,11 @@ function drawFrame(state: GameState): void {
   );
 }
 
-function setupInputHandlers(): void {
+/**
+ * Устанавливает обработчики клавиш для управления ракеткой.
+ * Отправляет movePaddle по WebSocket каждые 16ms, пока кнопка зажата.
+ */
+export function setupInputHandlers(): void {
   let moveInterval: number | null = null;
 
   function getDirection(): 'up' | 'down' | null {
@@ -146,7 +198,7 @@ function setupInputHandlers(): void {
   function sendMovement(active: boolean): void {
     if (!currentRoomId || !userId) return;
     const direction = getDirection();
-    ws?.send(JSON.stringify({
+    send({
       type: 'movePaddle',
       payload: {
         roomId: currentRoomId,
@@ -154,7 +206,7 @@ function setupInputHandlers(): void {
         direction: active ? direction : 'stop',
         active
       }
-    }));
+    });
   }
 
   window.addEventListener('keydown', (e) => {
@@ -177,8 +229,7 @@ function setupInputHandlers(): void {
       if (keysPressed[e.key]) {
         keysPressed[e.key] = false;
       }
-
-      if (!keysPressed['ArrowUp'] && !keysPressed['ArrowDown'] && moveInterval != null) {
+      if (!keysPressed['ArrowUp'] && !keysPressed['ArrowDown'] && moveInterval !== null) {
         clearInterval(moveInterval);
         moveInterval = null;
         sendMovement(false);

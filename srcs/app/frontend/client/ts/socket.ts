@@ -1,8 +1,7 @@
 // socket.ts – singleton WebSocket + type‑safe message bus
 
 import type { GameState } from './game.js';
-import type { TourneySummary } from './tournament.js';
-import type { TLobbyState } from './types.js';
+import type { TLobbyState, TourneySummary } from './types.js';
 
 export type ServerMessage =
   | { type: 'error';              payload: { message: string } }
