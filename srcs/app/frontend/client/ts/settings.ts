@@ -127,7 +127,10 @@ async function create_custom_code() {
     const qrcodeButtonDiv = document.getElementById('mfa-button') as HTMLDivElement;
 
     if (!qrcodeDiv)
+    {
+        alert("NO DIV ELEMENT");
         return;
+    }
 
     qrcodeDiv.innerHTML = '<h1 class="text-4xl font-bold text-center bg mb-8">Create your 2FA custom<br>6 diggit code</h1>';
     if (!document.getElementById('Code')) {

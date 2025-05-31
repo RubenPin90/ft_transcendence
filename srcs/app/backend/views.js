@@ -133,7 +133,7 @@ async function mfa(request, response) {
             if (!otc_return || otc_return === undefined || otc_return < 0)
                 return `2_${otc_return}`;
             return true;
-        } else if (replace_data.Function == 'verify') {
+        } else if (replace_data.Function == 'verify_otc') {
             response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
             var verified = await utils.verify_otc(request, response, replace_data, null);
             if (verified && verified !== undefined && !(verified < 0)) {
@@ -149,10 +149,14 @@ async function mfa(request, response) {
             else
                 response.raw.end(JSON.stringify({"Response": "Failed"}));
             return true;
-        } else if (replace_data.Function == 'create_custom') {
-            return await utils.create_custom_code(userid, response, replace_data);
-        } else if (replace_data.Function == 'verify_function') {
-            return await utils.verify_custom_code(userid, response, replace_data);
+        } else if (data.Function == 'create_custom') {
+            const test = utils.create_custom_code(userid, response, data);
+            console.log("+++++++++++++++++++++++++");
+            console.log(test);
+            console.log("+++++++++++++++++++++++++");
+            return await test;
+        } else if (data.Function == 'verify_function') {
+            return await utils.verify_custom_code(userid, response, data);
         } else if (replace_data.Function == 'create_email') {
             const returned = await utils.create_email_code(userid, response, replace_data);
             return returned;

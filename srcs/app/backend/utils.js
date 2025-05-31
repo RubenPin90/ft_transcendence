@@ -359,8 +359,8 @@ async function create_otc(userid, response) {
 	return true;
 }
 
-async function custom_code_error_checker(userid, response, replace_data) {
-	if (!response || response === undefined || !replace_data || replace_data === undefined || !userid || userid === undefined || userid === -1)
+async function custom_code_error_checker(userid, response) {
+	if (!response || response === undefined || !userid || userid === undefined || userid === -1)
 		return -1;
 	const check_settings = await settings_db.get_settings_value('self', userid);
 	if (!check_settings || check_settings === undefined || check_settings < 0)
@@ -368,33 +368,44 @@ async function custom_code_error_checker(userid, response, replace_data) {
 	return true;
 }
 
-async function create_custom_code(userid, response, replace_data) {
-	const check_custom_error_code = custom_code_error_checker(userid, response, replace_data);
+async function create_custom_code(userid, response) {
+	const check_custom_error_code = custom_code_error_checker(userid, response);
 	if (!check_custom_error_code || check_custom_error_code === undefined || check_custom_error_code < 0)
 		return -1;
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
 	if (check_mfa < 0)
 		return -2;
-	const check_code = replace_data.Code;
+	const check_code = data.Code;
+	console.log("-------------");
+	console.log("-------------");
+	console.log(1);
+	console.log("-------------");
 	response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
 	if (check_code.length != 6) {
 		response.raw.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
 		return -3;
 	}
+	console.log(2);
+	console.log("-------------");
 	if (isNaN(Number(check_code))) {
 		response.raw.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
 		return -4;
 	}
+	console.log(3);
+	console.log("-------------");
 	if (!check_mfa || check_mfa === undefined)
 		await mfa_db.create_mfa_value('', '', `${check_code}_temp`, 0, userid);
 	else
 		await mfa_db.update_mfa_value('custom', `${check_code}_temp`, userid);
+	console.log(4);
+	console.log("-------------");
+	console.log("-------------");
 	response.raw.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Success"}));
 	return true;
 }
 
-async function verify_custom_code(userid, response, replace_data) {
-	const check_custom_error_code = custom_code_error_checker(userid, response, replace_data);
+async function verify_custom_code(userid, response, data) {
+	const check_custom_error_code = custom_code_error_checker(userid, response);
 	if (!check_custom_error_code || check_custom_error_code === undefined || check_custom_error_code < 0)
 		return -1;
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
@@ -403,7 +414,7 @@ async function verify_custom_code(userid, response, replace_data) {
 	let custom = check_mfa.custom;
 	if (custom.endsWith('_temp'))
 		custom = custom.slice(0, -5);
-	if (replace_data.Code !== custom)
+	if (data.Code !== custom)
 		return -3;
 	await mfa_db.update_mfa_value('custom', custom, userid);
 	if (check_mfa.prefered === 0)
