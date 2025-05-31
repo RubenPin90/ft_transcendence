@@ -443,10 +443,10 @@ async function create_email_code(userid, response, replace_data) {
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
 	const encrypted_code = await modules.create_encrypted_password(check_code);
 	if (!check_mfa || check_mfa === undefined)
-		await mfa_db.create_mfa_value('', '', `${encrypted_code}_temp`, 0, userid);
+		await mfa_db.create_mfa_value(`${encrypted_code}_temp`, '', '', 0, userid);
 	else
 		await mfa_db.update_mfa_value('email', `${encrypted_code}_temp`, userid);
-	response.raw.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Success"}));
+	response.raw.end(JSON.stringify({"Response": 'success'}));
 	const check_email = await modules.send_email(check_settings.email, 'MFA code', `This is your 2FA code. Please do not share: ${check_code}`);
 	if (!check_email || check_email === undefined || check_email == false) {
 		await mfa_db.update_mfa_value('email', '', userid);
@@ -455,8 +455,8 @@ async function create_email_code(userid, response, replace_data) {
 	return true;
 }
 
-async function verify_email_code(userid, response, replace_data) {
-	if (await custom_code_error_checker(userid, response, replace_data) === false)
+async function verify_email_code(userid, response, data) {
+	if (await custom_code_error_checker(userid, response) === false)
 		return false;
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
 	if (check_mfa === undefined || check_mfa === null || check_mfa.email.length === 0)
@@ -464,7 +464,7 @@ async function verify_email_code(userid, response, replace_data) {
 	var email_value = check_mfa.email;
 	if (email_value.endsWith('_temp'))
 		email_value = email_value.slice(0, -5);
-	const decrypted_email_value = await modules.check_encrypted_password(replace_data.Code, email_value);
+	const decrypted_email_value = await modules.check_encrypted_password(data.Code, email_value);
 	response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
 	if (decrypted_email_value === false) {
 		response.raw.end(JSON.stringify({"Response": "Failed"}));
@@ -473,7 +473,7 @@ async function verify_email_code(userid, response, replace_data) {
 	await mfa_db.update_mfa_value('email', email_value, userid);
 	if (check_mfa.prefered === 0)
 		await mfa_db.update_mfa_value('prefered', 1, userid);
-	response.raw.end(JSON.stringify({"Response": "Success"}));
+	response.raw.end(JSON.stringify({"Response": "success"}));
 	return true;
 }
 

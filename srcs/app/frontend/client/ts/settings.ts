@@ -201,9 +201,9 @@ async function verifyEmail() {
         }
 
         const data = await response.json();
-        if (data.Response === "Success") {
+        if (data.Response === "success") {
             alert("Email successfully verified!");
-            window.location.href = 'http://localhost:8080/settings/mfa';
+            window.location.reload;
         } else {
             alert("Verification failed. Wrong password");
         }
@@ -228,7 +228,7 @@ async function create_email() {
         data = await response.json();
         if (data.Response === "NoEmail")
             alert("no email set"); // Here an alert that there is email set. then start a promt to let user input a mail
-        else if (data.Response === "Success") {
+        else if (data.Response === "success") {
             const emailDiv = document.getElementById('mfa');
             const emailInputDiv = document.getElementById('mfa-button');
             if (!emailDiv || !emailInputDiv){

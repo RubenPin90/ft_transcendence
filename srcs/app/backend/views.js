@@ -154,10 +154,10 @@ async function mfa(request, response) {
         } else if (data.Function == 'verify_function') {
             return await utils.verify_custom_code(userid, response, data);
         } else if (data.Function == 'create_email') {
-            const returned = await utils.create_email_code(userid, response, data);
-            return returned;
+            const returned2 = await utils.create_email_code(userid, response, data);
+            return returned2;
         } else if (data.Function == 'verify_email') {
-            return await utils.verify_email_code(userid, response, data);;
+            return await utils.verify_email_code(userid, response, data);
         } else if (data.Function == 'remove_custom_code') {
             const clear_return = await utils.clear_settings_mfa(userid, 'custom', response);
             if (!clear_return || clear_return === undefined || clear_return < 0)

@@ -78,13 +78,13 @@ async function send_email(receiver, subject, text) {
 	const transporter = nodemailer.createTransport({
 		service: 'gmail',
 		auth: {
-			user: process.env.SMTP_USER,
-			pass: process.env.SMTP_PASSWORD
+			user: SMTP_USER,
+			pass: SMTP_PASSWORD
 		}
 	});
 
 	const mailOptions = {
-		from: process.env.SMTP_USER,
+		from: SMTP_USER,
 		to: receiver,
 		subject: subject,
 		text: text
