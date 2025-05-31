@@ -136,9 +136,9 @@ async function mfa(request, response) {
             if (!otc_return || otc_return === undefined || otc_return < 0)
                 return `2_${otc_return}`;
             return true;
-        } else if (replace_data.Function == 'verify') {
+        } else if (data.Function == 'verify_otc') {
             response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-            var verified = await utils.verify_otc(request, response, replace_data, null);
+            var verified = await utils.verify_otc(request, response, data, null);
             if (verified && verified !== undefined && !(verified < 0)) {
                 const check_mfa = await mfa_db.get_mfa_value('self', userid);
                 var new_otc_str = check_mfa.otc;
@@ -152,26 +152,26 @@ async function mfa(request, response) {
             else
                 response.raw.end(JSON.stringify({"Response": "Failed"}));
             return true;
-        } else if (replace_data.Function == 'create_custom') {
-            return await utils.create_custom_code(userid, response, replace_data);
-        } else if (replace_data.Function == 'verify_function') {
-            return await utils.verify_custom_code(userid, response, replace_data);
-        } else if (replace_data.Function == 'create_email') {
-            const returned = await utils.create_email_code(userid, response, replace_data);
-            return returned;
-        } else if (replace_data.Function == 'verify_email') {
-            return await utils.verify_email_code(userid, response, replace_data);;
-        } else if (replace_data.Function == 'remove_custom_code') {
+        } else if (data.Function == 'create_custom') {
+            return await utils.create_custom_code(userid, response, data);
+        } else if (data.Function == 'verify_function') {
+            return await utils.verify_custom_code(userid, response, data);
+        } else if (data.Function == 'create_email') {
+            const returned2 = await utils.create_email_code(userid, response, data);
+            return returned2;
+        } else if (data.Function == 'verify_email') {
+            return await utils.verify_email_code(userid, response, data);
+        } else if (data.Function == 'remove_custom_code') {
             const clear_return = await utils.clear_settings_mfa(userid, 'custom', response);
             if (!clear_return || clear_return === undefined || clear_return < 0)
                 return `3_${clear_return}`;
             return true;
-        } else if (replace_data.Function === 'remove_otc') {
+        } else if (data.Function === 'remove_otc') {
             const clear_return = await utils.clear_settings_mfa(userid, 'otc', response);
             if (!clear_return || clear_return === undefined || clear_return < 0)
                 return `4_${clear_return}`;
             return true;
-        } else if (replace_data.Function === 'remove_email') {
+        } else if (data.Function === 'remove_email') {
             const clear_return = await utils.clear_settings_mfa(userid, 'email', response);
             if (!clear_return || clear_return === undefined || clear_return < 0)
                 return `5_${clear_return}`;
