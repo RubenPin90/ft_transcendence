@@ -102,9 +102,9 @@ async function verify_custom_code() {
 
         const data = await response.json();
         
-        if (data.Response === "Success") {
+        if (data.Response === "success") {
             alert("Code successfully registered!");
-            window.location.href = 'http://localhost:8080/settings/mfa';
+            window.location.reload;
             return;
         } else {
             alert("Incorrect code. Please retry!");

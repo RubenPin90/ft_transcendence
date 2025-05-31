@@ -368,7 +368,7 @@ async function custom_code_error_checker(userid, response) {
 	return true;
 }
 
-async function create_custom_code(userid, response) {
+async function create_custom_code(userid, response, data) {
 	const check_custom_error_code = custom_code_error_checker(userid, response);
 	if (!check_custom_error_code || check_custom_error_code === undefined || check_custom_error_code < 0)
 		return -1;
@@ -376,36 +376,26 @@ async function create_custom_code(userid, response) {
 	if (check_mfa < 0)
 		return -2;
 	const check_code = data.Code;
-	console.log("-------------");
-	console.log("-------------");
-	console.log(1);
-	console.log("-------------");
 	response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
 	if (check_code.length != 6) {
 		response.raw.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
 		return -3;
 	}
-	console.log(2);
-	console.log("-------------");
 	if (isNaN(Number(check_code))) {
 		response.raw.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
 		return -4;
 	}
-	console.log(3);
-	console.log("-------------");
 	if (!check_mfa || check_mfa === undefined)
 		await mfa_db.create_mfa_value('', '', `${check_code}_temp`, 0, userid);
 	else
 		await mfa_db.update_mfa_value('custom', `${check_code}_temp`, userid);
-	console.log(4);
-	console.log("-------------");
-	console.log("-------------");
 	response.raw.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Success"}));
 	return true;
 }
 
 async function verify_custom_code(userid, response, data) {
 	const check_custom_error_code = custom_code_error_checker(userid, response);
+	response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
 	if (!check_custom_error_code || check_custom_error_code === undefined || check_custom_error_code < 0)
 		return -1;
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
@@ -414,11 +404,14 @@ async function verify_custom_code(userid, response, data) {
 	let custom = check_mfa.custom;
 	if (custom.endsWith('_temp'))
 		custom = custom.slice(0, -5);
-	if (data.Code !== custom)
+	if (data.Code !== custom) {
+		response.raw.end(JSON.stringify({"Response": 'Wrong password', "Content": null}));
 		return -3;
+	}
 	await mfa_db.update_mfa_value('custom', custom, userid);
 	if (check_mfa.prefered === 0)
 		await mfa_db.update_mfa_value('prefered', 3, userid);
+	response.raw.end(JSON.stringify({"Response": 'success', "Content": null}));
 	return true;
 }
 
