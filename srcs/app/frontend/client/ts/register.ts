@@ -99,10 +99,13 @@ async function create_account() {
     return wrong_input("Passwords are not the same");
   }
 
+  const picute = await fetch('/default_profile');
+
+  let pfp = '';
   const response = await fetch('/register', {
     method : 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body   : JSON.stringify({email, username, password})
+    body   : JSON.stringify({email, username, password, pfp})
   });
 
   if (!response.ok) {

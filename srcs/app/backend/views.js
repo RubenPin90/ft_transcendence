@@ -463,9 +463,9 @@ async function verify_custom(request, response) {
 
 async function profile(request, response){
     var [keys, values] = modules.get_cookies(request);
-    if (keys?.includes('token'))
+    if (!keys?.includes('token')){
         return await home(request, response);
-
+    }
 
     const tokenIndex = keys.findIndex((key) => key === 'token');
     const token = values[tokenIndex];
@@ -476,32 +476,30 @@ async function profile(request, response){
         console.error(`Error in profile views.js: ${err}`);
         return // Here was a redirect(response, '/login', 302);
     }
-
     const user = await users_db.get_users_value('self', decoded.userid);
     if (!user || user === undefined){
         return response.code(404).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": 'fail', "Content": "No user or user undefined"});
-
         // return send.send_error_page('404.html', response, 404);
     }
 
     const settings = await settings_db.get_settings_value('self', decoded.userid);
     if (!settings || settings === undefined){
         return response.code(404).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": 'fail', "Content": "no settings or settings undefined"});
-
         // return send.send_error_page('404.html', response, 404);
     }
 
     const userid = decoded.userid;
 
 
-    const inner = request.body;
+    var inner = request.body.innervalue;
+    console.log(inner);
     inner = inner.replace('{{username}}', user.username);
     inner = inner.replace('{{email}}', settings.email || 'Not provided');
     inner = inner.replace('{{picture}}', settings.pfp || 'public/default_profile.svg');
     inner = inner.replace('{{status}}', ()=> {if (user.status === 1) return 'online'; else return 'offline'});
     inner = inner.replace('{{Friends}}', await friends_request.show_accepted_friends(userid))
-
-
+    console.log("------------------------------");
+    console.log(inner);
 
     return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": 'success', "Content": inner});
 
