@@ -102,9 +102,9 @@ async function verify_custom_code() {
 
         const data = await response.json();
         
-        if (data.Response === "Success") {
+        if (data.Response === "success") {
             alert("Code successfully registered!");
-            window.location.href = 'http://localhost:8080/settings/mfa';
+            window.location.reload;
             return;
         } else {
             alert("Incorrect code. Please retry!");
@@ -127,7 +127,10 @@ async function create_custom_code() {
     const qrcodeButtonDiv = document.getElementById('mfa-button') as HTMLDivElement;
 
     if (!qrcodeDiv)
+    {
+        alert("NO DIV ELEMENT");
         return;
+    }
 
     qrcodeDiv.innerHTML = '<h1 class="text-4xl font-bold text-center bg mb-8">Create your 2FA custom<br>6 diggit code</h1>';
     if (!document.getElementById('Code')) {
@@ -198,9 +201,9 @@ async function verifyEmail() {
         }
 
         const data = await response.json();
-        if (data.Response === "Success") {
+        if (data.Response === "success") {
             alert("Email successfully verified!");
-            window.location.href = 'http://localhost:8080/settings/mfa';
+            window.location.reload;
         } else {
             alert("Verification failed. Wrong password");
         }
@@ -225,7 +228,7 @@ async function create_email() {
         data = await response.json();
         if (data.Response === "NoEmail")
             alert("no email set"); // Here an alert that there is email set. then start a promt to let user input a mail
-        else if (data.Response === "Success") {
+        else if (data.Response === "success") {
             const emailDiv = document.getElementById('mfa');
             const emailInputDiv = document.getElementById('mfa-button');
             if (!emailDiv || !emailInputDiv){
@@ -322,14 +325,14 @@ async function remove_email() {
 //     }
 // }
 
-async function logout() {
-    delete_cookie("token");
-    location.reload();
-}
+// async function logout() {
+//     delete_cookie("token");
+//     location.reload();
+// }
 
-async function delete_cookie(name : string) {
-    document.cookie = name  + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-}
+// async function delete_cookie(name : string) {
+//     document.cookie = name  + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+// }
 
 
 

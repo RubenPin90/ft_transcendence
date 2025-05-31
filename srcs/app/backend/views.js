@@ -9,60 +9,31 @@ import * as friends_request from '../database/db_friend_request.js'
 import qrcode from 'qrcode';
 import { json } from 'stream/consumers';
 import { response } from 'express';
+import { encrypt_google } from './utils.js';
+import http from 'http';
 
 async function login(request, response) {
-    const check_login = utils.check_login(request, response);
-    if (check_login === true)
-        return true;
+    var [keys, values] = modules.get_cookies(request);
+    if (keys?.includes('token'))
+        return await home(request, response);
     if (request.method === "POST") {
         const parsed = await utils.process_login(request, response);
-        if (!parsed || parsed === undefined)
-            return `1_${parsed}`;
-        else if (parsed < 0) {
-            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-            if (parsed == -1)
-                response.end(JSON.stringify({"Response": 'Error', "Content": 'Wrong email'}));
-            else if (parsed == -2)
-                response.end(JSON.stringify({"Response": 'Error', "Content": 'Wrong password'}));
+        if (!parsed || parsed === undefined || parsed < 0)
             return true;
-        }
-        if (parsed.mfa && parsed.mfa.email && !parsed.mfa.email.endsWith('_temp') && parsed.mfa.prefered === 1) {
-            var email_code = Math.floor(Math.random() * 1000000);
-            const email_code_len = 6 - (String(email_code).length);
-            for (var pos = 0; pos < email_code_len; pos++)
-                email_code = '0' + email_code;
-            await modules.send_email(parsed.settings.email, 'MFA code', `This is your 2FA code. Please do not share: ${email_code}`);
-            email_code = await modules.create_encrypted_password(String(email_code));
-            await mfa_db.update_mfa_value('email', email_code, parsed.mfa.self);
-            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-            response.end(JSON.stringify({"Response": 'send_email_verification', "Content": parsed.settings.self}));
-            return true;
-        } else if (parsed.mfa && parsed.mfa.otc && !parsed.mfa.otc.endsWith('_temp') && parsed.mfa.prefered === 2) {
-            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-            response.end(JSON.stringify({"Response": 'send_2FA_verification', "Content": parsed.settings.self}));
-            return true;
-        } else if (parsed.mfa && parsed.mfa.custom && !parsed.mfa.custom.endsWith('_temp') && parsed.mfa.prefered === 3) {
-            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-            response.end(JSON.stringify({"Response": 'send_custom_verification', "Content": parsed.settings.self}));
-            return true;
-        }
         const token = modules.create_jwt(parsed.settings.self, '1h');
-        if (!token || token === undefined || token < 0)
-            return `2_${token}`;
-        const lang = modules.create_jwt(parsed.settings.lang, '1h');
-        if (!lang || lang === undefined || lang < 0)
-            return `3_${lang}`;
+        // const lang = modules.create_jwt(parsed.settings.lang, '1h');
+        const lang = modules.create_jwt('en', '1h'); //todo change later to actual settings value
 
-        modules.set_cookie(response, 'token', token, true, true, 'strict');
-        modules.set_cookie(response, 'lang', lang, true, true, 'strict');
-        response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-        response.end(JSON.stringify({"Response": 'reload', "Content": null}));
-        return true;
+        modules.set_cookie(response, 'token', token, 3600);
+        modules.set_cookie(response, 'lang', lang, 3600);
+
+        // response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+        // response.raw.end(JSON.stringify({"Response": 'success', "Settings": parsed.settings, "Mfa": parsed.mfa, "Content": null}));
+        return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({"Response": 'success', "Settings": parsed.settings, "Mfa": parsed.mfa, "Content": null})
+        // return true;
     }
-    if (!check_login || check_login === undefined || check_login < -1)
-        return `4_${check_login}`;
     await send.send_html('index.html', response, 200, async (data) => {
-        data = await utils.replace_all_templates(request, response);
+        data = await utils.replace_all_templates(request, response, 1);
         data = utils.show_page(data, "login_div");
         return data;
     });
@@ -70,45 +41,53 @@ async function login(request, response) {
 }
 
 async function register(request, response) {
-    const check_login = utils.check_login(request, response);
-    if (check_login === true)
-        return true;
+    var [keys, values] = modules.get_cookies(request);
+    if (keys?.includes('token'))
+        return await home(request, response);
     if (request.method == 'POST') {
-        const replace_data = await utils.get_frontend_content(request);
+        const replace_data = request.body;
         const check_settings = await settings_db.get_settings_value('email', replace_data.email);
         if (check_settings || check_settings !== undefined) {
-            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-            response.end(JSON.stringify({"Response": 'User already exists', "Content": null}));
+            response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            response.raw.end(JSON.stringify({"Response": 'User already exists', "Content": null}));
+            return true;
+        }
+        if (replace_data.password.length > 71) {
+            response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            response.raw.end(JSON.stringify({"Response": 'Password to long', "Content": null}));
             return true;
         }
         const hashed = await modules.create_encrypted_password(replace_data.password);
-        if (!hashed || hashed === undefined || hashed < 0)
-            return `1_${hashed}`;
+        if (!hashed || hashed === undefined || hashed < 0) {
+            response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            response.raw.end(JSON.stringify({"Response": 'Bcrypt error', "Content": null}));
+            return true;
+        }
         const settings = await settings_db.create_settings_value(hashed, '', 0, replace_data.email, 'en', '', '');
-        if (!settings || settings === undefined || settings < 0)
-            return `2_${settings}`;
+        if (!settings || settings === undefined || settings < 0) {
+            response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            response.raw.end(JSON.stringify({"Response": 'Failed creating table in settings', "Content": null}));
+            return true;
+        }
         const user = await users_db.create_users_value(0, replace_data.username, settings.self);
         if (!user || user === undefined || user < 0) {
             await settings_db.delete_settings_value(settings.self);
-            return `3_${user}`;
+            response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            response.raw.end(JSON.stringify({"Response": 'Failed creating table in user', "Content": null}));
+            return true;
         }
         const token = modules.create_jwt(settings.self, '1h');
-        if (!token || token === undefined || token < 0)
-            return `4_${token}`;
-        const lang = modules.create_jwt(parsed.settings.lang, '1h');
-        if (!lang || lang === undefined || lang < 0)
-            return `5_${lang}`;
+        const lang = modules.create_jwt('en', '1h');
         
-        modules.set_cookie(response, 'token', token, true, true, 'strict');
-        modules.set_cookie(response, 'lang', lang, true, true, 'strict');
-        response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-        response.end(JSON.stringify({"Response": 'reload', "Content": null}));
+        modules.set_cookie(response, 'token', token, 3600);
+        modules.set_cookie(response, 'lang', lang, 3600);
+        // response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+        // response.raw.end(JSON.stringify({"Response": 'success', "Content": null}));
+        return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": 'success', "Content": null })
         return true;
     }
-    if (!check_login || check_login === undefined || check_login < -1)
-        return `6_${check_login}`;
     const check = await send.send_html('index.html', response, 200, async (data) => {
-        data = await utils.replace_all_templates(request, response);
+        data = await utils.replace_all_templates(request, response, 1);
         data = utils.show_page(data, "register_div");
         return data;
     })
@@ -116,36 +95,25 @@ async function register(request, response) {
 }
 
 async function home(request, response) {
-    var [keys, values] = modules.get_cookies(request.headers.cookie);
+    var [keys, values] = modules.get_cookies(request);
     if (request.url === '/' && !keys?.includes('token'))
-        return send.redirect(response, '/login', 302);
-    if (request.method == 'POST') {
-        const data = await utils.encrypt_google(request);
-        if (data < 0)
-            return `1_${data}`;
-        response.code(200).type('application/json').send(data);
-        return true;
+        return await login(request, response);
+    const code = request.query.code;
+    if (code != undefined && !request.url.includes('&state=')) {
+        const google_return = await encrypt_google(code);
+        if (google_return < 0)
+            return `1_${google_return}`;
+        modules.set_cookie(response, 'token', google_return.token, 3600);
+        modules.set_cookie(response, 'lang', google_return.lang, 3600);
+        response.redirect("https://localhost/");
+    } else if (request.url !== '/') {
+        const github_return = await utils.encrypt_github(request, response);
+        if (github_return < 0)
+            return `2_${github_return}`;
+        modules.set_cookie(response, 'token', github_return.token, 3600);
+        modules.set_cookie(response, 'lang', github_return.lang, 3600);
+        response.redirect("https://localhost/");
     }
-    // } else if (request.url !== '/') {
-    //     const data = await utils.encrypt_github(request, response);
-    //     if (data < 0) {
-    //         return `5_${data}`;
-    //     }
-    //     const check_settings = await settings_db.get_settings_value('github', data);
-    //     if (!check_settings || check_settings === undefined || check_settings < 0)
-    //         return `6_${check_settings}`;
-    //     const token = modules.create_jwt(check_settings.self, '1h');
-    //     if (!token || token === undefined || token < 0)
-    //         return `7_${token}`
-    //     const lang = modules.create_jwt(check_settings.lang, '1h');
-    //     if (!lang || lang === undefined || lang < 0)
-    //         return `8_${lang}`;
-        
-    //     modules.set_cookie(response, 'token', token, true, true, 'strict');
-    //     modules.set_cookie(response, 'lang', lang, true, true, 'strict');
-	// 	send.redirect(response, '/', 302);
-    //     return true;
-    // }
     const check = await send.send_html('index.html', response, 200, async (data) => {
         data = await utils.replace_all_templates(request, response);
         // data = utils.show_page(data, "home_div");//changed from register to home?
@@ -153,26 +121,24 @@ async function home(request, response) {
         return data;
     });
     if (!check || check === undefined || check == false)
-        return `9_${check}`
+        return `3_${check}`
     return true;
 }
 
 async function mfa(request, response) {
     if (request.method === "POST") {
-        var replace_data = await utils.get_frontend_content(request);
-        if (!replace_data || replace_data === undefined)
-            return `1_${replace_data}`;
+        const data = request.body;
         const userid = await utils.get_decrypted_userid(request, response);
         if (!userid || userid === undefined || userid < 0)
-            return `2_${userid}`;
-        if (replace_data.Function == 'create_otc') {
+            return `1_${userid}`;
+        if (data.Function == 'create_otc') {
             const otc_return = await utils.create_otc(userid, response);
             if (!otc_return || otc_return === undefined || otc_return < 0)
-                return `3_${otc_return}`;
+                return `2_${otc_return}`;
             return true;
-        } else if (replace_data.Function == 'verify') {
-            response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-            var verified = await utils.verify_otc(request, response, replace_data, null);
+        } else if (data.Function == 'verify_otc') {
+            response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+            var verified = await utils.verify_otc(request, response, data, null);
             if (verified && verified !== undefined && !(verified < 0)) {
                 const check_mfa = await mfa_db.get_mfa_value('self', userid);
                 var new_otc_str = check_mfa.otc;
@@ -181,41 +147,41 @@ async function mfa(request, response) {
                 await mfa_db.update_mfa_value('otc', new_otc_str, userid);
                 if (check_mfa.prefered === 0)
                     await mfa_db.update_mfa_value('prefered', 2, userid);
-                response.end(JSON.stringify({"Response": "Success"}));
+                response.raw.end(JSON.stringify({"Response": "Success"}));
             }
             else
-                response.end(JSON.stringify({"Response": "Failed"}));
+                response.raw.end(JSON.stringify({"Response": "Failed"}));
             return true;
-        } else if (replace_data.Function == 'create_custom') {
-            return await utils.create_custom_code(userid, response, replace_data);
-        } else if (replace_data.Function == 'verify_function') {
-            return await utils.verify_custom_code(userid, response, replace_data);
-        } else if (replace_data.Function == 'create_email') {
-            const returned = await utils.create_email_code(userid, response, replace_data);
-            return returned;
-        } else if (replace_data.Function == 'verify_email') {
-            return await utils.verify_email_code(userid, response, replace_data);;
-        } else if (replace_data.Function == 'remove_custom_code') {
+        } else if (data.Function == 'create_custom') {
+            return await utils.create_custom_code(userid, response, data);
+        } else if (data.Function == 'verify_function') {
+            return await utils.verify_custom_code(userid, response, data);
+        } else if (data.Function == 'create_email') {
+            const returned2 = await utils.create_email_code(userid, response, data);
+            return returned2;
+        } else if (data.Function == 'verify_email') {
+            return await utils.verify_email_code(userid, response, data);
+        } else if (data.Function == 'remove_custom_code') {
             const clear_return = await utils.clear_settings_mfa(userid, 'custom', response);
+            if (!clear_return || clear_return === undefined || clear_return < 0)
+                return `3_${clear_return}`;
+            return true;
+        } else if (data.Function === 'remove_otc') {
+            const clear_return = await utils.clear_settings_mfa(userid, 'otc', response);
             if (!clear_return || clear_return === undefined || clear_return < 0)
                 return `4_${clear_return}`;
             return true;
-        } else if (replace_data.Function === 'remove_otc') {
-            const clear_return = await utils.clear_settings_mfa(userid, 'otc', response);
-            if (!clear_return || clear_return === undefined || clear_return < 0)
-                return `5_${clear_return}`;
-            return true;
-        } else if (replace_data.Function === 'remove_email') {
+        } else if (data.Function === 'remove_email') {
             const clear_return = await utils.clear_settings_mfa(userid, 'email', response);
             if (!clear_return || clear_return === undefined || clear_return < 0)
-                return `6_${clear_return}`;
+                return `5_${clear_return}`;
             return true;
         }
     }
     const status = await send.send_html('settings.html', response, 200, async (data) => {
         const userid = await utils.get_decrypted_userid(request, response);
         if (userid === -1)
-            return send.redirect(response, '/login', 302);
+            return // Here was a redirect(response, '/login', 302);
         else if (userid === -2)
             return true;
         const check_mfa = await mfa_db.get_mfa_value('self', userid);
@@ -287,179 +253,49 @@ async function mfa(request, response) {
     return true;
 }
 
-function return_language_values(){
-    return `<option value="" selected disabled hidden>Choose your main language</option>
-        <option value="af">Afrikaans</option>
-        <option value="ko">한국어</option>
-        <option value="az">Azərbaycanca</option>
-        <option value="id">Bahasa Indonesia</option>
-        <option value="ms">Bahasa Melayu</option>
-        <option value="jw">Basa Jawa</option>
-        <option value="su">Basa Sunda</option>
-        <option value="bs">Bosanski</option>
-        <option value="ca">Català</option>
-        <option value="ceb">Cebuano</option>
-        <option value="sn">ChiShona</option>
-        <option value="ny">Chichewa</option>
-        <option value="co">Corsu</option>
-        <option value="cy">Cymraeg</option>
-        <option value="da">Dansk</option>
-        <option value="de">Deutsch</option>
-        <option value="et">Eesti</option>
-        <option value="en">English</option>
-        <option value="es">Español</option>
-        <option value="eo">Esperanto</option>
-        <option value="eu">Euskara</option>
-        <option value="fr">Français</option>
-        <option value="fy">Frysk</option>
-        <option value="ga">Gaeilge</option>
-        <option value="sm">Gagana Samoa</option>
-        <option value="gl">Galego</option>
-        <option value="gd">Gàidhlig</option>
-        <option value="ha">Hausa</option>
-        <option value="hmn">Hmoob</option>
-        <option value="hr">Hrvatski</option>
-        <option value="ig">Igbo</option>
-        <option value="it">Italiano</option>
-        <option value="sw">Kiswahili</option>
-        <option value="ht">Kreyòl Ayisyen</option>
-        <option value="ku">Kurdî</option>
-        <option value="la">Latina</option>
-        <option value="lv">Latviešu</option>
-        <option value="lt">Lietuvių</option>
-        <option value="lb">Lëtzebuergesch</option>
-        <option value="hu">Magyar</option>
-        <option value="mg">Malagasy</option>
-        <option value="mt">Malti</option>
-        <option value="mi">Māori</option>
-        <option value="nl">Nederlands</option>
-        <option value="no">Norsk</option>
-        <option value="uz">Oʻzbekcha</option>
-        <option value="pl">Polski</option>
-        <option value="pt">Português</option>
-        <option value="ro">Română</option>
-        <option value="st">Sesotho</option>
-        <option value="sq">Shqip</option>
-        <option value="sk">Slovenčina</option>
-        <option value="sl">Slovenščina</option>
-        <option value="so">Soomaali</option>
-        <option value="fi">Suomi</option>
-        <option value="sv">Svenska</option>
-        <option value="tl">Tagalog</option>
-        <option value="vi">Tiếng Việt</option>
-        <option value="tr">Türkçe</option>
-        <option value="yo">Yorùbá</option>
-        <option value="xh">isiXhosa</option>
-        <option value="zu">isiZulu</option>
-        <option value="is">Íslenska</option>
-        <option value="cs">Čeština</option>
-        <option value="haw">ʻŌlelo Hawaiʻi</option>
-        <option value="el">Ελληνικά</option>
-        <option value="be">Беларуская</option>
-        <option value="bg">Български</option>
-        <option value="ky">Кыргызча</option>
-        <option value="mk">Македонски</option>
-        <option value="mn">Монгол</option>
-        <option value="ru">Русский</option>
-        <option value="sr">Српски</option>
-        <option value="tg">Тоҷикӣ</option>
-        <option value="uk">Українська</option>
-        <option value="kk">Қазақша</option>
-        <option value="hy">Հայերեն</option>
-        <option value="yi">ייִדיש</option>
-        <option value="iw">עברית</option>
-        <option value="ur">اردو</option>
-        <option value="ar">العربية</option>
-        <option value="sd">سنڌي</option>
-        <option value="fa">فارسی</option>
-        <option value="ps">پښتو</option>
-        <option value="ne">नेपाली</option>
-        <option value="mr">मराठी</option>
-        <option value="hi">हिन्दी</option>
-        <option value="bn">বাংলা</option>
-        <option value="gu">ગુજરાતી</option>
-        <option value="ta">தமிழ்</option>
-        <option value="te">తెలుగు</option>
-        <option value="kn">ಕನ್ನಡ</option>
-        <option value="ml">മലയാളം</option>
-        <option value="si">සිංහල</option>
-        <option value="th">ไทย</option>
-        <option value="lo">ລາວ</option>
-        <option value="my">မြန်မာ</option>
-        <option value="ka">ქართული</option>
-        <option value="km">ភាសាខ្មែរ</option>
-        <option value="ja">日本語</option>
-        <option value="zh-cn">简体中文</option>
-        <option value="zh-tw">繁體中文</option>`
-}
 
-async function select_language(request, response){
-    if (request.method == 'POST'){
-        console.log("selecting language");
-    }
-    const status = await send.send_html('settings.html', response, 200, async (data) => {
-        var replace_string = '';
-        // var replace_string = '<button onclick="change_language()">Change language</button><br></br>';
-        replace_string += '<div id="mfa-button" class="flex flex-col items-center w-full mx-auto">';
-        replace_string += '<label for="language" class="justify-center font-bold text-2xl pb-5 text-yellow-100">Choose your main language</label>';
-        replace_string += '<form id="language" class="w-full mx-auto">';
-        replace_string += '<select name="lang" id="lang" class="w-full p-4 text-center rounded-lg text-lg font-[Roboto] border border-[#e0d35f] border-spacing-8 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]">';
-        replace_string += return_language_values();
-        replace_string += '</select></form></div>';
-        replace_string += '<div class="flex mt-4 gap-4 w-full">';
-        replace_string += '<a class="flex-1">';
-        replace_string += '<button type="submit" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-        replace_string += '<span class="font-bold text-lg">Submit</span></button></a>';
-        replace_string += '<a href="/" data-link class="flex-1">';
-        replace_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-        replace_string += '<span class="font-bold text-lg">Home</span></button></a></div>';
-        return data.replace('{{mfa-button}}', replace_string);
-    });
-    return true;
-}
+// async function user(request, response){
+//     var [keys, values] = modules.get_cookies(request.headers.cookie);
+//     if (!keys?.includes('token'))
+//         return // Here was a redirect(response, '/login', 302);
+//     var request_url = request.url.slice(14);
+//     if (request_url == '/select_language')
+//         return await select_language(request, response);
+//     if (request_url == '/profile_settings')
+//         return await user_settings(request, response);
 
-async function user(request, response){
-    var [keys, values] = modules.get_cookies(request.headers.cookie);
-    if (!keys?.includes('token'))
-        return send.redirect(response, '/login', 302);
-    var request_url = request.url.slice(14);
-    if (request_url == '/select_language')
-        return await select_language(request, response);
-    if (request_url == '/profile_settings')
-        return await user_settings(request, response);
+//     const status = await send.send_html('settings.html', response, 200, async  (data) => {
+//         var replace_string = "";
+//         replace_string += '<div><a href="/settings/user/select_language" data-link><div class="buttons mb-6"></a></div>';
+//         replace_string += '<button class="block w-full mb-6 mt-6">';
+//         replace_string += '<span class="button_text">Select Language</span>';
+//         replace_string += '</button></div>';
 
-    const status = await send.send_html('settings.html', response, 200, async  (data) => {
-        var replace_string = "";
-        replace_string += '<div><a href="/settings/user/select_language" data-link><div class="buttons mb-6"></a></div>';
-        replace_string += '<button class="block w-full mb-6 mt-6">';
-        replace_string += '<span class="button_text">Select Language</span>';
-        replace_string += '</button></div>';
+//         replace_string += '<div><a href="/settings/user" data-link><div class="buttons mb-6"></a></div>';
+//         replace_string += '<button class="block w-full mb-6 mt-6">';
+//         replace_string += '<span class="button_text">Profile changes</span>';
+//         replace_string += '</button></div>';
 
-        replace_string += '<div><a href="/settings/user/profile_settings" data-link><div class="buttons mb-6"></a></div>';
-        replace_string += '<button class="block w-full mb-6 mt-6">';
-        replace_string += '<span class="button_text">Profile changes</span>';
-        replace_string += '</button></div>';
-
-        replace_string += '<div class="flex mt-12 gap-4 w-full">';
-        replace_string += '<a class="flex-1" href="/settings" data-link>';
-        replace_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-        replace_string += '<span class="button_text">Back</span>';
-        replace_string += '</button></a>';
-        replace_string += '<a class="flex-1">';
-        replace_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-        replace_string += '<span class="button_text">Logout</span>';
-        replace_string += '</button></a></div>';
-        return data.replace('{{mfa-button}}', replace_string);
-    });
-    if (!status || status === undefined || status < 0)
-        return `_${status}`
-    return true;
-}
+//         replace_string += '<div class="flex mt-12 gap-4 w-full">';
+//         replace_string += '<a class="flex-1" href="/settings" data-link>';
+//         replace_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+//         replace_string += '<span class="button_text">Back</span>';
+//         replace_string += '</button></a>';
+//         replace_string += '<a class="flex-1">';
+//         replace_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+//         replace_string += '<span class="button_text">Logout</span>';
+//         replace_string += '</button></a></div>';
+//         return data.replace('{{mfa-button}}', replace_string);
+//     });
+//     if (!status || status === undefined || status < 0)
+//         return `_${status}`
+//     return true;
+// }
 
 async function settings(request, response) {
-    var [keys, values] = modules.get_cookies(request.headers.cookie);
+    var [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token'))
-        return send.redirect(response, '/login', 302);
+        return login(request, response);// Here was a redirect(response, '/login', 302);
     const request_url = request.url.slice(9);
     if (request_url.startsWith("/mfa?"))
         return await settings_set_prefered_mfa(request, response);
@@ -471,26 +307,26 @@ async function settings(request, response) {
         return await user(request, response);
 
     const status = await send.send_html('settings.html', response, 200, async  (data) => {
-        var replace_string = "";
-        replace_string += '<div><a href="/settings/mfa" data-link><div class="buttons mb-6"></a></div>';
-        replace_string += '<button class="block w-full mb-6 mt-6">';
-        replace_string += '<span class="button_text">MFA</span>';
-        replace_string += '</button></div>';
+        var replace_string = "<span>In here??????</span>";
+        // replace_string += '<div><a href="/settings/mfa" data-link><div class="buttons mb-6"></a></div>';
+        // replace_string += '<button class="block w-full mb-6 mt-6">';
+        // replace_string += '<span class="button_text">MFA</span>';
+        // replace_string += '</button></div>';
 
-        replace_string += '<div><a href="/settings/user" data-link><div class="buttons mb-6"></a></div>';
-        replace_string += '<button class="block w-full mb-6 mt-6">';
-        replace_string += '<span class="button_text">User</span>';
-        replace_string += '</button></div>';
+        // replace_string += '<div><a href="/settings/user" data-link><div class="buttons mb-6"></a></div>';
+        // replace_string += '<button class="block w-full mb-6 mt-6">';
+        // replace_string += '<span class="button_text">User</span>';
+        // replace_string += '</button></div>';
 
-        replace_string += '<div class="flex mt-12 gap-4 w-full">';
-        replace_string += '<a class="flex-1" href="/" data-link>';
-        replace_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-        replace_string += '<span class="button_text">Back</span>';
-        replace_string += '</button></a>';
-        replace_string += '<a class="flex-1">';
-        replace_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-        replace_string += '<span class="button_text">Logout</span>';
-        replace_string += '</button></a></div>';
+        // replace_string += '<div class="flex mt-12 gap-4 w-full">';
+        // replace_string += '<a class="flex-1" href="/" data-link>';
+        // replace_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+        // replace_string += '<span class="button_text">Back</span>';
+        // replace_string += '</button></a>';
+        // replace_string += '<a class="flex-1">';
+        // replace_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+        // replace_string += '<span class="button_text">Logout</span>';
+        // replace_string += '</button></a></div>';
         return data.replace('{{mfa-button}}', replace_string);
     });
     if (!status || status === undefined || status < 0)
@@ -500,22 +336,22 @@ async function settings(request, response) {
 
 async function settings_set_prefered_mfa(request, response) {
     if (request.url.length < 11)
-        return send.redirect(response, '/settings/mfa', 302);
+        return // Here was a redirect(response, '/settings/mfa', 302);
     const location = request.url.slice(10);
     if (!location.indexOf('='))
-        return send.redirect(response, '/settings/mfa', 302);
+        return // Here was a redirect(response, '/settings/mfa', 302);
     const pos = location.indexOf('=') + 1;
     if (location.length === pos)
-        return send.redirect(response, '/settings/mfa', 302);
+        return // Here was a redirect(response, '/settings/mfa', 302);
     const method = location.slice(pos);
     const {keys, values} = utils.get_cookie('token', request);
     if ((!keys && !values) || (keys === undefined && values === undefined))
-        return send.redirect(response, '/settings/mfa', 302);
+        return // Here was a redirect(response, '/settings/mfa', 302);
     const decrypted_user =  modules.get_jwt(values[0]);
     const userid = decrypted_user.userid;
     const check_mfa = await mfa_db.get_mfa_value('self', userid);
     if (!check_mfa || check_mfa === undefined)
-        return send.redirect(response, '/settings/mfa', 302);
+        return // Here was a redirect(response, '/settings/mfa', 302);
     if (method === 'email') {
         await mfa_db.update_mfa_value('prefered', 1, userid);
     } else if (method === 'otc') {
@@ -523,18 +359,18 @@ async function settings_set_prefered_mfa(request, response) {
     } else if (method === 'custom') {
         await mfa_db.update_mfa_value('prefered', 3, userid);
     }
-    return send.redirect(response, '/settings/mfa', 302);    
+    return // Here was a redirect(response, '/settings/mfa', 302);    
 }
 
 async function settings_prefered_language(request, response) {
     if (request.url.length < 11)
-        return send.redirect(response, '/settings/user', 302);
+        return // Here was a redirect(response, '/settings/user', 302);
     const location = request.url.slice(10);
     if (!location.indexOf('='))
-        return send.redirect(response, '/settings/user', 302);
+        return // Here was a redirect(response, '/settings/user', 302);
     const pos = location.indexOf('=') + 1;
     if (location.length === pos)
-        return send.redirect(response, '/settings/user', 302);
+        return // Here was a redirect(response, '/settings/user', 302);
     const method = location.slice(pos);
     var [keys, values] = modules.get_cookies(request.headers.cookie);
     const user_check = keys?.find((key) => key === 'token');
@@ -550,14 +386,14 @@ async function settings_prefered_language(request, response) {
     var lang = values[langIndex];
     lang = await modules.get_jwt(lang);
     if (lang.userid == method)
-        return send.redirect(response, '/settings/user', 302);
+        return // Here was a redirect(response, '/settings/user', 302);
     const lang_jwt = modules.create_jwt(method, '1h');
     if (!lang_jwt || lang_jwt == undefined || lang_jwt < 0)
-        return send.redirect(response, '/settings/user', 302);
+        return // Here was a redirect(response, '/settings/user', 302);
     modules.delete_cookie(response, 'lang');
     modules.set_cookie(response, 'lang', lang_jwt);
     const wow = await settings_db.update_settings_value('lang', method, user.userid);
-    return send.redirect(response, '/settings/user', 302);
+    return // Here was a redirect(response, '/settings/user', 302);
 }
 
 async function verify_email(request, response) {
@@ -571,14 +407,14 @@ async function verify_email(request, response) {
         return false;
     const valid_password = await modules.check_encrypted_password(frontend_data.code, check_mfa.email);
     if (!valid_password || valid_password === undefined || valid_password < 0) {
-        response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-        response.end(JSON.stringify({"Response": 'failed', "Content": null}));
+        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+        response.raw.end(JSON.stringify({"Response": 'failed', "Content": null}));
     } else {
         const token = modules.create_jwt(frontend_data.userid, '1h');
         
         modules.set_cookie(response, 'token', token, true, true, 'strict');
-        response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-        response.end(JSON.stringify({"Response": 'reload', "Content": null}));
+        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+        response.raw.end(JSON.stringify({"Response": 'reload', "Content": null}));
     }
     return true;
 }
@@ -592,14 +428,14 @@ async function verify_2fa(request, response) {
     const replace_data = {'Function': 'verify', 'Code': frontend_data.code};
     const temp = await utils.verify_otc(request, response, replace_data, frontend_data.userid);
     if (temp === false || !temp || temp === undefined || temp < 0) {
-        response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-        response.end(JSON.stringify({"Response": 'failed', "Content": null}));
+        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+        response.raw.end(JSON.stringify({"Response": 'failed', "Content": null}));
     } else {
         const token = modules.create_jwt(frontend_data.userid, '1h');
         
         modules.set_cookie(response, 'token', token, true, true, 'strict');
-        response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-        response.end(JSON.stringify({"Response": 'reload', "Content": null}));
+        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+        response.raw.end(JSON.stringify({"Response": 'reload', "Content": null}));
     }
     return true;
 }
@@ -613,104 +449,113 @@ async function verify_custom(request, response) {
     const replace_data = {'Function': 'verify', 'Code': frontend_data.code};
     const temp = await utils.verify_custom_code(frontend_data.userid, response, replace_data);
     if (temp === false) {
-        response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-        response.end(JSON.stringify({"Response": 'failed', "Content": null}));
+        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+        response.raw.end(JSON.stringify({"Response": 'failed', "Content": null}));
     } else {
         const token = modules.create_jwt(frontend_data.userid, '1h');
         
         modules.set_cookie(response, 'token', token, true, true, 'strict');
-        response.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-        response.end(JSON.stringify({"Response": 'reload', "Content": null}));
+        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+        response.raw.end(JSON.stringify({"Response": 'reload', "Content": null}));
     }
     return true;
 }
 
 async function profile(request, response){
-    const [keys, values] = modules.get_cookies(request.headers.cookie);
-    if (!keys?.includes('token')){ 
-        return send.redirect(response, '/login', 302);
-    }
+    var [keys, values] = modules.get_cookies(request);
+    if (keys?.includes('token'))
+        return await home(request, response);
+
+
     const tokenIndex = keys.findIndex((key) => key === 'token');
     const token = values[tokenIndex];
     let decoded;
     try {
-        decoded = await modules.get_jwt(token);
+        decoded = modules.get_jwt(token);
     } catch (err){
-        return send.redirect(response, '/login', 302);
+        console.error(`Error in profile views.js: ${err}`);
+        return // Here was a redirect(response, '/login', 302);
     }
 
     const user = await users_db.get_users_value('self', decoded.userid);
     if (!user || user === undefined){
-        return send.send_error_page('404.html', response, 404);
+        return response.code(404).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": 'fail', "Content": "No user or user undefined"});
+
+        // return send.send_error_page('404.html', response, 404);
     }
 
     const settings = await settings_db.get_settings_value('self', decoded.userid);
     if (!settings || settings === undefined){
-        return send.send_error_page('404.html', response, 404);
+        return response.code(404).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": 'fail', "Content": "no settings or settings undefined"});
+
+        // return send.send_error_page('404.html', response, 404);
     }
 
     const userid = decoded.userid;
 
-    const status = await send.send_html('index.html', response, 200, async(data) => {
-        var [keys, values] = modules.get_cookies(request.headers.cookie);
-        const lang_check = keys?.find((key) => key === 'lang');
-        if (!lang_check || lang_check === undefined || lang_check == false)
-            return false;
-        const langIndex = keys.indexOf('lang');
-        const lang = values[langIndex];
-        try {
-            var decoded_lang = modules.get_jwt(lang);
-        } catch (err) {
-            return false;
-        }
-        data = await utils.replace_all_templates(request, response);
-        data = utils.show_page(data, "profile_div");
-        data = await translator.cycle_translations(data, decoded_lang.userid);
-        data = data.replace('{{username}}', user.username);
-        data = data.replace('{{email}}', settings.email || 'Not provided');
-        data = data.replace('{{picture}}', settings.pfp || 'public/default_profile.svg');
-        data = data.replace('{{status}}', ()=> {if (user.status === 1) return 'online'; else return 'offline'});
-        data = data.replace('{{Friends}}', await friends_request.show_accepted_friends(userid))
-        return data;
-    });
 
-    if (!status || status === undefined || status < 0){
-        return `Error rendering profile page: ${status}`;
-    }
-    return true;
+    const inner = request.body;
+    inner = inner.replace('{{username}}', user.username);
+    inner = inner.replace('{{email}}', settings.email || 'Not provided');
+    inner = inner.replace('{{picture}}', settings.pfp || 'public/default_profile.svg');
+    inner = inner.replace('{{status}}', ()=> {if (user.status === 1) return 'online'; else return 'offline'});
+    inner = inner.replace('{{Friends}}', await friends_request.show_accepted_friends(userid))
+
+
+
+    return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": 'success', "Content": inner});
+
+    // const status = await send.send_html('index.html', response, 200, async(data) => {
+    //     var [keys, values] = modules.get_cookies(request.headers.cookie);
+    //     const lang_check = keys?.find((key) => key === 'lang');
+    //     if (!lang_check || lang_check === undefined || lang_check == false)
+    //         return false;
+    //     const langIndex = keys.indexOf('lang');
+    //     const lang = values[langIndex];
+    //     try {
+    //         var decoded_lang = modules.get_jwt(lang);
+    //     } catch (err) {
+    //         return false;
+    //     }
+    //     data = await utils.replace_all_templates(request, response);
+    //     data = utils.show_page(data, "profile_div");
+    //     data = await translator.cycle_translations(data, decoded_lang.userid);
+    //     data = data.replace('{{username}}', user.username);
+    //     data = data.replace('{{email}}', settings.email || 'Not provided');
+    //     data = data.replace('{{picture}}', settings.pfp || 'public/default_profile.svg');
+    //     data = data.replace('{{status}}', ()=> {if (user.status === 1) return 'online'; else return 'offline'});
+    //     data = data.replace('{{Friends}}', await friends_request.show_accepted_friends(userid))
+    //     return data;
+    // });
+
+    // if (!status || status === undefined || status < 0){
+    //     return `Error rendering profile page: ${status}`;
+    // }
+    // return true;
 }
 
 async function logout(request, response) {
-    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    const [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token')) {
-        return send.redirect(response, '/login', 302);
+        return;
     }
 
-    const tokenIndex = keys.findIndex((key) => key === 'token');
-    const token = values[tokenIndex];
-    let decoded;
-    try {
-        decoded = await modules.get_jwt(token);
-    } catch (err) {
-        return send.redirect(response, '/login', 302);
+    for (var pos = 0; pos < keys.length; pos++) {
+        response.setCookie(keys[pos], '', {
+            path: '/',
+            httpOnly: true,
+            secure: true,
+            maxAge: 0
+        });
     }
-
-    const user = await users_db.get_users_value('self', decoded.userid);
-    if (!user || user === undefined){
-        return send.send_error_page('404.html', response, 404);
-    }
-
-    await users_db.update_users_value('status', 0, decoded.userid);
-
-    response.writeHead(200, { 'Content-Type': 'application/json' });
-    response.end(JSON.stringify({ message: 'Logged out successfully' }));
+    response.code(200).send({ message: 'Logged out successfully' });
 }
 
 
 async function user_settings(request, response) {
     const [keys, values] = modules.get_cookies(request.headers.cookie);
     if (!keys?.includes('token')) {
-        return send.redirect(response, '/login', 302);
+        return // Here was a redirect(response, '/login', 302);
     }
 
     const tokenIndex = keys.findIndex((key) => key === 'token');
@@ -719,7 +564,7 @@ async function user_settings(request, response) {
     try {
         decoded = await modules.get_jwt(token);
     } catch (err) {
-        return send.redirect(response, '/login', 302);
+        return // Here was a redirect(response, '/login', 302);
     }
 
     const status = await send.send_html('user_settings.html', response, 200);
@@ -741,7 +586,7 @@ async function update_settings(request, response) {
     }
     const [keys, values] = modules.get_cookies(request.headers.cookie);
     if (!keys?.includes('token')) {
-        return send.redirect(response, '/login', 302);
+        return // Here was a redirect(response, '/login', 302);
     }
 
     const { email, password, avatar } = data;
@@ -754,7 +599,7 @@ async function update_settings(request, response) {
         decoded = await modules.get_jwt(token);
     }
     catch (err) {
-        return send.redirect(response, '/login', 302);
+        return // Here was a redirect(response, '/login', 302);
     }
     const userid = decoded.userid;
 
@@ -796,7 +641,7 @@ async function update_user(request, response) {
     }
     const [keys, values] = modules.get_cookies(request.headers.cookie);
     if (!keys?.includes('token')) {
-        return send.redirect(response, '/login', 302);
+        return // Here was a redirect(response, '/login', 302);
     }
 
     const tokenIndex = keys.findIndex((key) => key === 'token');
@@ -806,7 +651,7 @@ async function update_user(request, response) {
         decoded = await modules.get_jwt(token);
     }
     catch (err) {
-        return send.redirect(response, '/login', 302);
+        return // Here was a redirect(response, '/login', 302);
     }
 
     const userid = decoded.userid;
@@ -828,7 +673,7 @@ async function update_user(request, response) {
 async function friends(request, response){
     const [keys, values] = modules.get_cookies(request.headers.cookie);
     if (!keys?.includes('token')) {
-        return send.redirect(response, '/login', 302);
+        return // Here was a redirect(response, '/login', 302);
     }
 
     const tokenIndex = keys.findIndex((key) => key === 'token');
@@ -837,7 +682,7 @@ async function friends(request, response){
     try {
         decoded = await modules.get_jwt(token);
     } catch (err) {
-        return send.redirect(response, '/login', 302);
+        return // Here was a redirect(response, '/login', 302);
     }
 
     const userid = decoded.userid;
@@ -873,7 +718,7 @@ async function friends(request, response){
 async function add_friends(request, response){
     const [keys, values] = modules.get_cookies(request.headers.cookie);
     if (!keys?.includes('token')) {
-        return send.redirect(response, '/login', 302);
+        return // Here was a redirect(response, '/login', 302);
     }
 
     const data = request.body;
@@ -886,7 +731,7 @@ async function add_friends(request, response){
     try {
         decoded = await modules.get_jwt(token);
     } catch (err) {
-        return send.redirect(response, '/login', 302);
+        return // Here was a redirect(response, '/login', 302);
     }
 
     const userid = decoded.userid;
@@ -909,7 +754,7 @@ async function add_friends(request, response){
 async function accept_friend(request, response){
     const [keys, values] = modules.get_cookies(request.headers.cookie);
     if (!keys?.includes('token')) {
-        return send.redirect(response, '/login', 302);
+        return // Here was a redirect(response, '/login', 302);
     }
 
     const data = request.body;
@@ -922,7 +767,7 @@ async function accept_friend(request, response){
     try {
         decoded = await modules.get_jwt(token);
     } catch (err) {
-        return send.redirect(response, '/login', 302);
+        return // Here was a redirect(response, '/login', 302);
     }
 
     // const userid = decoded.userid;
@@ -940,7 +785,7 @@ async function accept_friend(request, response){
 async function reject_friend(request, response){
 const [keys, values] = modules.get_cookies(request.headers.cookie);
     if (!keys?.includes('token')) {
-        return send.redirect(response, '/login', 302);
+        return // Here was a redirect(response, '/login', 302);
     }
 
     const data = request.body;
@@ -953,7 +798,7 @@ const [keys, values] = modules.get_cookies(request.headers.cookie);
     try {
         decoded = await modules.get_jwt(token);
     } catch (err) {
-        return send.redirect(response, '/login', 302);
+        return // Here was a redirect(response, '/login', 302);
     }
 
     // const userid = decoded.userid;
@@ -972,7 +817,7 @@ const [keys, values] = modules.get_cookies(request.headers.cookie);
 async function block_friend(request, response){
     const [keys, values] = modules.get_cookies(request.headers.cookie);
     if (!keys?.includes('token')) {
-        return send.redirect(response, '/login', 302);
+        return // Here was a redirect(response, '/login', 302);
     }
 
     const data = request.body;
@@ -985,7 +830,7 @@ async function block_friend(request, response){
     try {
         decoded = await modules.get_jwt(token);
     } catch (err) {
-        return send.redirect(response, '/login', 302);
+        return // Here was a redirect(response, '/login', 302);
     }
 
     // const userid = decoded.userid;
@@ -1000,120 +845,7 @@ async function block_friend(request, response){
     return true;
 }
 
-async function field_login(request, reply){
-    const googleHref = utils.google_input_handler();
-    const githubHref = utils.github_input_handler();
-    let return_login = ``;
-    return_login += `<label for="email-input" class="label_text">Email</label>`;
-    return_login += `<div class="relative">`;
-    return_login += `<div class="input_svg">`;
-    return_login += `<svg class="w-6 h-6 text-gray-500 justify-center" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 16">`;
-    return_login += `<path d="m10.036 8.278 9.258-7.79A1.979 1.979 0 0 0 18 0H2A1.987 1.987 0 0 0 .641.541l9.395 7.737Z"/>`;
-    return_login += `<path d="M11.241 9.817c-.36.275-.801.425-1.255.427-.428 0-.845-.138-1.187-.395L0 2.6V14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2.5l-8.759 7.317Z"/>`;
-    return_login += `</svg>`;
-    return_login += `</div>`;
-    return_login += `<input type="text" id="email-input" placeholder="example@gmail.com" required class="input_field" />`;
-    return_login += `</div>`;
-    return_login += `<label for="password-input" class="label_text">Password</label>`;
-    return_login += `<div class="relative">`;
-    return_login += `<div class="input_svg">`;
-    return_login += `<svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">`;
-    return_login += `<path fill-rule="evenodd" d="M15.75 1.5a6.75 6.75 0 0 0-6.651 7.906c.067.39-.032.717-.221.906l-6.5 6.499a3 3 0 0 0-.878 2.121v2.818c0 .414.336.75.75.75H6a.75.75 0 0 0 .75-.75v-1.5h1.5A.75.75 0 0 0 9 19.5V18h1.5a.75.75 0 0 0 .53-.22l2.658-2.658c.19-.189.517-.288.906-.22A6.75 6.75 0 1 0 15.75 1.5Zm0 3a.75.75 0 0 0 0 1.5A2.25 2.25 0 0 1 18 8.25a.75.75 0 0 0 1.5 0 3.75 3.75 0 0 0-3.75-3.75Z" clip-rule="evenodd" />`;
-    return_login += `</svg>`;
-    return_login += `</div>`;
-    return_login += `<button onclick="toggle_Eye(3)" id="password_eye1" class="password_eye" tabindex="-1">`;
-    return_login += `<svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">`;
-    return_login += `<path d="M3.53 2.47a.75.75 0 0 0-1.06 1.06l18 18a.75.75 0 1 0 1.06-1.06l-18-18ZM22.676 12.553a11.249 11.249 0 0 1-2.631 4.31l-3.099-3.099a5.25 5.25 0 0 0-6.71-6.71L7.759 4.577a11.217 11.217 0 0 1 4.242-.827c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113Z" />`;
-    return_login += `<path d="M15.75 12c0 .18-.013.357-.037.53l-4.244-4.243A3.75 3.75 0 0 1 15.75 12ZM12.53 15.713l-4.243-4.244a3.75 3.75 0 0 0 4.244 4.243Z" />`;
-    return_login += `<path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 0 0-2.63 4.31c-.12.362-.12.752 0 1.114 1.489 4.467 5.704 7.69 10.675 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 0 1 6.75 12Z" />`;
-    return_login += `</svg>`;
-    return_login += `</button>`;
-    return_login += `<input type="password" id="password-input1" placeholder="Password" required class="input_field" />`;
-    return_login += `</div>`;
-    return_login += `<button id="login-button" onclick="login()" class="mt-4 bg-violet-700 hover:bg-violet-800 text-white font-bold py-2 text-lg rounded-xl w-full mb-4 transition-all">`;
-    return_login += `Login`;
-    return_login += `</button>`;
-    return_login += `<div class="w-full mt-4 space-y-4">`;
-    return_login += `<a id="google" href="${googleHref}">`;
-    return_login += `<button type="button" class="text-white bg-[#1973e7] font-medium rounded-xl text-lg px-5 py-2.5 w-full flex items-center justify-center gap-4 border">`;
-    return_login += `<svg class="w-7 h-7" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100" height="100" viewBox="0 0 48 48">`;
-    return_login += `<path fill="#fbc02d" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12	s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20	s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#e53935" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039	l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4caf50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36	c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1565c0" d="M43.611,20.083L43.595,20L42,20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571	c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>`;
-    return_login += `</svg>`;
-    return_login += `<span>Sign in with Google</span>`;
-    return_login += `</button>`;
-    return_login += `</a>`;
-    return_login += `<a id="github" href="${githubHref}">`;
-    return_login += `<button type="button" class="text-white bg-[#221f1f] font-medium rounded-xl text-lg px-5 py-2.5 w-full flex items-center justify-center gap-4 border mt-2">`;
-    return_login += `<svg class="w-7 h-7" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100" height="100" viewBox="0,0,256,256">`;
-    return_login += `<g fill="#ffffff" fill-rule="nonzero" stroke="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0" font-family="none" font-weight="none" font-size="none" text-anchor="none" style="mix-blend-mode: normal"><g transform="scale(8.53333,8.53333)"><path d="M15,3c-6.627,0 -12,5.373 -12,12c0,5.623 3.872,10.328 9.092,11.63c-0.056,-0.162 -0.092,-0.35 -0.092,-0.583v-2.051c-0.487,0 -1.303,0 -1.508,0c-0.821,0 -1.551,-0.353 -1.905,-1.009c-0.393,-0.729 -0.461,-1.844 -1.435,-2.526c-0.289,-0.227 -0.069,-0.486 0.264,-0.451c0.615,0.174 1.125,0.596 1.605,1.222c0.478,0.627 0.703,0.769 1.596,0.769c0.433,0 1.081,-0.025 1.691,-0.121c0.328,-0.833 0.895,-1.6 1.588,-1.962c-3.996,-0.411 -5.903,-2.399 -5.903,-5.098c0,-1.162 0.495,-2.286 1.336,-3.233c-0.276,-0.94 -0.623,-2.857 0.106,-3.587c1.798,0 2.885,1.166 3.146,1.481c0.896,-0.307 1.88,-0.481 2.914,-0.481c1.036,0 2.024,0.174 2.922,0.483c0.258,-0.313 1.346,-1.483 3.148,-1.483c0.732,0.731 0.381,2.656 0.102,3.594c0.836,0.945 1.328,2.066 1.328,3.226c0,2.697 -1.904,4.684 -5.894,5.097c1.098,0.573 1.899,2.183 1.899,3.396v2.734c0,0.104 -0.023,0.179 -0.035,0.268c4.676,-1.639 8.035,-6.079 8.035,-11.315c0,-6.627 -5.373,-12 -12,-12z"></path></g></g>`;
-    return_login += `</svg>`;
-    return_login += `<span>Sign in with GitHub</span>`;
-    return_login += `</button>`;
-    return_login += `</a>`;
-    return_login += `</div>`;
-    return reply.code(200).send({ "response": return_login });
-}
 
-async function field_signup(request, reply){
-    const googleHref = utils.google_input_handler();
-    const githubHref = utils.github_input_handler();
-    let return_signup = `
-    <label for="username" class="label_text">Username</label>
-    <div id="user_field" class="relative input_total">
-    <div class="input_svg">
-    <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
-    <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd" /></svg></div>
-    <input type="text" id="username" placeholder="Username" required class="input_field" /></div>
-    <label for="email" class="label_text">Email</label>
-    <div id="email_field" class="relative input_total">
-    <div class="input_svg">
-    <svg class="w-6 h-6 text-gray-500 justify-center" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 16">
-    <path d="m10.036 8.278 9.258-7.79A1.979 1.979 0 0 0 18 0H2A1.987 1.987 0 0 0 .641.541l9.395 7.737Z"/>
-    <path d="M11.241 9.817c-.36.275-.801.425-1.255.427-.428 0-.845-.138-1.187-.395L0 2.6V14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2.5l-8.759 7.317Z"/></svg></div>
-    <input type="text" id="email" placeholder="example@gmail.com" required class="input_field" /></div>
-    <label for="password-input" class="label_text">Password</label>
-    <div id="password_field" class="relative input_total">
-    <div class="input_svg">
-    <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
-    <path fill-rule="evenodd" d="M15.75 1.5a6.75 6.75 0 0 0-6.651 7.906c.067.39-.032.717-.221.906l-6.5 6.499a3 3 0 0 0-.878 2.121v2.818c0 .414.336.75.75.75H6a.75.75 0 0 0 .75-.75v-1.5h1.5A.75.75 0 0 0 9 19.5V18h1.5a.75.75 0 0 0 .53-.22l2.658-2.658c.19-.189.517-.288.906-.22A6.75 6.75 0 1 0 15.75 1.5Zm0 3a.75.75 0 0 0 0 1.5A2.25 2.25 0 0 1 18 8.25a.75.75 0 0 0 1.5 0 3.75 3.75 0 0 0-3.75-3.75Z" clip-rule="evenodd" /></svg></div>
-    <button onclick="toggle_Eye(1)" id="password_eye" class="password_eye" tabindex="-1">
-    <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
-    <path d="M3.53 2.47a.75.75 0 0 0-1.06 1.06l18 18a.75.75 0 1 0 1.06-1.06l-18-18ZM22.676 12.553a11.249 11.249 0 0 1-2.631 4.31l-3.099-3.099a5.25 5.25 0 0 0-6.71-6.71L7.759 4.577a11.217 11.217 0 0 1 4.242-.827c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113Z" />
-    <path d="M15.75 12c0 .18-.013.357-.037.53l-4.244-4.243A3.75 3.75 0 0 1 15.75 12ZM12.53 15.713l-4.243-4.244a3.75 3.75 0 0 0 4.244 4.243Z" />
-    <path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 0 0-2.63 4.31c-.12.362-.12.752 0 1.114 1.489 4.467 5.704 7.69 10.675 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 0 1 6.75 12Z" /></svg></button>
-    <input type="password" id="password-input" placeholder="Password" required class="input_field" />
-    </div>
-    <label for="password-input2" class="label_text">Repeat Password</label>
-    <div id="repeat_field" class="relative input_total">
-    <div class="input_svg">
-    <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
-    <path fill-rule="evenodd" d="M15.75 1.5a6.75 6.75 0 0 0-6.651 7.906c.067.39-.032.717-.221.906l-6.5 6.499a3 3 0 0 0-.878 2.121v2.818c0 .414.336.75.75.75H6a.75.75 0 0 0 .75-.75v-1.5h1.5A.75.75 0 0 0 9 19.5V18h1.5a.75.75 0 0 0 .53-.22l2.658-2.658c.19-.189.517-.288.906-.22A6.75 6.75 0 1 0 15.75 1.5Zm0 3a.75.75 0 0 0 0 1.5A2.25 2.25 0 0 1 18 8.25a.75.75 0 0 0 1.5 0 3.75 3.75 0 0 0-3.75-3.75Z" clip-rule="evenodd" /></svg></div>
-    <button onclick="toggle_Eye(2)" id="password_eye2" class="password_eye" tabindex="-1">
-    <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
-    <path d="M3.53 2.47a.75.75 0 0 0-1.06 1.06l18 18a.75.75 0 1 0 1.06-1.06l-18-18ZM22.676 12.553a11.249 11.249 0 0 1-2.631 4.31l-3.099-3.099a5.25 5.25 0 0 0-6.71-6.71L7.759 4.577a11.217 11.217 0 0 1 4.242-.827c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113Z" />
-    <path d="M15.75 12c0 .18-.013.357-.037.53l-4.244-4.243A3.75 3.75 0 0 1 15.75 12ZM12.53 15.713l-4.243-4.244a3.75 3.75 0 0 0 4.244 4.243Z" />
-    <path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 0 0-2.63 4.31c-.12.362-.12.752 0 1.114 1.489 4.467 5.704 7.69 10.675 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 0 1 6.75 12Z" /></svg></button>
-    <input type="password" id="password-input2" placeholder="Repeat password" required class="input_field" /></div>
-    <span id="error_header" class="text-bold text-xl text-red-400"></span><br>
-
-    <button id="login-button" onclick="create_account()" class="bg-violet-700 hover:bg-violet-800 text-white font-bold py-2 text-lg rounded-xl w-full mb-4">Sign Up</button>
-
-    <div class="w-full mt-4 space-y-4">
-    <a id="google" href="${googleHref}">
-    <button type="button" class="text-white bg-[#1973e7] font-medium rounded-xl text-lg px-5 py-2.5 w-full flex items-center justify-center gap-4 border">
-    <svg class="w-7 h-7" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100" height="100" viewBox="0 0 48 48">
-    <path fill="#fbc02d" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12	s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20	s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#e53935" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039	l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4caf50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36	c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1565c0" d="M43.611,20.083L43.595,20L42,20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571	c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path></svg>
-    <span>Sign Up with Google</span></button></a>
-
-    <a id="github" href="${githubHref}">
-    <button type="button" class="text-white bg-[#221f1f] font-medium rounded-xl text-lg px-5 py-2.5 w-full flex items-center justify-center gap-4 border mt-2">
-    <svg class="w-7 h-7" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100" height="100" viewBox="0,0,256,256">
-    <g fill="#ffffff" fill-rule="nonzero" stroke="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0" font-family="none" font-weight="none" font-size="none" text-anchor="none" style="mix-blend-mode: normal"><g transform="scale(8.53333,8.53333)"><path d="M15,3c-6.627,0 -12,5.373 -12,12c0,5.623 3.872,10.328 9.092,11.63c-0.056,-0.162 -0.092,-0.35 -0.092,-0.583v-2.051c-0.487,0 -1.303,0 -1.508,0c-0.821,0 -1.551,-0.353 -1.905,-1.009c-0.393,-0.729 -0.461,-1.844 -1.435,-2.526c-0.289,-0.227 -0.069,-0.486 0.264,-0.451c0.615,0.174 1.125,0.596 1.605,1.222c0.478,0.627 0.703,0.769 1.596,0.769c0.433,0 1.081,-0.025 1.691,-0.121c0.328,-0.833 0.895,-1.6 1.588,-1.962c-3.996,-0.411 -5.903,-2.399 -5.903,-5.098c0,-1.162 0.495,-2.286 1.336,-3.233c-0.276,-0.94 -0.623,-2.857 0.106,-3.587c1.798,0 2.885,1.166 3.146,1.481c0.896,-0.307 1.88,-0.481 2.914,-0.481c1.036,0 2.024,0.174 2.922,0.483c0.258,-0.313 1.346,-1.483 3.148,-1.483c0.732,0.731 0.381,2.656 0.102,3.594c0.836,0.945 1.328,2.066 1.328,3.226c0,2.697 -1.904,4.684 -5.894,5.097c1.098,0.573 1.899,2.183 1.899,3.396v2.734c0,0.104 -0.023,0.179 -0.035,0.268c4.676,-1.639 8.035,-6.079 8.035,-11.315c0,-6.627 -5.373,-12 -12,-12z"></path></g></g></svg>
-    <span>Sign Up with GitHub</span></button></a></div>
-    `;
-    return reply.code(200).send({ "response": return_signup });
-
-}
 
 export {
     login,
@@ -1134,7 +866,5 @@ export {
     add_friends,
     accept_friend,
     reject_friend,
-    block_friend,
-    field_login,
-    field_signup
+    block_friend
 }

@@ -17,7 +17,7 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.get('/js/:file', async (req, reply) => {
     const file = req.params.file;
     if (!file.endsWith('.js')) return reply.callNotFound();
-    return mimes.get_js(file, reply.raw);
+    return mimes.get_js(file, reply);
   });
 
   // --- CSS ---
@@ -49,32 +49,34 @@ export default fastifyPlugin(async function routes(fastify) {
   });
   
   // --- Views ---
-  fastify.get('/', (req, reply) => {
-    views.home(req.raw, reply.raw);
-  });
-  fastify.get('/login', (req, reply) => views.login(req.raw, reply.raw));
-  fastify.get('/register', (req, reply) => views.register(req.raw, reply.raw));
-  fastify.post('/register', (req, reply) => views.register(req.raw, reply.raw));
+  fastify.get('/', (req, reply) => views.home(req, reply));
+  fastify.get('/login', (req, reply) => views.login(req, reply));
+  fastify.post('/login', (req, reply) => views.login(req, reply));
+  fastify.get('/register', (req, reply) => views.register(req, reply));
+  fastify.post('/register', (req, reply) => views.register(req, reply));
 
-  fastify.get('/settings', (req, reply) => views.settings(req.raw, reply.raw));
-  fastify.get('/settings/*', (req, reply) => views.settings(req.raw, reply.raw));
-  fastify.get('/verify_email', (req, reply) => views.verify_email(req.raw, reply.raw));
-  fastify.get('/verify_2fa', (req, reply) => views.verify_2fa(req.raw, reply.raw));
-  fastify.get('/verify_custom', (req, reply) => views.verify_custom(req.raw, reply.raw));
+  fastify.get('/settings', (req, reply) => views.settings(req, reply));
+  fastify.post('/settings', (req, reply) => views.settings(req, reply));
+  fastify.get('/settings/*', (req, reply) => views.settings(req, reply));
+  fastify.post('/settings/*', (req, reply) => views.settings(req, reply));
+  fastify.get('/verify_email', (req, reply) => views.verify_email(req, reply));
+  fastify.get('/verify_2fa', (req, reply) => views.verify_2fa(req, reply));
+  fastify.get('/verify_custom', (req, reply) => views.verify_custom(req, reply));
 
-  fastify.get('/profile', (req, reply) => views.profile(req.raw, reply.raw));
-  fastify.get('/logout', (req, reply) => views.logout(req.raw, reply.raw));
-  fastify.get('/update_user', (req, reply) => views.update_user(req.raw, reply.raw));
+  fastify.get('/profile', (req, reply) => views.profile(req, reply));
+  // fastify.get('/logout', (req, reply) => views.logout(req, reply));
+  fastify.post('/logout', (req, reply) => views.logout(req, reply));
+  fastify.get('/update_user', (req, reply) => views.update_user(req, reply));
   fastify.post('/update_user', (req, reply) => views.update_user(req, reply));
-  fastify.get('/update_settings', (req, reply) => views.update_settings(req.raw, reply.raw));
+  fastify.get('/update_settings', (req, reply) => views.update_settings(req, reply));
   fastify.post('/update_settings', (req, reply) => views.update_settings(req, reply));
 
-  fastify.get('/friends', (req, reply) => views.friends(req.raw, reply.raw));
+  fastify.get('/friends', (req, reply) => views.friends(req, reply));
   fastify.post('/add_friends', (req, reply) => views.add_friends(req, reply));
   fastify.post('/accept_friend', (req, reply) => views.accept_friend(req, reply));
   fastify.post('/reject_friend', (req, reply) => views.reject_friend(req, reply));
   fastify.post('/block_friend', (req, reply) => views.block_friend(req, reply));
-  fastify.post('/encript_google', (req, reply) => views.home(req.raw, reply.raw));
+  fastify.post('/encript_google', (req, reply) => views.home(req, reply));
 
   fastify.post('/field_login', (req, reply) => views.field_login(req, reply));
   fastify.post('/field_signup', (req, reply) => views.field_signup(req, reply));
@@ -93,7 +95,7 @@ export default fastifyPlugin(async function routes(fastify) {
     // }
     } catch (err) {
       console.error('Error:', err);
-      return reply.code(500).send({ response: 'fail' });
+      return reply.code(500).send({ "response": 'fail' });
     }
   });
 

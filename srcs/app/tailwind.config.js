@@ -1,7 +1,6 @@
  /* @type {import('tailwindcss').Config} */
 export default {
-  //  content: ["./scripts/**/*.js", "./database/*js", "./templates/*.html", "*.html", "*.js", "./js/**/*.{js,ts}", "./ts/**/*.ts", "./views/*.{html,ts}, ./scripts/*.js"],
-   content: ["./backend/*.js", "./backend/**/*.js", "./frontend/client/*.js", "./backend/**/*.html"],
+   content: ["./frontend/", "./frontend/css/*.css", "./frontend/client/js/*.js", "./frontend/client/ts/*.ts", "./backend/*.js", "./backend/templates/*.html", "./backend/**/*.js", "./backend/*.js", "./database/*.js"],
    theme: {
      extend: {
       boxShadow: {

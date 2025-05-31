@@ -4,7 +4,7 @@ import sqlite3 from 'sqlite3';
 // Tested: all working//
 async function get_friends() {
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -25,7 +25,7 @@ async function get_friends_value(search_value, value) {
 	if (!valid_values.includes(search_value))
 		return null;
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -47,7 +47,7 @@ async function create_friends_value(user1, user2) {
 		return -4;
 	}
 
-	const db = await open({ filename: 'db.sqlite', driver: sqlite3.Database });
+	const db = await open({ filename: './database/db.sqlite', driver: sqlite3.Database });
 	try {
 		const [check1, check2] = await Promise.all([
 			db.get(`SELECT * FROM settings WHERE self = ?`, [user1]),
@@ -82,7 +82,7 @@ async function create_friends_value(user1, user2) {
 //     }
 
 //     const db = await open({
-//         filename: 'db.sqlite',
+//         filename: './database/db.sqlite',
 //         driver: sqlite3.Database
 //     });
 
@@ -118,7 +118,7 @@ async function update_friends_value(search_field, new_value, user1, user2) {
 	const valid_fields = ['since'];
 	if (!valid_fields.includes(search_field)) return null;
 
-	const db = await open({ filename: 'db.sqlite', driver: sqlite3.Database });
+	const db = await open({ filename: './database/db.sqlite', driver: sqlite3.Database });
 	try {
 		const exists = await db.get(`
 			SELECT * FROM friends
@@ -144,7 +144,7 @@ async function update_friends_value(search_field, new_value, user1, user2) {
 //     if (!valid_values.includes(search_value))
 //         return null;
 //     const db = await open({
-//         filename: 'db.sqlite',
+//         filename: './database/db.sqlite',
 //         driver: sqlite3.Database
 //     });
 
@@ -169,7 +169,7 @@ async function update_friends_value(search_field, new_value, user1, user2) {
 // }
 
 async function delete_friends_value(user1, user2) {
-	const db = await open({ filename: 'db.sqlite', driver: sqlite3.Database });
+	const db = await open({ filename: './database/db.sqlite', driver: sqlite3.Database });
 	try {
 		return await db.run(`
 			DELETE FROM friends
@@ -187,7 +187,7 @@ async function delete_friends_value(user1, user2) {
 // // Tested: all working
 // async function delete_friends_value(self) {
 //     const db = await open({
-//         filename: 'db.sqlite',
+//         filename: './database/db.sqlite',
 //         driver: sqlite3.Database
 //     });
 

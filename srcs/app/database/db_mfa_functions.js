@@ -3,7 +3,7 @@ import sqlite3 from 'sqlite3';
 
 async function get_mfa() {
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -25,7 +25,7 @@ async function get_mfa_value(search_value, value) {
         return -1;
 
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -45,7 +45,7 @@ async function get_mfa_value(search_value, value) {
 // Not tested: But working propperly so far
 async function create_mfa_value(mfa_email, otc, custom, prefered, self) {
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     })
 
@@ -77,7 +77,7 @@ async function update_mfa_value(search_value, value, self) {
     if (!valid_values.includes(search_value))
         return -1;
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -104,7 +104,7 @@ async function update_mfa_value(search_value, value, self) {
 // Tested: all working
 async function delete_mfa_value(self) {
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
