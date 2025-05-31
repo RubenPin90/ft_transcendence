@@ -31,6 +31,8 @@ function createSocket(): WebSocket {
 
   ws.addEventListener('message', ev => {
     const data: ServerMessage = JSON.parse(ev.data);
+    if (data.type != 'tournamentList' && data.type != 'state')
+      console.log(`[socket] ← ${data.type}`, data);
     listeners[data.type]?.forEach(cb => cb(data as any));
   });
 
@@ -51,7 +53,7 @@ export function getSocket(): WebSocket {
 
 export function on<T extends MsgType>(type: T, cb: Listener<T>): void {
   (listeners[type] ??= new Set()).add(cb as any);
-  ensureSocket(); // guarantee the connection exists
+  ensureSocket();
 }
 
 export function off<T extends MsgType>(type: T, cb: Listener<T>): void {

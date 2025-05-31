@@ -350,13 +350,13 @@ export class TournamentManager {
       }
     );
   
-    /* ---------- NEW:  automatic 5-second countdown ------------ */
-    setTimeout(() => {
-      // start only if nobody has cancelled / deleted the tourney in the meantime
-      if (this.tournaments[tournamentId]?.status === 'bracket') {
-        this.beginFirstRound(tournamentId);
-      }
-    }, 5000);  
+    // /* ---------- NEW:  automatic 5-second countdown ------------ */
+    // setTimeout(() => {
+    //   // start only if nobody has cancelled / deleted the tourney in the meantime
+    //   if (this.tournaments[tournamentId]?.status === 'bracket') {
+    //     this.beginFirstRound(tournamentId);
+    //   }
+    // }, 5000); 
   }
 
   beginFirstRound(tournamentId) {
@@ -402,7 +402,7 @@ export class TournamentManager {
   
     // 2.  Seat ONLY the opponent (creator is already inside)
     this.matchManager.joinRoom(matchId, opponentId);
-  
+    // this.matchManager.joinRoomforTournament(matchId, opponentId);
      // 3.  Notify the participants
      this.#notifyPlayers(lobbyRoom, tournamentId);
   }
@@ -426,10 +426,11 @@ export class TournamentManager {
         })),
       },
     };
-  
+    
     for (const player of room.players)
       this.#sendToUser(getPlayerId(player), payload);
-  
+    
+    this.beginFirstRound(tournamentId);
     console.log(`Room created: ${room.matchId} with players ${room.players[0].id} vs ${room.players[1].id}`);
   }
 

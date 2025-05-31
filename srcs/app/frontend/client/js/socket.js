@@ -5,6 +5,8 @@ function createSocket() {
     ws.addEventListener('message', ev => {
         var _a;
         const data = JSON.parse(ev.data);
+        if (data.type != 'tournamentList' && data.type != 'state')
+            console.log(`[socket] ← ${data.type}`, data);
         (_a = listeners[data.type]) === null || _a === void 0 ? void 0 : _a.forEach(cb => cb(data));
     });
     ws.addEventListener('close', () => {

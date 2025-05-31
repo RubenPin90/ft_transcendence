@@ -102,6 +102,28 @@ export class MatchManager extends EventEmitter {
   
     return newRoom;
   }
+
+  // joinRoomforTournament (roomId, playerId)
+  // {
+  //   const room = this.rooms.get(roomId)
+  //   if (!room || room.players.length >= room.maxPlayers) return null
+  //   if (room.players.some(p => p.playerId === playerId)) return room
+  //   room.players.push({ playerId, isBot: false, paddleY: 0.5 })
+  //   room.scoreBoard[playerId] = 0
+  //   return room
+  // }
+
+  // startRoomTournament (roomId) {
+  //   const room = this.rooms.get(roomId)
+  //   if (!room || room.status !== 'waiting') return
+  //   if (room.players.length < 2) return
+
+  //   room.status = 'running'
+  //   this._initBall(roomId)
+  //   this._mainLoop(roomId)
+  //   this.emit('tournamentStarted', { roomId, players: room.players.map(p => p.playerId) })
+  //   console.log(`[${roomId}] Tournament started with players: ${room.players.map(p => p.playerId).join(', ')}`)
+  // }
   
 
   joinRoom (roomId, playerId) {

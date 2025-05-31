@@ -18,7 +18,8 @@ import type {
   MatchStub,
   BracketRounds,
   TournamentBracketMsg,
-  TourneySummary
+  TourneySummary,
+  PlayerStub
 } from './types.js';
 import { setMyId, setCurrentTLobby, getCurrentTLobby } from './state.js';
 import { hideAllPages } from './helpers.js';
@@ -62,13 +63,62 @@ on('joinedTLobby', (msg) => {
   }
 });
 
-on('tournamentBracketMsg', (msg) => {
+on<'matchAssigned'>('matchAssigned', (msg) => {
+  // We no longer show the versus‐overlay here; just do the join/navigation logic.
+  const { tournamentId, matchId, players } = msg.payload;
+  const myId =
+    localStorage.getItem('playerId') ?? (socket as any).userId;
+  const me = players.find((p) => p.id === myId);
+  const rival = players.find((p) => p.id !== myId);
+  if (!me || !rival) return;
+
+  localStorage.setItem('currentGameId', matchId);
+  currentRoomId = matchId;
+
+  setTimeout(() => {
+    send({ type: 'joinMatchRoom', payload: { tournamentId, matchId } });
+    navigate('/game/1v1');
+  }, 3000);
+});
+
+on<'tournamentBracketMsg'>('tournamentBracketMsg', (msg) => {
   let rounds = msg.payload.rounds as unknown;
   if (Array.isArray(rounds) && !Array.isArray(rounds[0])) {
     rounds = [rounds];
   }
+
+  // Render the bracket immediately:
   renderBracketOverlay(rounds as BracketRounds);
+
+  // After 1 second, find the first fully-known match in the first round:
+  setTimeout(() => {
+    const br = rounds as BracketRounds;
+    if (!Array.isArray(br) || br.length === 0) {
+      return;
+    }
+
+    const firstRound: MatchStub[] = br[0];
+    // Iterate over each MatchStub in round 1 until we find two real PlayerStubs:
+    for (const match of firstRound) {
+      // Filter out anything that is not a real PlayerStub:
+      const realPlayers = match.players.filter(
+        (p): p is PlayerStub =>
+          p !== null && typeof (p as any).pendingMatchId === 'undefined');
+
+      if (realPlayers.length === 2) {
+        const leftName = realPlayers[0].name;
+        const rightName = realPlayers[1].name;
+        showVersusOverlay(leftName, rightName);
+        return; // stop after showing the first valid “vs” overlay
+      }
+      // If you want to allow a “waiting on opponent” display when one side is pendingMatchId,
+      // you could check for p having pendingMatchId and show a different overlay. But
+      // as written, we only show “X vs Y” when both are non-null PlayerStub.
+    }
+    // If no match in round 1 has two concrete players yet, do nothing.
+  }, 1000);
 });
+
 
 on('tournamentCreated', (msg) => {
   const TLobby: TLobbyState = msg.payload;
@@ -111,25 +161,7 @@ on('matchFound', (msg) => {
   navigate(`/game/${mode === 'PVP' || mode === '1v1' ? '1v1' : 'pve'}`);
 });
 
-on<'matchAssigned'>('matchAssigned', (msg) => {
-  const { tournamentId, matchId, players } = msg.payload;
-  const myId = localStorage.getItem('playerId') ?? (socket as any).userId;
-  const me = players.find(p => p.id === myId);
-  const rival = players.find(p => p.id !== myId);
-  if (!me || !rival) return;
 
-  localStorage.setItem('currentGameId', matchId);
-  currentRoomId = matchId;
-
-  showVersusOverlay(me.name, rival.name);
-  send({ type: 'joinMatchRoom', payload: { tournamentId, matchId } });
-
-  setTimeout(() => {
-    navigate('/game/1v1');
-  }, 3000);
-});
-
-// Теперь мы не регистрируем on<'state'> в play.ts — за это отвечает game.ts.
 
 // ────────────────────────────────────────────────────────────
 //  5.  UI helpers & routing
@@ -159,7 +191,6 @@ function joinByCodeWithSocket(code?: string) {
   joinByCode(socket, code);
 }
 
-// Установим колбэк “игра окончена” через setOnGameEnd:
 setOnGameEnd((winnerId: string) => {
   alert(`Player ${winnerId} wins!`);
 });
@@ -192,7 +223,6 @@ function route() {
     if (currentMode && currentMode !== mode) stopGame();
     currentMode = mode;
     initGameCanvas();
-    // Теперь вызываем startGame и внутри game.ts подписываемся на `state` и `matchFound`.
     if (['pve', '1v1'].includes(mode)) startGame(mode as GameMode);
     return;
   }

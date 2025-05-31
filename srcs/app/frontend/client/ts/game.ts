@@ -1,7 +1,5 @@
-// game.ts — полностью через шину событий из socket.ts
-
 import { on, off, send, getSocket } from './socket.js';
-import type { ServerMessage } from './socket.js'; // только тип для извлечения payload
+import type { ServerMessage } from './socket.js';
 export type GameMode = 'pve' | '1v1' | 'Tournament';
 
 interface PlayerState {
@@ -21,43 +19,31 @@ export interface GameState {
 let ctx: CanvasRenderingContext2D | null = null;
 let userId: string | null = null;
 let currentRoomId: string | null = null;
-let ws: WebSocket | null = null;  // Только для send(); слушатели идут через on()/off()
+let ws: WebSocket | null = null;
 let inputHandlersRegistered = false;
 
 const keysPressed: Record<string, boolean> = {};
 
-// Локальная переменная, куда сохранится callback, переданный пользователем
 let gameEndCb: ((winnerId: string) => void) | null = null;
 
-// Колбэки для off(...)
 let matchFoundListener: ((msg: Extract<ServerMessage, { type: 'matchFound' }>) => void) | null = null;
 let stateListener:      ((msg: Extract<ServerMessage, { type: 'state' }>)      => void) | null = null;
 
-/**
- * setOnGameEnd сохраняет колбэк, который будет вызван,
- * когда игра завершится (status === 'finished').
- */
+
 export function setOnGameEnd(cb: (winnerId: string) => void): void {
   gameEndCb = cb;
 }
 
-/**
- * Инициализирует canvas для игры: получает контекст 2D.
- */
+
 export function initGameCanvas(): void {
   const canvas = document.getElementById('game') as HTMLCanvasElement | null;
   if (!canvas) return;
   ctx = canvas.getContext('2d');
 }
 
-/**
- * Запускает игру: подписывается на события matchFound и state через on().
- * Если mode === 'pve', отправляет joinQueue.
- */
-export function startGame(mode: GameMode): void {
-  ws = getSocket(); // нужен только для send()
 
-  // Восстанавливаем из localStorage, если ещё не заданы
+export function startGame(mode: GameMode): void {
+  ws = getSocket();
   if (!currentRoomId) {
     currentRoomId = localStorage.getItem('currentGameId');
   }
@@ -71,15 +57,12 @@ export function startGame(mode: GameMode): void {
     if (ws.readyState === WebSocket.OPEN) {
       sendJoinQueue();
     } else {
-      // дождёмся открытия, потом отправим
       ws.addEventListener('open', sendJoinQueue, { once: true });
     }
   }
 
-  // Подписываемся на matchFound, если ещё не подписаны
   if (!matchFoundListener) {
     matchFoundListener = (msg) => {
-      // msg.payload содержит { gameId, mode, userId }
       currentRoomId = msg.payload.gameId;
       userId        = msg.payload.userId;
       console.log(`Match ready: room=${currentRoomId}, user=${userId}`);
@@ -87,12 +70,10 @@ export function startGame(mode: GameMode): void {
     on('matchFound', matchFoundListener);
   }
 
-  // Подписываемся на state, если ещё не подписаны
   if (!stateListener) {
     stateListener = (msg) => {
       drawFrame(msg.state);
       if (msg.state.status === 'finished') {
-        // Игра окончена
         stopGame();
         if (msg.state.winner != null && gameEndCb) {
           gameEndCb(msg.state.winner);
@@ -102,17 +83,12 @@ export function startGame(mode: GameMode): void {
     on('state', stateListener);
   }
 
-  // Устанавливаем обработчики ввода (клавиши), но только один раз
   if (!inputHandlersRegistered) {
     setupInputHandlers();
     inputHandlersRegistered = true;
   }
 }
 
-/**
- * Останавливает игру: отправляет leaveGame и удаляет слушатели, чтобы
- * при перезапуске не накапливались подписки.
- */
 export function stopGame(): void {
   if (ws && ws.readyState === WebSocket.OPEN) {
     send({
@@ -121,21 +97,17 @@ export function stopGame(): void {
     });
   }
 
-  // Отписываемся от matchFound
   if (matchFoundListener) {
     off('matchFound', matchFoundListener);
     matchFoundListener = null;
   }
-  // Отписываемся от state
   if (stateListener) {
     off('state', stateListener);
     stateListener = null;
   }
 }
 
-/**
- * Рисует текущее состояние игры в canvas.
- */
+
 export function drawFrame(state: GameState): void {
   if (
     state == null ||
@@ -153,7 +125,6 @@ export function drawFrame(state: GameState): void {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Рисуем мяч
   if (state.ball) {
     const { x, y } = state.ball;
     ctx.beginPath();
@@ -162,13 +133,11 @@ export function drawFrame(state: GameState): void {
     ctx.fill();
   }
 
-  // Рисуем ракетки
   state.players.forEach((p, i) => {
     const x = i === 0 ? 10 : canvas.width - 25;
     ctx?.fillRect(x, toY(p.y) - 50, 15, 100);
   });
 
-  // Рисуем счёт
   ctx.font = '20px sans-serif';
   ctx.fillText(
     `${state.scores[state.players[0].id] || 0}`,
@@ -182,10 +151,6 @@ export function drawFrame(state: GameState): void {
   );
 }
 
-/**
- * Устанавливает обработчики клавиш для управления ракеткой.
- * Отправляет movePaddle по WebSocket каждые 16ms, пока кнопка зажата.
- */
 export function setupInputHandlers(): void {
   let moveInterval: number | null = null;
 

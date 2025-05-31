@@ -28,12 +28,43 @@ on('joinedTLobby', (msg) => {
         renderTLobby(TLobby, socket);
     }
 });
+on('matchAssigned', (msg) => {
+    var _a;
+    const { tournamentId, matchId, players } = msg.payload;
+    const myId = (_a = localStorage.getItem('playerId')) !== null && _a !== void 0 ? _a : socket.userId;
+    const me = players.find((p) => p.id === myId);
+    const rival = players.find((p) => p.id !== myId);
+    if (!me || !rival)
+        return;
+    localStorage.setItem('currentGameId', matchId);
+    currentRoomId = matchId;
+    setTimeout(() => {
+        send({ type: 'joinMatchRoom', payload: { tournamentId, matchId } });
+        navigate('/game/1v1');
+    }, 3000);
+});
 on('tournamentBracketMsg', (msg) => {
     let rounds = msg.payload.rounds;
     if (Array.isArray(rounds) && !Array.isArray(rounds[0])) {
         rounds = [rounds];
     }
     renderBracketOverlay(rounds);
+    setTimeout(() => {
+        const br = rounds;
+        if (!Array.isArray(br) || br.length === 0) {
+            return;
+        }
+        const firstRound = br[0];
+        for (const match of firstRound) {
+            const realPlayers = match.players.filter((p) => p !== null && typeof p.pendingMatchId === 'undefined');
+            if (realPlayers.length === 2) {
+                const leftName = realPlayers[0].name;
+                const rightName = realPlayers[1].name;
+                showVersusOverlay(leftName, rightName);
+                return;
+            }
+        }
+    }, 1000);
 });
 on('tournamentCreated', (msg) => {
     const TLobby = msg.payload;
@@ -67,22 +98,6 @@ on('matchFound', (msg) => {
     localStorage.setItem('currentGameId', gameId);
     localStorage.setItem('playerId', userId);
     navigate(`/game/${mode === 'PVP' || mode === '1v1' ? '1v1' : 'pve'}`);
-});
-on('matchAssigned', (msg) => {
-    var _a;
-    const { tournamentId, matchId, players } = msg.payload;
-    const myId = (_a = localStorage.getItem('playerId')) !== null && _a !== void 0 ? _a : socket.userId;
-    const me = players.find(p => p.id === myId);
-    const rival = players.find(p => p.id !== myId);
-    if (!me || !rival)
-        return;
-    localStorage.setItem('currentGameId', matchId);
-    currentRoomId = matchId;
-    showVersusOverlay(me.name, rival.name);
-    send({ type: 'joinMatchRoom', payload: { tournamentId, matchId } });
-    setTimeout(() => {
-        navigate('/game/1v1');
-    }, 3000);
 });
 let markQueued;
 let currentMode = null;

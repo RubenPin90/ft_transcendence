@@ -21,11 +21,9 @@
     
     console.log('Rendering tournament bracket overlay with rounds:', rounds);
 
-    /* wipe previous columns but keep the button */
     overlay.replaceChildren(beginBtn);
   
-    /* build columns */
-    /* build columns */
+
   rounds.forEach((round, rIdx) => {
     const col = document.createElement('div');
     col.className = 'round-col';
@@ -37,10 +35,8 @@
     round.forEach(match => {
       if (!match || !Array.isArray(match.players)) return;
 
-      // clone the template fragment
       const card = cardTpl.cloneNode(true) as DocumentFragment;
 
-      // explicitly fetch the two player-name divs
       const p1El = card.querySelector<HTMLDivElement>('.p1');
       const p2El = card.querySelector<HTMLDivElement>('.p2');
 
@@ -58,11 +54,10 @@
       col.appendChild(card);
     });
 
-    overlay.insertBefore(col, beginBtn); // keep button last
+    overlay.insertBefore(col, beginBtn);
   });
 
   
-    /* host-only “Begin” button */
     try {
       const TLobby = (window as any).getCurrentTLobby?.();
       const myId   = (window as any).getMyId?.();
@@ -83,7 +78,6 @@
     overlay.hidden = false;
   }
 
-  /** Join a tournament via its 4‑letter invitation code. */
   export function joinByCode(socket: WebSocket, codeFromBtn?: string) {
     const codeInput = document.getElementById('t-code-input') as HTMLInputElement | null;
     const code = (codeFromBtn ?? codeInput?.value ?? '').trim();
