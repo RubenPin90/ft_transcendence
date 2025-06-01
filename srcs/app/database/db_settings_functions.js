@@ -1,6 +1,6 @@
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
-import * as modules from '../backend/mimes.js';
+import * as modules from '../backend/modules.js';
 import { promises as fs } from 'fs';
 
 const max_loop_size = 1000000000;

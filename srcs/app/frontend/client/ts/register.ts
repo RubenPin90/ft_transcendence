@@ -98,12 +98,22 @@ async function create_account() {
   if (password !== repeat){
     return wrong_input("Passwords are not the same");
   }
-
-  const picute = await fetch('/default_profile');
-
+  
   let pfp = '';
+  const picture = await fetch('/public/default_profile.svg');
+  const blob = await picture.blob(); //Gets the raw binary data of the image
+
+  const base64 = await new Promise<string | void>((resolve, reject) => {
+    const file = new FileReader(); //A built-in browser API for reading files (like images).
+    file.onloadend = () => { // This function runs when the file has finished reading.
+      pfp = file.result as string; //Inside this, you assign the result to pfp
+      resolve(); // Then call resolve() to say “we’re done, continue the await”
+    };
+    file.onerror = reject;
+    file.readAsDataURL(blob); // Tells the reader to convert the binary blob into a Base64-encoded data URL
+  })
   const response = await fetch('/register', {
-    method : 'POST',
+    method : 'POST',  
     headers: { 'Content-Type': 'application/json' },
     body   : JSON.stringify({email, username, password, pfp})
   });

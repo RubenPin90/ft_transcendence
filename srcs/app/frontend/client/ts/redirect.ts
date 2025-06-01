@@ -31,6 +31,38 @@ async function show_profile_page() : Promise<string>{
     return 'profile_div';
 }
 
+async function show_friends_page() : Promise<string>{
+    var innervalue = document.getElementById("friends_field")?.innerHTML;
+
+    console.log(innervalue);
+
+    const response = await fetch ('/friends', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({innervalue}),
+    });
+    if (!response.ok){
+        alert("error with friends response");
+        return 'home_div';
+    };
+
+    const data = await response.json();
+    if (data.Response === 'success'){
+        var element = document.getElementById("friends_field");
+        if (element){
+            element.innerHTML = data.Content;
+        }
+    }
+    else if (data.Response === 'fail'){
+        alert (`error with data of friends ${data.Content}`)
+        return 'home_div';
+    }
+    return 'friends_div';
+}
+
+
 function toggle_divs(render : string){
     available_divs.forEach(divs => {
         const element = document.getElementById(divs);
@@ -139,7 +171,7 @@ async function where_am_i(path : string) : Promise<string> {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
-            return 'friends_div';
+            return await show_friends_page();
         default: return 'home_div';
     }
 }

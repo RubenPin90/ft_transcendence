@@ -63,7 +63,7 @@ async function register(request, response) {
             response.raw.end(JSON.stringify({"Response": 'Bcrypt error', "Content": null}));
             return true;
         }
-        const settings = await settings_db.create_settings_value(hashed, '', 0, replace_data.email, 'en', '', '');
+        const settings = await settings_db.create_settings_value(hashed, replace_data.pfp, 0, replace_data.email, 'en', '', '');
         if (!settings || settings === undefined || settings < 0) {
             response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
             response.raw.end(JSON.stringify({"Response": 'Failed creating table in settings', "Content": null}));
@@ -492,14 +492,15 @@ async function profile(request, response){
 
 
     var inner = request.body.innervalue;
-    console.log(inner);
+    // console.log(inner);
+
     inner = inner.replace('{{username}}', user.username);
-    inner = inner.replace('{{email}}', settings.email || 'Not provided');
-    inner = inner.replace('{{picture}}', settings.pfp || 'public/default_profile.svg');
+    inner = inner.replace('{{email}}', settings.email);
+    inner = inner.replace('{{picture}}', settings.pfp);
     inner = inner.replace('{{status}}', ()=> {if (user.status === 1) return 'online'; else return 'offline'});
     inner = inner.replace('{{Friends}}', await friends_request.show_accepted_friends(userid))
-    console.log("------------------------------");
-    console.log(inner);
+    // console.log("------------------------------");
+    // console.log(inner);
 
     return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": 'success', "Content": inner});
 
@@ -582,19 +583,25 @@ async function update_settings(request, response) {
     if (!data || data === undefined){
         return response.code(400).send({ message: 'Invalid data'});
     }
-    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    const [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token')) {
-        return // Here was a redirect(response, '/login', 302);
+        return login(request, response);
     }
 
     const { email, password, avatar } = data;
+
+    console.log("----------------------");
+    console.log(email);
+    console.log(password);
+    console.log(avatar);
+    console.log("----------------------");
 
 
     const tokenIndex = keys.findIndex((key) => key === 'token');
     const token = values[tokenIndex];
     let decoded;
     try {
-        decoded = await modules.get_jwt(token);
+        decoded = modules.get_jwt(token);
     }
     catch (err) {
         return // Here was a redirect(response, '/login', 302);
@@ -629,16 +636,13 @@ async function update_settings(request, response) {
 }
 
 async function update_user(request, response) {
-    if (request.method !== 'POST') {
-        return send.send_error_page('404.html', response, 404);
-    }
-
     const data = request.body;
     if (data === null || data === undefined){
         return response.code(400).send({ message: 'Invalid data'});
     }
-    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    const [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token')) {
+        return login(request, response);
         return // Here was a redirect(response, '/login', 302);
     }
 
@@ -646,61 +650,66 @@ async function update_user(request, response) {
     const token = values[tokenIndex];
     let decoded;
     try {
-        decoded = await modules.get_jwt(token);
+        decoded = modules.get_jwt(token);
     }
     catch (err) {
         return // Here was a redirect(response, '/login', 302);
     }
 
     const userid = decoded.userid;
-
+    console.log("DATA: ", data);
     try {
-        const result = await users_db.update_users_value('username', data.usernameValue, userid);
+        const result = await users_db.update_users_value('username', data, userid);
         if (result) {
-            return response.code(200).send({ message: 'Successfully updated Username'});
+            return response.code(200).send({ "Response": 'Successfully updated Username'});
         }
         else{
-            return response.code(500).send({ message: 'Failed to update Username'});
+            return response.code(500).send({ "Response": 'Failed to update Username'});
         }
     }
     catch (err){
-        return response.code(500).send({ message: 'Server error'});
+        return response.code(500).send({ "Response": 'Server error'});
     }
 }
 
 async function friends(request, response){
-    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    const [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token')) {
-        return // Here was a redirect(response, '/login', 302);
+        return login(request, response);
     }
 
-    const tokenIndex = keys.findIndex((key) => key === 'token');
-    const token = values[tokenIndex];
+    const token = values[keys.indexOf("token")];
     let decoded;
     try {
-        decoded = await modules.get_jwt(token);
+        decoded = modules.get_jwt(token);
     } catch (err) {
         return // Here was a redirect(response, '/login', 302);
     }
 
     const userid = decoded.userid;
 
-    const status = await send.send_html('index.html', response, 200, async(data) => {
-        var [keys, values] = modules.get_cookies(request.headers.cookie);
-        const lang_check = keys?.find((key) => key === 'lang');
-        if (!lang_check || lang_check === undefined || lang_check == false)
-            return false;
-        const langIndex = keys.indexOf('lang');
-        const lang = values[langIndex];
-        try {
-            var decoded_lang = modules.get_jwt(lang);
-        } catch (err) {
-            return false;
-        }
-        data = await translator.cycle_translations(data, decoded_lang.userid);
-        data = data.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
-        return data;
-    });
+
+    var inner = request.body.innervalue;
+    // inner = await translator.cycle_translations(inner, decoded_lang);
+    inner = inner.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
+    return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": 'success', "Content": inner});
+
+    // const status = await send.send_html('index.html', response, 200, async(data) => {
+    //     var [keys, values] = modules.get_cookies(request.headers.cookie);
+    //     const lang_check = keys?.find((key) => key === 'lang');
+    //     if (!lang_check || lang_check === undefined || lang_check == false)
+    //         return false;
+    //     const langIndex = keys.indexOf('lang');
+    //     const lang = values[langIndex];
+    //     try {
+    //         var decoded_lang = modules.get_jwt(lang);
+    //     } catch (err) {
+    //         return false;
+    //     }
+    //     data = await translator.cycle_translations(data, decoded_lang.userid);
+    //     data = data.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
+    //     return data;
+    // });
 
 
 
@@ -714,9 +723,9 @@ async function friends(request, response){
 
 
 async function add_friends(request, response){
-    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    const [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token')) {
-        return // Here was a redirect(response, '/login', 302);
+        return login(request, response);
     }
 
     const data = request.body;
@@ -727,7 +736,7 @@ async function add_friends(request, response){
     const token = values[tokenIndex];
     let decoded;
     try {
-        decoded = await modules.get_jwt(token);
+        decoded = modules.get_jwt(token);
     } catch (err) {
         return // Here was a redirect(response, '/login', 302);
     }
@@ -738,7 +747,11 @@ async function add_friends(request, response){
     const receiver_db = await users_db.get_users_value('username', receiver);
     if (!receiver_db || receiver_db === undefined){
         console.error("no user in database");
-        return;
+        return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": "no user in database" });
+    }
+    if (receiver_db.self == userid){
+        console.error("cant send youself the request");
+        return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": "Sending request to self" });
     }
 
     const result = await friends_request.create_friend_request_value(userid, receiver_db.self);
@@ -746,89 +759,69 @@ async function add_friends(request, response){
         console.error("create_friend_request_value caught an error");
         return null;
     }
-    return true;
+    return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": "success" });
 }
 
-async function accept_friend(request, response){
-    const [keys, values] = modules.get_cookies(request.headers.cookie);
-    if (!keys?.includes('token')) {
-        return // Here was a redirect(response, '/login', 302);
-    }
-
+async function accept_friends(request, response){
+    const [keys, values] = modules.get_cookies(request);
     const data = request.body;
     if (!data || data === undefined){
         return response.code(400).send({ message: 'Invalid data'});
     }
-    const tokenIndex = keys.findIndex((key) => key === 'token');
-    const token = values[tokenIndex];
+
     let decoded;
     try {
-        decoded = await modules.get_jwt(token);
+        decoded = modules.get_jwt(values[keys.indexOf("token")]);
     } catch (err) {
-        return // Here was a redirect(response, '/login', 302);
+        return response.code(400).send({ message: 'Invalid decoded'});
     }
 
-    // const userid = decoded.userid;
-
     const receiver = data.userid;
-    // const result = await friends_request.delete_friend_request_value(receiver);
     const result = await friends_request.update_friend_request_value(receiver, 'accepted');
     if (!result || result === undefined){
         console.error("error in deleting accepted friend request");
         return null;
     }
-    return true;
+    return response.code(200).send({ message: 'success'});
 }
 
 async function reject_friend(request, response){
-const [keys, values] = modules.get_cookies(request.headers.cookie);
-    if (!keys?.includes('token')) {
-        return // Here was a redirect(response, '/login', 302);
-    }
-
+    const [keys, values] = modules.get_cookies(request);
     const data = request.body;
     if (!data || data === undefined){
         return response.code(400).send({ message: 'Invalid data'});
     }
-    const tokenIndex = keys.findIndex((key) => key === 'token');
-    const token = values[tokenIndex];
+
     let decoded;
     try {
-        decoded = await modules.get_jwt(token);
+        decoded = modules.get_jwt(values[keys.indexOf("token")]);
     } catch (err) {
-        return // Here was a redirect(response, '/login', 302);
+        return response.code(400).send({ message: 'Invalid decoded'});
     }
 
-    // const userid = decoded.userid;
-
     const receiver = data.userid;
-    console.log("RECEIVER: ", receiver);
+    // const result = await friends_request.delete_friend_request_value(receiver);
     const result = await friends_request.delete_friend_request_value(receiver);
     if (!result || result === undefined){
         console.error("error in deleting accepted friend request");
         return null;
     }
-    return true;
+    return response.code(200).send({ message: 'success'});
 }
 
 
 async function block_friend(request, response){
-    const [keys, values] = modules.get_cookies(request.headers.cookie);
-    if (!keys?.includes('token')) {
-        return // Here was a redirect(response, '/login', 302);
-    }
-
+    const [keys, values] = modules.get_cookies(request);
     const data = request.body;
     if (!data || data === undefined){
         return response.code(400).send({ message: 'Invalid data'});
     }
-    const tokenIndex = keys.findIndex((key) => key === 'token');
-    const token = values[tokenIndex];
+
     let decoded;
     try {
-        decoded = await modules.get_jwt(token);
+        decoded = modules.get_jwt(values[keys.indexOf("token")]);
     } catch (err) {
-        return // Here was a redirect(response, '/login', 302);
+        return response.code(400).send({ message: 'Invalid decoded'});
     }
 
     // const userid = decoded.userid;
@@ -840,7 +833,7 @@ async function block_friend(request, response){
         console.error("error in deleting accepted friend request");
         return null;
     }
-    return true;
+    return response.code(200).send({ message: 'success'});
 }
 
 
@@ -862,7 +855,7 @@ export {
     update_settings,
     friends,
     add_friends,
-    accept_friend,
+    accept_friends,
     reject_friend,
     block_friend
 }

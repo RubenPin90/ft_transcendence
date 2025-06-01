@@ -1,7 +1,7 @@
 async function add_friend(){
     const input = document.getElementById('accept_friends') as HTMLInputElement;
     if (!input || input === undefined){
-        alert('no input elemetn');
+        alert('no input element');
         return;
     }
     const input_value = input.value;
@@ -22,6 +22,11 @@ async function add_friend(){
             alert("response is not ok in add_friend");
             return;
         }
+        const data = await response.json();
+        if (data.Response == "success"){
+            alert("Friend request sent");
+            return;
+        }
     } catch (err){
         console.error("Error on add_friends:", err);
     }
@@ -29,7 +34,7 @@ async function add_friend(){
 
 async function accept_friend(userid : string){
     try{
-        const response = await fetch('/accept_friend',{
+        const response = await fetch('/accept_friends',{
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -867,7 +867,7 @@ async function replace_all_templates(request, response, state) {
                 <path d="M11.241 9.817c-.36.275-.801.425-1.255.427-.428 0-.845-.138-1.187-.395L0 2.6V14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2.5l-8.759 7.317Z"/>
             </svg>
         </div>
-        <input type="text" id="email" placeholder="example@gmail.com" required class="input_field" />
+        <input type="text" id="email_change" placeholder="example@gmail.com" required class="input_field" />
     </div>
     <label for="password-input" class="label_text">Password</label>
     <div id="password_field" class="relative input_total">
@@ -883,7 +883,7 @@ async function replace_all_templates(request, response, state) {
                 <path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 0 0-2.63 4.31c-.12.362-.12.752 0 1.114 1.489 4.467 5.704 7.69 10.675 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 0 1 6.75 12Z" />
                 </svg>
         </button>
-        <input type="password" id="password-input" placeholder="Password" required class="input_field" />
+        <input type="password" id="password_input_change" placeholder="Password" required class="input_field" />
     </div>
     <label for="password-input2" class="label_text">Repeat Password</label>
     <div id="repeat_field" class="relative input_total">
@@ -899,7 +899,7 @@ async function replace_all_templates(request, response, state) {
                 <path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 0 0-2.63 4.31c-.12.362-.12.752 0 1.114 1.489 4.467 5.704 7.69 10.675 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 0 1 6.75 12Z" />
             </svg>
         </button>
-        <input type="password" id="password-input2" placeholder="Repeat password" required class="input_field" />
+        <input type="password" id="password_input2_change" placeholder="Repeat password" required class="input_field" />
     </div>
     <div class="flex mt-12 gap-4 w-full">
         <a class="flex-1">
