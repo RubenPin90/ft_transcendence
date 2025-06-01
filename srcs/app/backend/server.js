@@ -7,10 +7,10 @@ import fastifyStatic from '@fastify/static';
 import WebSocket, { WebSocketServer } from 'ws';
 import os from 'os';
 
-import { matchManager, GAME_MODES } from './game/matchManager.js';
+import { SocketRegistry } from './socketRegistry.js';
+import { MatchManager, GAME_MODES } from './game/matchManager.js';
 import { handleClientMessage } from './game/messageHandler.js';
-import { tournamentManager } from './game/tournamentManager.js';
-
+import { TournamentManager } from './game/tournamentManager.js';
 import urlsPlugin from './urls.js';
 
 const PORT = 8080;
@@ -39,20 +39,25 @@ await fastify.register(urlsPlugin);
 // Start the server
 await fastify.listen({ port: PORT, host: '0.0.0.0' });
 const server = fastify.server;
+console.log(`Server running at http://localhost:${PORT}`);
 
 // Setup WebSocket server
 const wss = new WebSocketServer({ noServer: true });
 
-tournamentManager.matchManager = matchManager;
-tournamentManager.setSocketServer(wss);
-tournamentManager.setUserSockets(matchManager.userSockets);
+// Instantiate managers
+const socketRegistry = new SocketRegistry();
+const matchManager = new MatchManager(socketRegistry);
+const tournamentManager = new TournamentManager(socketRegistry, matchManager);
+
+tournamentManager.matchManager = matchManager; // Wire matchManager into tournamentManager if needed
+matchManager.tournamentManager = tournamentManager; // Optional: wire back if needed
 
 // Broadcast tournament state every second
 setInterval(() => {
   tournamentManager.broadcastTournamentUpdate();
-}, 1000);
+}, 3000);
 
-// Create initial tournaments
+// Create initial tournaments from SERVER
 for (let i = 0; i < 3; i++) {
   tournamentManager.createTournament(null, 'SERVER');
 }
@@ -73,7 +78,7 @@ wss.on('connection', (ws, req) => {
   let userId;
   do {
     userId = 'user_' + (Math.random() * 10000 | 0);
-  } while (matchManager.userSockets.has(userId));
+  } while (socketRegistry.has(userId));
 
   ws.userId = userId;
   ws.inGame = false;
@@ -83,11 +88,11 @@ wss.on('connection', (ws, req) => {
 
   matchManager.registerSocket(userId, ws);
 
-  ws.on('message', (raw) => handleClientMessage(ws, raw, matchManager));
+  ws.on('message', (raw) => handleClientMessage(ws, raw, matchManager, tournamentManager));
 
   ws.on('close', () => {
     console.log('❌ WS closed:', userId);
-    tournamentManager.leaveTournament(userId, null);
+    tournamentManager.leaveTournament(userId);
     matchManager.unregisterSocket(userId);
 
     if (ws.inGame) {
@@ -96,14 +101,15 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-// Graceful shutdown
-const handleSIGINT = () => {
-  wss.close(() => {
-    fastify.close(() => {
-      process.exit(0);
-    });
-  });
-};
 
-process.on('SIGTERM', handleSIGINT);
-process.on('SIGINT', handleSIGINT); // For Ctrl+C too
+// Graceful shutdown
+// const handleSIGINT = () => {
+//   wss.close(() => {
+//     fastify.close(() => {
+//       process.exit(0);
+//     });
+//   });
+// };
+
+// process.on('SIGTERM', handleSIGINT);
+// process.on('SIGINT', handleSIGINT); // For Ctrl+C too

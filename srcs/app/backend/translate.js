@@ -10,7 +10,7 @@ async function translator(text, lang) {
 			return -1;
 		return translated;
 	} catch (err) {
-		console.log(err);
+		//console.log(err);
 		return -2;
 	}
 }
