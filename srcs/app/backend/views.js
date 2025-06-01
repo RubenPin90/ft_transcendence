@@ -244,7 +244,7 @@ async function mfa(request, response) {
                 <option value="" selected disabled hidden>Choose a default authentication method</option>
                     ${select_menu}
             </select>
-            <button type="submit">Submit</button>
+            <button onclick="change_language()">Submit</button>
         </form>
         <br>`;
         return data.replace("{{mfa-button}}", `${replace_string} ${select_menu} <div><a href="/settings" data-link><button>Back</button></a></div> \
@@ -256,43 +256,53 @@ async function mfa(request, response) {
 }
 
 
-// async function user(request, response){
-//     var [keys, values] = modules.get_cookies(request.headers.cookie);
-//     if (!keys?.includes('token'))
-//         return // Here was a redirect(response, '/login', 302);
-//     var request_url = request.url.slice(14);
-//     if (request_url == '/select_language')
-//         return await select_language(request, response);
-//     if (request_url == '/profile_settings')
-//         return await user_settings(request, response);
+async function user(request, response){
+    var [keys, values] = modules.get_cookies(request.headers.cookie);
+    if (!keys?.includes('token'))
+        return // Here was a redirect(response, '/login', 302);
+    const data = request.body;
+    if (data.Function == "change_language") {
+        const new_lang = data.Lang;
+        if (keys?.indexOf('lang')) {
+            const old_lang = modules.get_jwt(values[keys.indexOf('lang')]);
+            if (old_lang != new_lang)
+                modules.delete_cookie(response, 'lang');
+        }
+        const new_lang_decrypted = modules.create_jwt(new_lang, '1h');
+        modules.set_cookie(response, 'lang', new_lang_decrypted, 3600);
+        const page_translated = await translator.cycle_translations(data.Page, new_lang);
+        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+        response.raw.end(JSON.stringify({"Response": 'success', 'Content': page_translated}));
+    }
 
-//     const status = await send.send_html('settings.html', response, 200, async  (data) => {
-//         var replace_string = "";
-//         replace_string += '<div><a href="/settings/user/select_language" data-link><div class="buttons mb-6"></a></div>';
-//         replace_string += '<button class="block w-full mb-6 mt-6">';
-//         replace_string += '<span class="button_text">Select Language</span>';
-//         replace_string += '</button></div>';
+    const status = await send.send_html('settings.html', response, 200, async  (data) => {
+        var replace_string = "<span>In here??????</span>";
+        // var replace_string = "";
+        // replace_string += '<div><a href="/settings/user/select_language" data-link><div class="buttons mb-6"></a></div>';
+        // replace_string += '<button class="block w-full mb-6 mt-6">';
+        // replace_string += '<span class="button_text">Select Language</span>';
+        // replace_string += '</button></div>';
 
-//         replace_string += '<div><a href="/settings/user" data-link><div class="buttons mb-6"></a></div>';
-//         replace_string += '<button class="block w-full mb-6 mt-6">';
-//         replace_string += '<span class="button_text">Profile changes</span>';
-//         replace_string += '</button></div>';
+        // replace_string += '<div><a href="/settings/user" data-link><div class="buttons mb-6"></a></div>';
+        // replace_string += '<button class="block w-full mb-6 mt-6">';
+        // replace_string += '<span class="button_text">Profile changes</span>';
+        // replace_string += '</button></div>';
 
-//         replace_string += '<div class="flex mt-12 gap-4 w-full">';
-//         replace_string += '<a class="flex-1" href="/settings" data-link>';
-//         replace_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-//         replace_string += '<span class="button_text">Back</span>';
-//         replace_string += '</button></a>';
-//         replace_string += '<a class="flex-1">';
-//         replace_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-//         replace_string += '<span class="button_text">Logout</span>';
-//         replace_string += '</button></a></div>';
-//         return data.replace('{{mfa-button}}', replace_string);
-//     });
-//     if (!status || status === undefined || status < 0)
-//         return `_${status}`
-//     return true;
-// }
+        // replace_string += '<div class="flex mt-12 gap-4 w-full">';
+        // replace_string += '<a class="flex-1" href="/settings" data-link>';
+        // replace_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+        // replace_string += '<span class="button_text">Back</span>';
+        // replace_string += '</button></a>';
+        // replace_string += '<a class="flex-1">';
+        // replace_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+        // replace_string += '<span class="button_text">Logout</span>';
+        // replace_string += '</button></a></div>';
+        return data.replace('{{mfa-button}}', replace_string);
+    });
+    if (!status || status === undefined || status < 0)
+        return `_${status}`
+    return true;
+}
 
 async function settings(request, response) {
     var [keys, values] = modules.get_cookies(request);

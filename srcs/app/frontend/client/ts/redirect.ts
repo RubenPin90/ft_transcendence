@@ -1,4 +1,4 @@
-const available_divs = ['change_avatar_div','user_prof_div', 'userpass_div', 'useravatar_div', 'username_div' ,'lang_prof_div' ,'settings_main_div', 'mfa_div','user_settings_div', 'register_div', 'profile_div', 'menu_div', 'login_div', 'home_div', 'game_div', 'friends_div', 'change_user_div', 'change_login_div']
+const available_divs = ['change_avatar_div','user_prof_div', 'userpass_div', 'useravatar_div', 'username_div' ,'lang_prof_div' ,'settings_main_div', 'mfa_div','user_settings_div', 'register_div', 'lang_div', 'profile_div', 'menu_div', 'login_div', 'home_div', 'game_div', 'friends_div', 'change_user_div', 'change_login_div']
 
 async function show_profile_page() : Promise<string>{
     var innervalue = document.getElementById("profile_div")?.innerHTML;
@@ -142,6 +142,12 @@ async function where_am_i(path : string) : Promise<string> {
                 return 'login_div';
             }
             return 'user_prof_div';
+        case '/settings/language': 
+        if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'lang_div';
         case '/settings/mfa': 
         if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');

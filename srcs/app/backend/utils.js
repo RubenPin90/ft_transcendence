@@ -607,6 +607,10 @@ async function replace_all_templates(request, response, state) {
 	settings_html_default_string += '<a class="buttons" href="/settings/user" data-link>';
 	settings_html_default_string += '<button class="block w-full mb-6 mt-6">';
 	settings_html_default_string += '<span class="button_text">User</span>';
+	settings_html_default_string += '</button></a>';
+	settings_html_default_string += '<a class="buttons" href="/settings/language" data-link>';
+	settings_html_default_string += '<button class="block w-full mb-6 mt-6">';
+	settings_html_default_string += '<span class="button_text">Change language</span>';
 	settings_html_default_string += '</button></a></div>';
 	settings_html_default_string += '<div class="flex mt-12 gap-4 w-full">';
 	settings_html_default_string += '<a class="flex-1" href="/" data-link>';
@@ -781,7 +785,9 @@ async function replace_all_templates(request, response, state) {
 			<option value="zh-tw">繁體中文</option>
 			<option value="ko">한국어</option>
 		</select>
-		<button type="submit">Submit</button>
+		<a data-link>
+			<button onclick="change_language()">Submit</button>
+		</a>
 	</form>`
 	settings_html_user_select_language_string += '<div class="flex mt-12 w-1/2">';
 	settings_html_user_select_language_string += '<a href="/settings" class="flex-1" data-link>';
@@ -794,7 +800,7 @@ async function replace_all_templates(request, response, state) {
 	settings_html_user_select_language_string += '';
 	settings_html_user_select_language_string += '';
 	settings_html_user_select_language_string += ' \
-	</div></div></div></div>';
+	</div></div></div></div></div>';
 	const settings_html_user_select_language_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_select_language_string);
 
 	var settings_html_user_profile_settings_string = "";
@@ -1036,7 +1042,7 @@ async function replace_all_templates(request, response, state) {
 	index_html += settings_html_user_profile_credential_raw;
 	index_html += settings_html_user_profile_avatar_raw;
 	index_html += friends_html_raw;
-	index_html += menu_raw;
+	index_html += play_main;
 	// index_html += game_raw;
 	const [keys, values] = modules.get_cookies(request);
 	// const user_encrypt = modules.get_jwt(values[0]);

@@ -307,23 +307,64 @@ async function remove_email() {
     }
 }
 
-// async function change_language() {
-//     const response = await fetch("/settings/user", {
-//         method: 'POST',
-//         headers: {'Content-Type': 'application/json'},
-//         body: JSON.stringify({'Function': 'change_language'})
-//     });
+async function change_language() {
+    // const response = await fetch("/settings/user", {
+    //     method: 'POST',
+    //     headers: {'Content-Type': 'application/json'},
+    //     body: JSON.stringify({'Function': 'change_language'})
+    // });
 
-//     if (!response.ok)
-//         throw new Error(`HTTP Fehler! Status: ${response.status}`);
+    // if (!response.ok)
+    //     throw new Error(`HTTP Fehler! Status: ${response.status}`);
 
-//     let data;
-//     try {
+    // let data;
+    // try {
         
-//     } catch (err) {
-//         console.error(`Error in change language: ${err}`)
-//     }
-// }
+    // } catch (err) {
+    //     console.error(`Error in change language: ${err}`)
+    // }
+    const langField = document.getElementById('lang') as HTMLInputElement;
+    try{
+        const lang = langField.value;
+        if (!lang){
+            alert("Please enter a language"); //TODO MAKE IT MORE APPEALING WITH CSS
+            return;
+        }
+        const full_page = document.getElementById('main_body');
+        if (!full_page)
+            return;
+        const response = await fetch('/settings/user', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({'Function': 'change_language', 'Lang': lang, 'Page': full_page.innerHTML}),
+        });
+        const result = await response.json();
+        if (response.ok){
+            alert("update was successfull");
+        }else{
+            alert("Error: " + result.message);
+        }
+        var lang_data;
+        try {
+            lang_data = await response.json();
+            if (!lang_data)
+                return;
+            if (lang_data.Response == 'success') {
+                full_page.innerHTML = lang_data.Content;
+                console.log(lang_data);
+            }
+            // lang_field.innerHTML = `${splited[0]}<br>${usernameValue}`;
+            // console.log(lang_field.innerHTML);
+        } catch (err) {}
+
+    }
+    catch (err){
+        console.error("error with update: " + err);
+        alert("error with update");
+    };
+}
 
 // async function logout() {
 //     delete_cookie("token");

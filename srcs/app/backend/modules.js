@@ -49,9 +49,12 @@ function set_cookie(response, key, value, maxAge) {
 }
 
 function delete_cookie(response, key) {
-	const prev = response.getHeader('Set-Cookie') || [];
-	const cookie = `${key}=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/`;
-	response.setHeader('Set-Cookie', [...prev, cookie]);
+	response.setCookie(key, value, {
+		path: '/',
+		httpOnly: true,
+		secure: true,     // auf true setzen, wenn du HTTPS verwendest
+		maxAge: 0       // Cookie läuft in 1 Stunde ab
+	});
 }
 
 async function create_encrypted_password(password) {
