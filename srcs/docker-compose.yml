@@ -23,6 +23,19 @@ services:
     build: ./app
     container_name: 'app'
     restart: always
+    environment:
+      - SMTP_USER=${SMTP_USER}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - SMTP_PASSWORD_FILE=/run/secrets/smtp_password
+      - GOOGLE_CLIENT_SECRET_FILE=/run/secrets/google_client_secret
+      - GITHUB_CLIENT_SECRET_FILE=/run/secrets/github_client_secret
+      - JWT_SECRET_FILE=/run/secrets/jwt_secret
+    secrets:
+      - smtp_password
+      - google_client_secret
+      - github_client_secret
+      - jwt_secret
     networks:
       - trancendence-network
 
@@ -47,6 +60,7 @@ services:
       - trancendence-network
     volumes:
       - grafana_data:/var/lib/grafana
+      - ${GRAFANA_PROVISION}:/etc/grafana/provisioning
     environment:
       - GF_SECURITY_ADMIN_PASSWORD__FILE=/run/secrets/admin_password
       - GF_SECURITY_ADMIN_USER=${USER_NAME}
@@ -93,6 +107,14 @@ secrets:
     file: ${SECRETS_DIR}/grafana.txt
   prometheus_password:
     file: ${SECRETS_DIR}/prometheus.txt
+  smtp_password:
+    file: ${SECRETS_DIR}/smtp.txt
+  google_client_secret:
+    file: ${SECRETS_DIR}/google.txt
+  github_client_secret:
+    file: ${SECRETS_DIR}/github.txt
+  jwt_secret:
+    file: ${SECRETS_DIR}/jwt.txt
 
 networks:
   trancendence-network:
