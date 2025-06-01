@@ -33,6 +33,7 @@
     "dev": "vite",
     "preview": "vite preview",
     "build-frontend": "tsc",
+    "start:css": "npx tailwindcss -i ./frontend/css/input.css -o ./frontend/css/output.css",
     "build:css": "npx tailwindcss -i ./css/input.css -o ./css/output.css --watch",
     "rebuild:css": "tailwindcss build ./frontend/css/input.css -o ./frontend/css/output.css",
     "watch:css": "npx tailwindcss -i ./css/input.css -o ./css/output.css --watch",

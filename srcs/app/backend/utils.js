@@ -818,6 +818,11 @@ async function replace_all_templates(request, response, state) {
                 <span class="button_text">change avatar</span>
             </button>
         </a>
+		<a class="delete_button">
+			<button class="block w-full mb-4 mt-6" onclick="delete_account()">
+				<span class="button_text">Delete account</span>
+			</button>
+		</a>
     </div>
     <div class="flex mt-12 gap-4 w-full">
 		<a href="/settings" class="flex-1" data-link>

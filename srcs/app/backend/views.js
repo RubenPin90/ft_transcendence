@@ -846,7 +846,29 @@ async function block_friend(request, response){
     return true;
 }
 
-
+async function delete_account(request, response) {
+    const data = request.body;
+    const [keys, values] = modules.get_cookies(request);
+    const token = values[keys.indexOf('token')];
+    var decrypted;
+    try {
+        decrypted = modules.get_jwt(token);
+    } catch (err) {}
+    const decrypted_user = decrypted.userid;
+    console.log("+++++++++++++++++++");
+    console.log(decrypted);
+    console.log(decrypted_user);
+    console.log("+++++++++++++++++++");
+    console.log("äääääääääääääääääääääääää");
+    console.log(await settings_db.get_settings());
+    await settings_db.delete_settings_value(decrypted_user);
+    console.log("äääääääääääääääääääääääää");
+    console.log(await settings_db.get_settings());
+    console.log("äääääääääääääääääääääääää");
+    response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+    response.raw.end(JSON.stringify({"Response": 'success'}));
+    return true;    
+}
 
 export {
     login,
@@ -867,5 +889,6 @@ export {
     add_friends,
     accept_friend,
     reject_friend,
-    block_friend
+    block_friend,
+    delete_account
 }
