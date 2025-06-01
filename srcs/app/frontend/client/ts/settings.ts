@@ -48,7 +48,7 @@ async function verify_code() {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({"Function": "verify", "Code": code.value}),
+        body: JSON.stringify({"Function": "verify_otc", "Code": code.value}),
     });
     if (!response.ok) {
         throw new Error(`HTTP Fehler! Status: ${response.status}`);
@@ -57,10 +57,10 @@ async function verify_code() {
     let data;
     try {
         data = await response.json();
-        if (data.Response !== "Success")
+        if (data.Response !== "success")
             alert("Error: 2FA code invalid");
         else
-            window.location.href = 'http://localhost:8080/settings/mfa';
+            window.location.reload;
         //     clear window and replace with nice UI Box. Client success
     } catch (jsonError) {
         throw new Error('Fehler beim Parsen der JSON-Antwort');
