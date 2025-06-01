@@ -4,7 +4,7 @@ import sqlite3 from 'sqlite3';
 // Tested: all working//
 async function get_friend_request() {
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -25,7 +25,7 @@ async function get_friend_request_value(search_value, value) {
 	if (!valid_values.includes(search_value))
 		return null;
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -44,7 +44,7 @@ async function get_friend_request_value(search_value, value) {
 // Not tested: But working propperly so far
 async function create_friend_request_value(sender_id, receiver_id) {
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -83,7 +83,7 @@ async function update_friend_request_value(id, status) {
     // if (!valid_values.includes(status))
     //     return null;
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -104,7 +104,7 @@ async function update_friend_request_value(id, status) {
 // Tested: all working
 async function delete_friend_request_value(id) {
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -123,7 +123,7 @@ async function delete_friend_request_value(id) {
 
 async function show_pending_requests(userid){
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
     var html = '';
@@ -182,7 +182,7 @@ async function show_pending_requests(userid){
 
 async function show_accepted_friends(userid){
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
     var html = '';

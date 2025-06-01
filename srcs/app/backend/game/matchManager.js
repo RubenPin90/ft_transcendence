@@ -1,15 +1,13 @@
 import { v4 as uuidv4 } from 'uuid'
+import { EventEmitter } from 'events'
+import { userSockets } from './userSockets.js';
 
 export const GAME_MODES = {
-  PVE: 'PVE',     // Player vs AI
-  PVP: 'PVP',     // 1v1
+  PVE: 'PVE',
+  PVP: 'PVP',
 }
 
-export class matchManager {
-  /*───────────────────────────
-    Static configuration
-  ───────────────────────────*/
-
+export class matchManager extends EventEmitter {
   static GAME_MODES = GAME_MODES
   static MAX_BOUNCE_ANGLE = Math.PI / 4 // 45°
   static TICK_RATE = 60
@@ -26,22 +24,20 @@ export class matchManager {
   static TICK_RATE            = 60
   static MAX_BALL_SPEED       = 0.7
 
-  // Throttling rules
-  static MIN_HITS_AFTER_MAX   = 5          // After reaching max‑speed, wait this many paddle hits …
-  static BALL_BROADCAST_FRAMES= 10         // … then show ball for this many frames after each hit
+
+  static MIN_HITS_AFTER_MAX   = 5
+  static BALL_BROADCAST_FRAMES= 10
 
   static getRandomReactionDelay () {
     return matchManager.BOT_MIN_REACTION_MS +
            Math.random() * (matchManager.BOT_MAX_REACTION_MS - matchManager.BOT_MIN_REACTION_MS)
   }
 
-  /*───────────────────────────
-    Construction / bookkeeping
-  ───────────────────────────*/
   constructor (wss) {
+    super();
     this.wss         = wss
     this.rooms       = new Map()
-    this.userSockets = new Map()
+    this.userSockets = userSockets;
     this.queues = {
       [matchManager.GAME_MODES.PVP]: []
     }
@@ -63,12 +59,15 @@ export class matchManager {
     }
   }
 
-  /*───────────────────────────
-    Room lifecycle helpers
-  ───────────────────────────*/
-  createRoom ({ mode = GAME_MODES.PVP, maxPlayers = 2, creatorId, botId = 'BOT' }) {
-    const roomId = uuidv4()
-
+  createRoom(options = {}) {
+    const {
+      roomId    = uuidv4(),
+      mode      = GAME_MODES.PVP,
+      maxPlayers = 2,
+      creatorId,
+      botId     = 'BOT',
+    } = options;
+  
     const newRoom = {
       roomId,
       mode,
@@ -81,39 +80,39 @@ export class matchManager {
       pauseTimeout: null,
       FPS: matchManager.TICK_RATE,
       maxScore: 5,
-      // throttling trackers
       isMaxSpeedReached: false,
       hitsSinceMaxSpeed: 0,
       ballBroadcastCountdown: 0,
-    }
-
+    };
+  
     if (mode === GAME_MODES.PVE) {
-      newRoom.players.push({ playerId: botId, isBot: true, paddleY: 0.5 })
-      newRoom.scoreBoard[botId] = 0
+      newRoom.players.push({ playerId: botId, isBot: true, paddleY: 0.5 });
+      newRoom.scoreBoard[botId] = 0;
     }
+  
     if (creatorId) {
-      newRoom.players.push({ playerId: creatorId, isBot: false, paddleY: 0.5 })
-      newRoom.scoreBoard[creatorId] = 0
+      newRoom.players.push({ playerId: creatorId, isBot: false, paddleY: 0.5 });
+      newRoom.scoreBoard[creatorId] = 0;
     }
-
-    this.rooms.set(roomId, newRoom)
-
+  
+    this.rooms.set(roomId, newRoom);
+  
     if (newRoom.players.length === maxPlayers) {
-      newRoom.status = 'running'
-      this._initBall(roomId)
-      this._mainLoop(roomId)
+      newRoom.status = 'running';
+      this._initBall(roomId);
+      this._mainLoop(roomId);
     }
-    return newRoom
+  
+    return newRoom;
   }
+  
 
   joinRoom (roomId, playerId) {
     const room = this.rooms.get(roomId)
     if (!room || room.players.length >= room.maxPlayers) return null
     if (room.players.some(p => p.playerId === playerId)) return room
-
     room.players.push({ playerId, isBot: false, paddleY: 0.5 })
     room.scoreBoard[playerId] = 0
-
     if (room.players.length === room.maxPlayers) {
       room.status = 'running'
       this._initBall(roomId)
@@ -123,13 +122,11 @@ export class matchManager {
   }
 
   removeFromQueue(userId) {
-    // filter out any entries matching this user
     const q      = this.queues[matchManager.GAME_MODES.PVP];
     const before = q.length;
     this.queues[matchManager.GAME_MODES.PVP] =
     q.filter(entry => entry.userId !== userId);
     const after  = this.queues[matchManager.GAME_MODES.PVP].length;
-
     console.log(
       `Removed user ${userId} from queue. ` +
       `Queue size: ${before} → ${after}`
@@ -139,37 +136,26 @@ export class matchManager {
   leaveRoom (roomId, playerId) {
     const room = this.rooms.get(roomId)
     if (!room) return
-    // Remove the player
     room.players = room.players.filter(p => p.playerId !== playerId)
     delete room.scoreBoard[playerId]
-
-    // In PVP or custom modes, treat disconnect as a forfeit
     if (room.mode !== GAME_MODES.PVE && room.status !== 'finished') {
       this._forfeitMatch(roomId, playerId)
       return
     }
-
     if (room.players.length === 0) {
       this.removeRoom(roomId)
     }
   }
 
-  /*───────────────────────────
-    NEW: handle forfeits
-  ───────────────────────────*/
   _forfeitMatch (roomId, leaverId) {
     const room = this.rooms.get(roomId)
     if (!room) return
 
-    // Stop the simulation
     clearInterval(room.updateInterval)
     clearTimeout(room.pauseTimeout)
-
-    // Determine the winner (if any)
     const winner = room.players.find(p => p.playerId !== leaverId)
     room.status  = 'finished'
 
-    // Broadcast final state with forfeit reason
     this._broadcastFor(roomId)({
       roomId,
       players : room.players.map(p => ({ id: p.playerId, y: p.paddleY })),
@@ -179,52 +165,33 @@ export class matchManager {
       winner  : winner?.playerId ?? null,
       reason  : 'opponent_disconnect',
     })
-
-    // Clean up after a short delay
     setTimeout(() => this.removeRoom(roomId), 500)
   }
+
   _endMatch(roomId, winnerId, reason = 'normal') {
     const room = this.rooms.get(roomId);
     if (!room) return;
-
     clearInterval(room.updateInterval);
     clearTimeout(room.pauseTimeout);
     room.status = 'finished';
-
     this._broadcastFor(roomId)({ roomId, winner: winnerId, status: 'finished' });
-
-    // 🔔 Notify whoever is listening
     this.emit('matchFinished', { roomId, winnerId, reason });
-
-    // Clean up
     setTimeout(() => this.removeRoom(roomId), 500);
   }
 
-  /*───────────────────────────
-    Gameplay helpers
-  ───────────────────────────*/
   _updateBotPaddle (room) {
     const bot = room.players.find(p => p.isBot)
     if (!bot) return
-
-    // Respect a random reaction delay (100‑200 ms) before each movement decision
     const now = Date.now()
     if (bot.aiNextMoveTime && now < bot.aiNextMoveTime) return
-
     const { y: ballY } = room.ballState
     const dy = ballY - bot.paddleY
-
-    // Move toward the ball at a constant speed (BOT_MAX_SPEED normalised units per tick)
     if (Math.abs(dy) <= matchManager.BOT_MAX_SPEED) {
       bot.paddleY = ballY
     } else {
       bot.paddleY += matchManager.BOT_MAX_SPEED * Math.sign(dy)
     }
-
-    // Clamp inside arena bounds
     bot.paddleY = Math.max(0, Math.min(1, bot.paddleY))
-
-    // Schedule next movement decision after a random reaction delay
     bot.aiNextMoveTime = now + matchManager.getRandomReactionDelay()
   }
 
@@ -241,9 +208,6 @@ export class matchManager {
     room.ballBroadcastCountdown = 0
   }
 
-  /*───────────────────────────
-    Main simulation loop
-  ───────────────────────────*/
   _mainLoop (roomId) {
     const room = this.rooms.get(roomId)
     if (!room) return
@@ -260,21 +224,17 @@ export class matchManager {
     }
 
     room.updateInterval = setInterval(() => {
-      // 1. AI paddle
       if (room.mode === matchManager.GAME_MODES.PVE && room.status === 'running') {
         this._updateBotPaddle(room)
       }
 
-      // 2. Move ball
       const b = room.ballState
       b.x += b.vx / FPS
       b.y += b.vy / FPS
 
-      // 3. Wall collisions
       if (b.y <= 0) { b.y = 0; b.vy *= -1 }
       if (b.y >= 1) { b.y = 1; b.vy *= -1 }
 
-      // 4. Paddle collisions
       room.players.forEach((p, idx) => {
         const withinY = b.y >= p.paddleY - paddleSize/2 && b.y <= p.paddleY + paddleSize/2
         const hit = (idx === 0 && b.x <= 0.02) || (idx === 1 && b.x >= 0.98)
@@ -307,7 +267,6 @@ export class matchManager {
         }
       })
 
-      // 5. Global speed clamp
       const speed = Math.hypot(b.vx, b.vy)
       if (speed > matchManager.MAX_BALL_SPEED) {
         const scl = matchManager.MAX_BALL_SPEED / speed
@@ -315,10 +274,8 @@ export class matchManager {
         b.vy *= scl
       }
 
-      // 6. Goal check
       if (b.x < 0 || b.x > 1) {
         const scorerIdx = b.x < 0 ? 1 : 0
-        // Safety: if a player left, handle as forfeit
         if (scorerIdx >= room.players.length) {
           const leaverIdx = scorerIdx === 0 ? 1 : 0
           const leaverId  = room.players[leaverIdx]?.playerId
@@ -356,7 +313,6 @@ export class matchManager {
         return
       }
 
-      // 7. Regular broadcast
       const state = {
         roomId,
         players: room.players.map(p => ({ id: p.playerId, y: p.paddleY })),
@@ -371,9 +327,6 @@ export class matchManager {
     }, 1000 / FPS)
   }
 
-  /*───────────────────────────
-    House‑keeping
-  ───────────────────────────*/
   removeRoom (roomId) {
     const room = this.rooms.get(roomId)
     if (!room) return

@@ -3,3 +3,5 @@ node_modules
 secrets.key
 db.sqlite
 .vscode
+secrets
+monitoring

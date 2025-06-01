@@ -5,14 +5,6 @@ import { joinQueue1v1, joinQueueTournament } from './matchMaking.js';
 import { matchManager } from './matchManager.js';
 import { tournamentManager } from './tournamentManager.js';
 
-
-
-/**
- * Handle any incoming JSON message from a ws-like object.
- * @param {{ userId, inGame, currentGameId, send, readyState }} ws
- * @param {string} rawMsg
- * @param {WebSocket.Server} wss   // only needed if you want to broadcast chat
- */
 export function handleClientMessage(ws, rawMsg, matchManager) {
   let data;
   try {
@@ -24,23 +16,27 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
   // console.log(`Incoming from ${ws.userId}:`);
   // console.log(data);
   switch (data.type) {
-    case 'chat':
-      wss.clients.forEach(client => {
-        if (client !== ws && client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({
-            type: 'chat',
-            payload: data.payload,
-          }));
-        }
-      });
+    case 'kickPlayer': {
+      console.log('Incoming kickPlayer request with data:', data);
+      const { tournamentId, playerId } = data.payload;
+      const userId = ws.userId;
+      tournamentManager.kickPlayer(userId, tournamentId, playerId);
       break;
+    }
     case 'joinByCode': {
         console.log('Incoming joinByCode request with data:', data);
         const { code } = data.payload;
         const userId = ws.userId;
         tournamentManager.joinTournament(userId, code, ws);
         break;
+    }
+    case 'tLobbyState':{
+      const current = getCurrentTLobby();
+      if (!current || current.id === msg.payload.id) {
+        renderTLobby(msg.payload, socket);
       }
+      break;
+    }
     case 'createTournament': {
       console.log('Incoming createTournament request with data:', data);
       const tournamentId = tournamentManager.createTournament(ws, ws.userId);
@@ -58,12 +54,81 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
       tournamentManager.toggleReady(userId, tournamentId);
       break;
     }
-
+    case 'startTournament': {
+      console.log('Incoming startTournament request with data:', data);
+      const { id: tournamentId } = data.payload;
+      const userId = ws.userId;
+      console.log('userId:', userId);
+      console.log('tournamentId:', tournamentId);
+      tournamentManager.startTournament(tournamentId);
+      break;
+    }
     case 'leaveTournament': {
       console.log('Incoming leaveTournament request with data:', data);
       const { tournamentId } = data.payload ?? {};
       const userId = ws.userId;
       tournamentManager.leaveTournament(userId, tournamentId);
+      break;
+    }
+    case 'joinMatchRoom': {
+      const { tournamentId, matchId } = data.payload;
+      const userId = ws.userId;                     // you already attach this on login
+      console.log('Incoming joinMatchRoom request with data:', data);
+
+
+
+      const room = tournamentManager.rooms[matchId];
+      if (!room) {
+        ws.send(JSON.stringify({
+          type: 'error',
+          payload: { message: 'Match room not found.' }
+        }));
+        break;
+      }
+    
+      // 1. Make sure this socket really belongs in the room
+      if (!room.players.some(p => tournamentManager.getPlayerId(p) === userId)) {
+        ws.send(JSON.stringify({
+          type: 'error',
+          payload: { message: 'You are not a member of this match.' }
+        }));
+        break;
+      }
+    
+      room.sockets   ??= new Map();
+      room.readySet  ??= new Set();
+    
+      room.sockets.set(userId, ws);
+      room.readySet.add(userId);
+    
+      console.log(`[${matchId}] ${userId} joined (${room.readySet.size}/2)`);
+    
+      // 3. If both players are in, flip the switch
+      if (room.readySet.size === 2) {
+        room.status = 'inProgress';
+    
+        const payload = {
+          type: 'matchStart',
+          payload: {
+            tournamentId,
+            matchId,
+            players: room.players.map(p => ({
+              id:   tournamentManager.getPlayerId(p),
+              name: p.name,
+            })),
+          },
+        };
+    
+        // broadcast only to the two sockets inside the room
+        for (const sock of room.sockets.values()) {
+          if (sock.readyState === 1) {
+            sock.send(JSON.stringify(payload));
+          }
+        }
+    
+        console.log(`[${matchId}] matchStart sent`);
+      }
+    
       break;
     }
 
@@ -80,7 +145,6 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
     }
     case 'leaveQueue': {
       console.log('Incoming leaveQueue request');
-      // remove this ws.userId from whatever queue you pushed them into
       matchManager.removeFromQueue(ws.userId);
       break;
     }
@@ -89,26 +153,18 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
         console.log('data received:', data.payload)
         console.log('ws.userId:', ws.userId)
       
-        // 1) pull out direction & active
         const { direction, active } = data.payload
-      
-        // 2) lookup the game room
         const room = matchManager.rooms.get(ws.currentGameId)
         if (!room) break
-      
-        // 3) find this player
         const player = room.players.find(p => p.playerId === ws.userId)
         if (!player) break
-        // 4) compute dy: up = -1, down = +1, else 0
         let dy = 0
         if (active) {
           if (direction === 'up')   dy = -1
           else if (direction === 'down') dy =  1
         }
-        
-        // 5) apply movement
-        const speed = room.paddleSpeed ?? 1.0      // you can tweak this
-        const FPS = 60                     // same value you use in _mainLoop
+        const speed = room.paddleSpeed ?? 1.0
+        const FPS = 60
         const deltaY = dy * speed / FPS
         player.paddleY = Math.max(0,
           Math.min(1, player.paddleY + deltaY)
@@ -116,6 +172,8 @@ export function handleClientMessage(ws, rawMsg, matchManager) {
         break
       }
     case 'leaveGame':
+      console.log('Incoming leaveGame request');
+      console.log('data received:', data.payload);
       ws.inGame = false;
       ws.currentGameId = null;
       console.log(`${ws.userId} left the game voluntarily.`);

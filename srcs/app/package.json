@@ -10,6 +10,7 @@
     "ejs": "^3.1.10",
     "express": "^4.21.2",
     "fastify": "^5.3.2",
+    "fastify-cookie": "^5.6.1",
     "fastify-plugin": "^5.0.1",
     "googletrans": "^1.0.21",
     "jsonwebtoken": "^9.0.2",
@@ -33,9 +34,10 @@
     "preview": "vite preview",
     "build-frontend": "tsc",
     "build:css": "npx tailwindcss -i ./css/input.css -o ./css/output.css --watch",
-    "rebuild:css": "tailwindcss build ./css/input.css -o ./css/output.css",
+    "rebuild:css": "tailwindcss build ./frontend/css/input.css -o ./frontend/css/output.css",
     "watch:css": "npx tailwindcss -i ./css/input.css -o ./css/output.css --watch",
     "install:css": " npm install tailwindcss --save-dev && npm install tailwindcss"
+
   },
   "repository": {
     "type": "git",

@@ -8,23 +8,20 @@ dotenv.config();
 function get_cookies(request) {
 	if (!request || request === undefined)
 		return [null, null];
-	const values = request.split('; ');
-	if (!values || values === undefined)
-		return [null, null]
-	let key = [];
-	let value = [];
-	values.forEach(element => {
-		const [i_key, i_value] = element.split('=');
-		key.push(i_key);
-		value.push(i_value);
-	});
+	const cookies = request.cookies;
+	if (!cookies || cookies === undefined)
+		return [null, null];
+	const key = Object.keys(cookies);
+	const value = Object.values(cookies);
 	return [key, value];
 }
+
+const JWT_KEY = "3x@mpl3S3cr3tK3y!2023"; //TODO REMOVE
 
 function create_jwt(data, expire) {
 	var token;
 	try {
-		token = jwt.sign({ userid: data }, process.env.JWT_KEY, {expiresIn: expire});
+		token = jwt.sign({ userid: data }, JWT_KEY, {expiresIn: expire});
 	} catch (err) {
 		return -1;
 	}
@@ -32,23 +29,23 @@ function create_jwt(data, expire) {
 }
 
 function get_jwt(token) {
-	var token;
+	var token2;
 	try {
-		token = jwt.verify(token, process.env.JWT_KEY);
+		token2 = jwt.verify(token, JWT_KEY);
 	} catch (err) {
+		console.log(err);
 		return -1;
 	}
-	return token;
+	return token2;
 }
 
-function set_cookie(response, key, value, HttpOnly = false, Secure = false, SameSite = null, path = '/') {
-	const prev = response.getHeader('Set-Cookie') || [];
-	let cookie = `${key}=${value}; Path=${path}`;
-	// if (HttpOnly) cookie += '; HttpOnly';
-	// if (Secure) cookie += '; Secure';
-	// if (SameSite) cookie += `; SameSite=${SameSite}`; // e.g., 'Lax', 'Strict', 'None'
-
-	response.setHeader('Set-Cookie', [...prev, cookie]);
+function set_cookie(response, key, value, maxAge) {
+	response.setCookie(key, value, {
+		path: '/',
+		httpOnly: true,
+		secure: true,     // auf true setzen, wenn du HTTPS verwendest
+		maxAge: maxAge       // Cookie läuft in 1 Stunde ab
+	});
 }
 
 function delete_cookie(response, key) {
@@ -81,13 +78,13 @@ async function send_email(receiver, subject, text) {
 	const transporter = nodemailer.createTransport({
 		service: 'gmail',
 		auth: {
-			user: process.env.SMTP_USER,
-			pass: process.env.SMTP_PASSWORD
+			user: SMTP_USER,
+			pass: SMTP_PASSWORD
 		}
 	});
 
 	const mailOptions = {
-		from: process.env.SMTP_USER,
+		from: SMTP_USER,
 		to: receiver,
 		subject: subject,
 		text: text

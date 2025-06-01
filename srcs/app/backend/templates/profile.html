@@ -1,7 +1,7 @@
 <div id="profile_div" class="hidden">
     <div class="min-h-screen flex items-center justify-center px-4 py-10">
         <div id="login-container" class="user_field">
-            <main id="login-signup-field" class="w-full">
+            <main id="profile_field" class="w-full">
                 <div class="w-full flex bg-gray-400 py-4 relative">
                     <div>
                         <a href="/" data-link>
@@ -12,19 +12,21 @@
                             </button>
                         </a>
                     </div>
-                    <img src="{{picture}}" class="w-28 h-28 ml-10 my-auto" alt="Profile picture">
-                    <div class="pl-12 flex flex-col">
-                        <label for="username" class="label_profile">Username</label>
-                        <span id="username">{{username}}</span>
-                        <label for="email" class="label_profile">email</label>
-                        <span id="email">{{email}}</span>
-                        <label for="win/loss" class="label_profile">win/loss</label>
-                        <span id="win_loss">{{win_loss}}</span>
-                        <label for="status" class="label_profile">status</label>
-                        <span id="status">{{status}}</span>
+                    <div id="personal_info">
+                        <img src="{{picture}}" class="w-28 h-28 ml-10 my-auto" alt="Profile picture">
+                        <div class="pl-12 flex flex-col">
+                            <label for="username" class="label_profile">Username</label>
+                            <span id="username_prof">{{username}}</span>
+                            <label for="email" class="label_profile">email</label>
+                            <span id="email">{{email}}</span>
+                            <label for="win/loss" class="label_profile">win/loss</label>
+                            <span id="win_loss">{{win_loss}}</span>
+                            <label for="status" class="label_profile">status</label>
+                            <span id="status">{{status}}</span>
+                        </div>
                     </div>
                 </div>
-                <div class="w-full flex bg-gray-400 mt-2 pb-8 py-4 pl-4 gap-2 overflow-x-auto">    
+                <div class="w-full flex bg-gray-400 mt-2 pb-8 py-4 pl-4 gap-2 overflow-x-auto">
                     {{Friends}}
                 </div>
                 <div class="w-full max-h-60 overflow-y-auto flex h-full flex-col bg-gray-500 mt-2 py-4 pl-4">

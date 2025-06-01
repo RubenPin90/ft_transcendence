@@ -90,9 +90,9 @@ export function stopGame(): void {
       type: 'leaveGame',
       payload: { roomId: currentRoomId, userId }
     }));
-    ws.close();
+    // ws.close();
   }
-  ws = null;
+  // ws = null;
 }
 
 function drawFrame(state: GameState): void {

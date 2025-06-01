@@ -12,8 +12,8 @@ services:
     environment:
       - PROM_USER=${USER_NAME}
       - PROM_PASS_FILE=/run/secrets/prometheus_password
-    # depends_on:
-    #   - app
+    depends_on:
+      - app
     networks:
       - trancendence-network
     secrets:
