@@ -1,7 +1,7 @@
 
 function prev_next(element : HTMLInputElement, prev : string | null, next : string | null, key : string){
     if (key === "Backspace"){
-        console.log("backspace pressed");
+        //console.log("backspace pressed");
         if (element.value.length === 0 && prev)
             document.getElementById(prev)?.focus();
         return;
@@ -18,7 +18,7 @@ function prev_next(element : HTMLInputElement, prev : string | null, next : stri
         return inputElement.value.length > 0;
        })
        if (allFilled) {
-        console.log("everything correct");
+        //console.log("everything correct");
        }
     }
 }
