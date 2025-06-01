@@ -10,7 +10,7 @@ async function create_db() {
     try {
         // Fremdschlüssel aktivieren
         await db.run(`PRAGMA foreign_keys = ON;`);
-        console.log("Fremdschlüssel aktiviert!");
+        //console.log("Fremdschlüssel aktiviert!");
 
         // Tabellen in richtiger Reihenfolge erstellen
         // SETTINGS
@@ -61,14 +61,31 @@ async function create_db() {
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
         );`);
 
-        // SCORES
+        // 1v1
         await db.run(`
-        CREATE TABLE IF NOT EXISTS scores (
+        CREATE TABLE IF NOT EXISTS 1v1 (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            points INTEGER,
-            self TEXT UNIQUE NOT NULL,
-            FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
+            points TEXT NOT NULL,
+            player1 TEXT NOT NULL,
+            player2 TEXT NOT NULL,
+            date DATETIME DEFAULT CURRENT_TIMESTAMP,
+            match_id TEXT UNIQUE NOT NULL,
+            FOREIGN KEY (player1) REFERENCES settings(self) ON DELETE CASCADE,
+            FOREIGN KEY (player2) REFERENCES settings(self) ON DELETE CASCADE
+    );`);
+
+        // tournaments
+        await db.run(`
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tournament_id TEXT NOT NULL,
+            round INTEGER NOT NULL,
+            match_id TEXT NOT NULL,
+            winner TEXT,
+            date DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (match_id) REFERENCES 1v1(match_id) ON DELETE CASCADE,
+            FOREIGN KEY (winner) REFERENCES settings(self) ON DELETE SET NULL
         );`);
+
 
         await db.run(`
         CREATE TABLE friend_request (
@@ -94,12 +111,12 @@ async function create_db() {
         );`);
 
 
-        console.log("Alle Tabellen erfolgreich erstellt oder existieren bereits.");
+        //console.log("Alle Tabellen erfolgreich erstellt oder existieren bereits.");
     } catch (err) {
         console.error(`Error creating db: ${err}`);
         return -1;
     } finally {
-        console.log('Database setup abgeschlossen');
+        //console.log('Database setup abgeschlossen');
         db.close();
         return 0;
     }

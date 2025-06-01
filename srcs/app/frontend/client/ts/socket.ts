@@ -1,8 +1,7 @@
 // socket.ts – singleton WebSocket + type‑safe message bus
 
 import type { GameState } from './game.js';
-import type { TourneySummary } from './tournament.js';
-import type { TLobbyState } from './types.js';
+import type { TLobbyState, TourneySummary } from './types.js';
 
 export type ServerMessage =
   | { type: 'error';              payload: { message: string } }
@@ -15,7 +14,10 @@ export type ServerMessage =
   | { type: 'tournamentUpdated';  payload: TLobbyState }
   | { type: 'tLobbyState';        payload: TLobbyState }
   | { type: 'matchAssigned';      payload: { tournamentId: string; matchId: string; players: { id: string; name: string }[] } }
+  | { type: 'TournamentBracket'; payload: { tournamentId: string; rounds: { matchId: string; players: { id: string; name: string }[] }[] } }
   | { type: 'tournamentBracketMsg'; payload: { tournamentId: string; rounds: { matchId: string; players: { id: string; name: string }[] }[] } };
+
+
 
 export type MsgType = ServerMessage['type'];
 
@@ -32,6 +34,8 @@ function createSocket(): WebSocket {
 
   ws.addEventListener('message', ev => {
     const data: ServerMessage = JSON.parse(ev.data);
+    if (data.type != 'tournamentList' && data.type != 'state')
+      console.log(`[socket] ← ${data.type}`, data);
     listeners[data.type]?.forEach(cb => cb(data as any));
   });
 
@@ -52,7 +56,7 @@ export function getSocket(): WebSocket {
 
 export function on<T extends MsgType>(type: T, cb: Listener<T>): void {
   (listeners[type] ??= new Set()).add(cb as any);
-  ensureSocket(); // guarantee the connection exists
+  ensureSocket();
 }
 
 export function off<T extends MsgType>(type: T, cb: Listener<T>): void {

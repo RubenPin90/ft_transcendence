@@ -1,3 +1,5 @@
+export let onGameEndCallback: ((winnerId: string) => void) | null = null;
+
 export interface TLobbyState {
     id: string
     code: string
@@ -5,9 +7,10 @@ export interface TLobbyState {
     players: { id: string; name: string; ready: boolean }[]
     hostId: string
     displaySlots: number
+    status?: 'pending' | 'bracket' | 'running' | 'finished';
   }
 
-export interface MatchAssignedMsg {
+export interface matchAssignedMsg {
   type: 'matchAssigned';
   payload: {
     tournamentId: string;
@@ -16,13 +19,36 @@ export interface MatchAssignedMsg {
   };
 }
 
+export interface TourneySummary {
+  id: string;
+  code: string;
+  name: string;
+  slots: string;
+  joinable: boolean;
+}
+
+export interface PlayerStub {
+  id: string;
+  name: string;
+}
+
+export interface MatchStub {
+  matchId: string;
+  players: (PlayerStub | null | { pendingMatchId: string })[];
+}
+
+export type BracketRounds = MatchStub[][];
+
+
 export interface TournamentBracketMsg {
-  type: 'tournamentBracket';
+  type: 'tournamentBracketMsg';
   payload: {
     tournamentId: string;
-    rounds: {
-      matchId: string;
-      players: { id: string; name: string }[];
-    }[];
+    rounds: BracketRounds;
   };
+}
+
+export interface TournamentBracketPayload {
+  tournamentId: string;
+  rounds: MatchStub[][] | MatchStub[];   // может быть 1-мерный или 2-мерный массив
 }
