@@ -116,8 +116,9 @@ async function home(request, response) {
     }
     const check = await send.send_html('index.html', response, 200, async (data) => {
         data = await utils.replace_all_templates(request, response);
-        // data = utils.show_page(data, "home_div");//changed from register to home?
-        data = utils.show_page(data, "register_div");//changed from register to home?
+        //check if should be commented out or in
+        data = utils.show_page(data, "home_div");//changed from register to home?
+        // data = utils.show_page(data, "register_div");//changed from register to home?
         return data;
     });
     if (!check || check === undefined || check == false)
@@ -805,7 +806,7 @@ const [keys, values] = modules.get_cookies(request.headers.cookie);
     // const userid = decoded.userid;
 
     const receiver = data.userid;
-    console.log("RECEIVER: ", receiver);
+    //console.log("RECEIVER: ", receiver);
     const result = await friends_request.delete_friend_request_value(receiver);
     if (!result || result === undefined){
         console.error("error in deleting accepted friend request");
@@ -846,6 +847,7 @@ async function block_friend(request, response){
     return true;
 }
 
+
 async function delete_account(request, response) {
     const data = request.body;
     const [keys, values] = modules.get_cookies(request);
@@ -855,19 +857,44 @@ async function delete_account(request, response) {
         decrypted = modules.get_jwt(token);
     } catch (err) {}
     const decrypted_user = decrypted.userid;
-    console.log("+++++++++++++++++++");
-    console.log(decrypted);
-    console.log(decrypted_user);
-    console.log("+++++++++++++++++++");
-    console.log("äääääääääääääääääääääääää");
-    console.log(await settings_db.get_settings());
     await settings_db.delete_settings_value(decrypted_user);
-    console.log("äääääääääääääääääääääääää");
-    console.log(await settings_db.get_settings());
-    console.log("äääääääääääääääääääääääää");
     response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
     response.raw.end(JSON.stringify({"Response": 'success'}));
-    return true;    
+    return true;
+}
+
+async function play(request, response) {
+    console.log("play page requested");
+    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    if (!keys?.includes('token')) {
+        return send.redirect(response, '/login', 302);
+    }
+
+    const tokenIndex = keys.findIndex((key) => key === 'token');
+    const token = values[tokenIndex];
+    let decoded;
+    try {
+        decoded = await modules.get_jwt(token);
+    } catch (err) {
+        return send.redirect(response, '/login', 302);
+    }
+
+    const user = await users_db.get_users_value('self', decoded.userid);
+    if (!user || user === undefined){
+        return send.send_error_page('404.html', response, 404);
+    }
+
+    const status = await send.send_html('index.html', response, 200, async(data) => {
+        data = await utils.replace_all_templates(request, response);
+        data = data.replace("{{uname}}", user.username);
+        data = utils.show_page(data, "play_div");
+        return data;
+    });
+
+    if (!status || status === undefined || status < 0){
+        return `Error rendering play page: ${status}`;
+    }
+    return true;
 }
 
 export {
@@ -890,5 +917,6 @@ export {
     accept_friend,
     reject_friend,
     block_friend,
-    delete_account
+    delete_account,
+    play
 }

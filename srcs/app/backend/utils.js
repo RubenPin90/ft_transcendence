@@ -256,7 +256,7 @@ function get_decrypted_userid(request, response) {
 		var self_decoded = modules.get_jwt(values[keys.indexOf('token')]);
 	} catch (err) {
 		const err_string = String(err);
-		console.log(err_string);
+		//console.log(err_string);
 		if (err_string.includes("jwt expired")) {
 			response.raw.writeHead(302, {
 				'Set-Cookie': 'token=; HttpOnly; Secure; SameSite=Strict; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
@@ -492,7 +492,7 @@ async function clear_settings_mfa(userid, search_value, response) {
 	for (const option of fallback_options) {
 		if (search_value == option)
 			continue;
-		console.log(check_mfa[option]);
+		//console.log(check_mfa[option]);
 		if (!check_mfa[option].endsWith('_temp') && check_mfa[option].length !== 0) {
 			await mfa_db.update_mfa_value('prefered', fallback_options.indexOf(option) + 1, userid);
 			found = true;
@@ -942,9 +942,81 @@ async function replace_all_templates(request, response, state) {
 	`;
 	const settings_html_user_profile_avatar_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_avatar_string);
 
-	// const game_raw = await fs.readFile("./backend/templates/game.html", 'utf8');
+	// const play_raw = await fs.readFile("./backend/templates/game.html", 'utf8');
 
-	const menu_raw = await fs.readFile("./backend/templates/menu.html", 'utf8');
+	const play_raw = await fs.readFile("./backend/templates/play.html", 'utf8');
+
+	// play.ts (or wherever you build the template HTML)
+
+	let play_main = "";
+		play_main +=   '<div class="min-h-screen flex items-center justify-center px-4 py-10">';
+		play_main +=     '<div id="login-container" class="field">';
+		play_main +=       '<div id="main-menu">';
+		play_main +=         '<h1>Welcome, <span id="username">{{uname}}</span>!</h1>';
+		play_main +=         '<button id="sp-vs-pve-btn">PVE</button>';
+		play_main +=         '<button id="one-vs-one-btn">1v1 Matchmaking</button>';
+		play_main +=         '<button id="tournament-btn">Tournament</button>';
+		play_main +=       '</div>';
+
+		play_main +=       '<div id="game-container" hidden>';
+		play_main +=         '<h2 id="game-mode-title"></h2>';
+		play_main +=         '<canvas id="game" width="800" height="600"></canvas>';
+		play_main +=       '</div>';
+
+		play_main +=       '<div id="matchmaking-page" hidden class="matchmaking">';
+		play_main +=         '<h2>Searching for an opponent…</h2>';
+		play_main +=         '<div id="matchmaking-spinner" class="spinner"></div>';
+		play_main +=       '</div>';
+
+		play_main +=       '<div id="tournament-page" hidden>';
+		play_main +=         '<h2 style="text-align:center;margin-bottom:2.5rem">Tournaments</h2>';
+		play_main +=         '<div class="tournament-layout">';
+		play_main +=           '<div style="display:flex;gap:1rem;margin-bottom:2rem">';
+		play_main +=             '<input id="t-code-input" class="full-btn" placeholder="Enter a Tournament code here" style="flex:1;height:100px">';
+		play_main +=             '<button id="t-code-btn" class="full-btn" style="width:180px;height:100px">Join<br>by&nbsp;code</button>';
+		play_main +=           '</div>';
+		play_main +=           '<div style="margin-bottom:2rem;text-align:center">';
+		play_main +=             '<button id="t-create-btn" class="full-btn" style="width:240px;height:60px;font-size:1.2rem">Create&nbsp;Tournament</button>';
+		play_main +=           '</div>';
+		play_main +=           '<div class="t-right" id="tournament-list"></div>';
+		play_main +=         '</div>';
+		play_main +=       '</div>';
+
+		play_main +=       '<div id="t-lobby-page" hidden>';
+		play_main +=         '<h2 id="t-lobby-status" style="text-align:center;margin-bottom:1.5rem">Waiting for players…</h2>';
+		play_main +=         '<div id="t-lobby-table" class="TLobby-table"></div>';
+		play_main +=         '<div class="code-box">';
+		play_main +=           '<input id="t-share-code" readonly>';
+		play_main +=           '<button id="t-copy-code-btn" title="Copy code to clipboard"></button>';
+		play_main +=         '</div>';
+		play_main +=         '<div id="host-controls">';
+		play_main +=           '<button id="t-start-btn" class="full-btn" style="width:320px;height:80px;font-size:1.5rem">START</button>';
+		play_main +=         '</div>';
+		play_main +=         '<div id="player-controls">';
+		play_main +=           '<button id="t-ready-btn" class="full-btn" style="width:320px;height:80px;font-size:1.5rem">READY</button>';
+		play_main +=           '<span id="t-my-ready-dot" class="green-dot"></span>';
+		play_main +=         '</div>';
+		play_main +=         '<div style="display:flex;justify-content:space-between">';
+		play_main +=           '<button id="t-leave-btn" class="square-btn">Leave</button>';
+		play_main +=           '<button id="t-custom-btn" class="square-btn">Customization</button>';
+		play_main +=         '</div>';
+		play_main +=       '</div>';
+
+		play_main +=       '<div id="bracket-overlay" class="bracket-overlay" hidden>';
+		play_main +=         '<button id="bracket-begin-btn" class="bracket-begin-btn" hidden>Begin round&nbsp;1</button>';
+		play_main +=       '</div>';
+
+		play_main +=       '<template id="match-card-tpl">';
+		play_main +=         '<div class="match-card">';
+		play_main +=           '<div class="p1"></div>';
+		play_main +=           '<div class="vs">vs</div>';
+		play_main +=           '<div class="p2"></div>';
+		play_main +=         '</div>';
+		play_main +=       '</template>';
+
+		play_main +=     '</div>'; // login-container
+		play_main +=   '</div>';   // flex container
+
 
 	const index_html_raw = await fs.readFile("./backend/templates/index.html", 'utf8')
 

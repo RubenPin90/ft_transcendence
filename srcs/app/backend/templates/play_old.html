@@ -1,11 +1,12 @@
-<div id="menu_div" class="hidden">
+<div id="play_div" class="hidden">
+  <div class="min-h-screen flex items-center justify-center px-4 py-10">
+  <div id="login-container" class="field">
+
   <div id="main-menu">
-    <h1>Welcome, <span id="username"></span>!</h1>
+    <h1>Welcome, <span id="username">{{username}}</span>!</h1>
     <button id="sp-vs-pve-btn">PVE</button>
     <button id="one-vs-one-btn">1v1 Matchmaking</button>
     <button id="Tournament-btn">Tournament</button>
-    <button id="settings-btn">Settings</button>
-    <button id="profile-btn">Profile</button>
   </div>
 
   <div id="profile-page" style="display: none;"></div>
@@ -29,7 +30,7 @@
 
   <style>
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      to { transform: rotate(360deg); } 
     }
   </style>
   <div id="tournament-page" style="display:none; padding:2rem; font-family:sans-serif">
