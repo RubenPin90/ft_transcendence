@@ -10,6 +10,8 @@ COPY . .
 RUN npm run build-frontend
 RUN npm run rebuild:css
 
+RUN npm run start:css
+
 RUN chown -R node:node /app
 
 USER node

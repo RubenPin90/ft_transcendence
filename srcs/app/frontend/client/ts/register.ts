@@ -116,10 +116,14 @@ async function create_account() {
       window.location.reload();
     else if (data.Response !== 'success'){
       wrong_input(data.Response);
+      return;
     }
-  } catch { /* ignore malformed JSON */ }
+  } catch (err) {
+      console.error(`error with register: ${err}`);
+      alert(`error with register: ${err}`);
+      return;
+  }
 
-  console.log("AAAAAA");
   const response2 = await fetch('/get_data', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -127,19 +131,22 @@ async function create_account() {
       "get" : "site_content"
     }),
   });
-  console.log("BBBBBB");
 
 
   try {
     const data2 = await response2.json();
     const content = data2.Content;
-    const content2 = content.getElementById("main_body");
-    console.log(content2);
+
+    const content2 = content.match(/<body class="background" id="main_body">([\s\S]*?)<\/body>/);
+    // const content2 = content.getElementById("main_body");
+    const content2value = content2[1].trim();
     var current_file = document.getElementById("main_body");
-    if (!current_file || !content2)
+    if (!current_file)
       return ;
-    current_file.innerHTML = content2.innerHTML;
+    current_file.innerHTML = content2value;
+    window.history.pushState({}, '', '/');
   } catch (err) {
-    console.error(`Error with redirect: ${err}`);
+    console.error(`Error with redirect Signup: ${err}`);
+    return;
   }
 }
