@@ -217,12 +217,11 @@ setOnGameEnd((winnerId: string) => {
 });
 
 const navigate = (path: string) => {
-  const samePath = path === window.location.pathname;
-  if (!samePath) {
-    history.pushState({}, '', path);
-  }
+  if (path === window.location.pathname) return;
+  history.pushState({}, '', path);
   route();
 };
+
 
 
 function route() {
@@ -234,12 +233,14 @@ function route() {
     renderTournamentList(tournaments, joinByCodeWithSocket);
     return;
   }
+
   if (path === '/matchmaking') {
     enterMatchmaking();
     markQueued(true);
     document.getElementById('matchmaking-page')!.style.display = 'block';
     return;
   }
+
   if (path.startsWith('/game')) {
     document.getElementById('game-container')!.style.display = 'block';
     const mode = path.split('/')[2] || 'pve';
@@ -250,17 +251,29 @@ function route() {
     if (['pve', '1v1'].includes(mode)) startGame(mode as GameMode);
     return;
   }
+
   if (path.startsWith('/tournament/')) {
     document.getElementById('t-lobby-page')!.style.display = 'block';
     return;
   }
-  const mapping: Record<string, string> = { '/profile': 'profile-page', '/settings': 'settings-page' };
+
+  // Profile or Settings
+  const mapping: Record<string,string> = {
+    '/profile':  'profile-page',
+    '/settings': 'settings-page'
+  };
   const pageId = mapping[path];
   if (pageId) {
     document.getElementById(pageId)!.style.display = 'block';
-  } else {
-    document.getElementById('main-menu')!.style.display = 'block';
+    return;
   }
+
+  // FALLBACK: show “main-menu” **only if it actually exists**.
+  const mainMenuEl = document.getElementById('main-menu');
+  if (mainMenuEl) {
+    mainMenuEl.style.display = 'block';
+  }
+  // otherwise: do nothing (we’re probably on /login or /register, where #main-menu is not present).
 }
 
 document.addEventListener('DOMContentLoaded', () => {

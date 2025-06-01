@@ -41,9 +41,11 @@ export function initGameCanvas(): void {
   ctx = canvas.getContext('2d');
 }
 
+let searchingForMatch = false; 
 
 export function startGame(mode: GameMode): void {
   ws = getSocket();
+
   if (!currentRoomId) {
     currentRoomId = localStorage.getItem('currentGameId');
   }
@@ -52,8 +54,14 @@ export function startGame(mode: GameMode): void {
   }
 
   if (mode === 'pve') {
-    const sendJoinQueue = () =>
+    if (searchingForMatch || currentRoomId) return;
+    searchingForMatch = true;
+
+    const sendJoinQueue = () => {
+      if (!searchingForMatch) return; // already matched → don’t re-queue
       send({ type: 'joinQueue', payload: { mode } });
+    };
+
     if (ws.readyState === WebSocket.OPEN) {
       sendJoinQueue();
     } else {
@@ -63,8 +71,9 @@ export function startGame(mode: GameMode): void {
 
   if (!matchFoundListener) {
     matchFoundListener = (msg) => {
-      currentRoomId = msg.payload.gameId;
-      userId        = msg.payload.userId;
+      searchingForMatch = false;
+      currentRoomId     = msg.payload.gameId;
+      userId            = msg.payload.userId;
       console.log(`Match ready: room=${currentRoomId}, user=${userId}`);
     };
     on('matchFound', matchFoundListener);
@@ -95,6 +104,9 @@ export function stopGame(): void {
       type: 'leaveGame',
       payload: { roomId: currentRoomId, userId }
     });
+    searchingForMatch = false;
+    currentRoomId = null;
+    userId        = null;
   }
 
   if (matchFoundListener) {

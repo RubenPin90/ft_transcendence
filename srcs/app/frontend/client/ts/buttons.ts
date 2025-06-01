@@ -15,7 +15,7 @@ export function setupButtonsDelegated(
   if (mainMenu) {
     mainMenu.addEventListener('click', (event) => {
       const target = event.target as HTMLElement;
-
+      console.log('Main menu button clicked:', target.id);
       switch (target.id) {
         case 'sp-vs-pve-btn':
           navigate('/game/pve');

@@ -70,6 +70,12 @@ async function check_cookie_fe(): Promise<boolean> {
 async function where_am_i(path : string) : Promise<string> {
     switch (path) {
         case '/home': return 'home_div';
+        case '/play':
+            if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'play_div';
         case '/profile': 
             if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/');

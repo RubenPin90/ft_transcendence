@@ -46,9 +46,30 @@ function createSocket(): WebSocket {
   return ws;
 }
 
+
+
 function ensureSocket(): WebSocket {
-  return socket && socket.readyState <= WebSocket.OPEN ? socket : (socket = createSocket());
+  // ⬇️ Return the existing socket while it is CONNECTING (0) or OPEN (1)
+  if (socket && socket.readyState <= WebSocket.OPEN) return socket;
+
+  // ⬇️ *If we just failed*, give the stack a chance to unwind so we don’t spin
+  if (socket && socket._justFailed) return socket as WebSocket; // bailout guard
+
+  socket = createSocket();
+  (socket as any)._justFailed = false;
+
+  socket.addEventListener('close', () => {
+    // Mark it as failed this tick; next tick we allow one reconnection try
+    (socket as any)._justFailed = true;
+    setTimeout(() => {
+      if (socket) (socket as any)._justFailed = false;
+    }, 250);               // ¼ s throttle – plenty to avoid a tight loop
+    socket = null;
+  });
+
+  return socket;
 }
+
 
 export function getSocket(): WebSocket {
   return ensureSocket();

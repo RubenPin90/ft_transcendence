@@ -1015,6 +1015,8 @@ async function replace_all_templates(request, response, state) {
 
 	const index_html_raw = await fs.readFile("./backend/templates/index.html", 'utf8')
 
+	const play_main_string = play_raw.replace("{{main-menu}}", play_main);
+
 	if (state == 1) {
 		var final_string = login_html;
 		final_string += register_html;
@@ -1031,7 +1033,8 @@ async function replace_all_templates(request, response, state) {
 	index_html += settings_html_user_profile_credential_raw;
 	index_html += settings_html_user_profile_avatar_raw;
 	index_html += friends_html_raw;
-	index_html += menu_raw;
+	index_html += play_main_string;
+	// index_html += menu_raw;
 	// index_html += game_raw;
 	const [keys, values] = modules.get_cookies(request);
 	// const user_encrypt = modules.get_jwt(values[0]);
