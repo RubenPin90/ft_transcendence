@@ -9,6 +9,7 @@ import * as mimes from './mimes.js';
 import * as send from './responses.js';
 import * as modules from './modules.js';
 import * as user_db from '../database/db_users_functions.js'
+import { log } from 'console';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,17 +30,15 @@ export default fastifyPlugin(async function routes(fastify) {
   // --- SVG ---
   fastify.get('/public/:file', async (req, reply) => {
     const file = req.params.file;
-  
+    
     let mime = null;
     if (file.endsWith('.svg')) {
       mime = 'image/svg+xml';
-    } else if (file.endsWith('.jpg') || file.endsWith('.jpeg')) {
-      mime = 'image/jpeg';
     } else {
       return reply.callNotFound();
     }
-
-    const filePath = path.join(process.cwd(), 'public', file);
+    
+    const filePath = path.join(process.cwd(),'frontend' ,'public', file);
     try {
       const data = await fs.readFile(filePath);
       reply.type(mime).send(data);
@@ -64,16 +63,18 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.get('/verify_custom', (req, reply) => views.verify_custom(req, reply));
 
   fastify.get('/profile', (req, reply) => views.profile(req, reply));
+  fastify.post('/profile', (req, reply) => views.profile(req, reply));
   // fastify.get('/logout', (req, reply) => views.logout(req, reply));
   fastify.post('/logout', (req, reply) => views.logout(req, reply));
-  fastify.get('/update_user', (req, reply) => views.update_user(req, reply));
+  // fastify.get('/update_user', (req, reply) => views.update_user(req, reply));
   fastify.post('/update_user', (req, reply) => views.update_user(req, reply));
-  fastify.get('/update_settings', (req, reply) => views.update_settings(req, reply));
+  // fastify.get('/update_settings', (req, reply) => views.update_settings(req, reply));
   fastify.post('/update_settings', (req, reply) => views.update_settings(req, reply));
 
   fastify.get('/friends', (req, reply) => views.friends(req, reply));
+  fastify.post('/friends', (req, reply) => views.friends(req, reply));
   fastify.post('/add_friends', (req, reply) => views.add_friends(req, reply));
-  fastify.post('/accept_friend', (req, reply) => views.accept_friend(req, reply));
+  fastify.post('/accept_friends', (req, reply) => views.accept_friends(req, reply));
   fastify.post('/reject_friend', (req, reply) => views.reject_friend(req, reply));
   fastify.post('/block_friend', (req, reply) => views.block_friend(req, reply));
   fastify.post('/encript_google', (req, reply) => views.home(req, reply));
