@@ -1,6 +1,5 @@
 CMD := docker compose
 FLAG := -f
-# SHELL := /bin/bash
 
 ROOT_DIR := $(shell pwd)
 SRC_DIR := $(ROOT_DIR)/srcs
@@ -55,20 +54,25 @@ re: .init_setup
 	sed -i "s|GRAFANA_DATA_DIR=#|GRAFANA_DATA_DIR=$(DATA_GRAFANA)|g" $(ENV_FILE)
 
 .init_setup:
+	@if [ ! -f $(OAUTH_KEY) ]; then \
+		echo "Please provide the secrets decreption key!"; \
+		echo "Bye bye!!"; \
+		exit 1; \
+	fi
 	@if [ ! -f $(ENV_FILE) ]; then \
 		$(MAKE) -s .env; \
 	fi
 	@if [ ! -d $(SECRETS_DIR) ]; then \
 		$(MAKE) -s .secrets; \
 	fi
-	@if [ ! -f "$(OAUTH_FILE)" ] && [ -f "$(OAUTH_KEY)" ]; then \
+	@if [ ! -f $(OAUTH_FILE) ]; then \
 		echo "Secrets provided proceeding with decryption"; \
 		$(MAKE) -s .decrypt; \
 	fi
 	@if [ ! -d $(DATA_GRAFANA) ]; then \
 		$(MAKE) -s .data_grafana; \
 	fi
-	echo "Initial setup completed!"
+	@echo "Initial setup completed!"
 
 clean:
 	@$(CMD) $(FLAG) $(COMPOSE_FILE) down -v

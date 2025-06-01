@@ -8,11 +8,6 @@ function yaml() {
     yq -r "$1" "$OAUTH_FILE"
 }
 
-function demo_mode() {
-    echo "Running demo setup..."
-    openssl rand -base64 24
-}
-
 declare -A secrets=(
     ["google"]=".secrets.google.client_secret"
     ["github"]=".secrets.github.client_secret"
@@ -39,10 +34,3 @@ if [ -f "$OAUTH_FILE" ]; then
         sed -i "s|$k=#|$k=$(yaml ${users[$k]})|g" $ENV_FILE;
     done
 fi
-# else
-#     echo "Generating demo secrets..."
-#     for k in "${!secrets[@]}"; do 
-#         echo "secrets/$k.txt";
-#         demo_mode > "secrets/$k.txt";
-#     done
-#     for k in "${!users[@]}"; do sed -i "s|$k=#|$k=$USER|g" $ENV_FILE; done
