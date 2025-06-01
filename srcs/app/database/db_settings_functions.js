@@ -176,14 +176,14 @@ async function delete_settings_value(self) {
     try {
         const check = await db.get(`
         SELECT * FROM settings
-        WHERE self = '${self}'`);
+        WHERE self = ?`, [self]);
         if (!check)
             return null;
         var row = await db.run(`
         DELETE FROM settings
-        WHERE mfa.self = '${self}'`);
+        WHERE settings.self = '${self}'`);
     } catch (err) {
-        console.error(`Error in delete_mfa_value: ${err}`);
+        console.error(`Error in delete_settings_value: ${err}`);
         return null;
     } finally {
         await db.close();

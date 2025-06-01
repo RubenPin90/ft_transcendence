@@ -55,6 +55,23 @@ function toggle_eye(num : number){
     }
 }
 
+async function delete_account() {
+    const response = await fetch("/delete_account", {
+        method: 'POST',
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({"action": "delete"}),
+    });
+
+    var data;
+    try {
+        data = await response.json();
+        if (data.Response == "success")
+            Logout();
+    } catch (err) {
+        console.log(err);
+    }
+}
+
 // function return_main_settings() : string {
 //     return `
 //     <div class="flex flex-col mt-8 gap-6">

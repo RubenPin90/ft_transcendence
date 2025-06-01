@@ -30,6 +30,10 @@
     @apply flex items-center gap-2 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl
 }
 
+.delete_button{
+    @apply flex items-center gap-2 bg-gradient-to-br to-[#e41010] from-[#ee6e6e] border-black border border-spacing-5 rounded-xl
+}
+
 .buttons_small_C{
     @apply to-[#d16e1d] from-[#e0d35f]
 }

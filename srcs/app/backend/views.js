@@ -140,6 +140,7 @@ async function mfa(request, response) {
         } else if (data.Function == 'verify_otc') {
             response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
             var verified = await utils.verify_otc(request, response, data, null);
+            console.log(verified);
             if (verified && verified !== undefined && !(verified < 0)) {
                 const check_mfa = await mfa_db.get_mfa_value('self', userid);
                 var new_otc_str = check_mfa.otc;
@@ -148,10 +149,10 @@ async function mfa(request, response) {
                 await mfa_db.update_mfa_value('otc', new_otc_str, userid);
                 if (check_mfa.prefered === 0)
                     await mfa_db.update_mfa_value('prefered', 2, userid);
-                response.raw.end(JSON.stringify({"Response": "Success"}));
+                response.raw.end(JSON.stringify({"Response": "success"}));
             }
             else
-                response.raw.end(JSON.stringify({"Response": "Failed"}));
+                response.raw.end(JSON.stringify({"Response": "failed"}));
             return true;
         } else if (data.Function == 'create_custom') {
             return await utils.create_custom_code(userid, response, data);
@@ -385,7 +386,7 @@ async function settings_prefered_language(request, response) {
         return false;
     const langIndex = keys.indexOf('lang');
     var lang = values[langIndex];
-    lang = await modules.get_jwt(lang);
+    lang = modules.get_jwt(lang);
     if (lang.userid == method)
         return // Here was a redirect(response, '/settings/user', 302);
     const lang_jwt = modules.create_jwt(method, '1h');
@@ -846,6 +847,22 @@ async function block_friend(request, response){
     return true;
 }
 
+
+async function delete_account(request, response) {
+    const data = request.body;
+    const [keys, values] = modules.get_cookies(request);
+    const token = values[keys.indexOf('token')];
+    var decrypted;
+    try {
+        decrypted = modules.get_jwt(token);
+    } catch (err) {}
+    const decrypted_user = decrypted.userid;
+    await settings_db.delete_settings_value(decrypted_user);
+    response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+    response.raw.end(JSON.stringify({"Response": 'success'}));
+    return true;
+}
+
 async function play(request, response) {
     console.log("play page requested");
     const [keys, values] = modules.get_cookies(request.headers.cookie);
@@ -900,5 +917,6 @@ export {
     accept_friend,
     reject_friend,
     block_friend,
+    delete_account,
     play
 }
