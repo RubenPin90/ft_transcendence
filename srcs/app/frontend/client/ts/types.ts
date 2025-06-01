@@ -7,9 +7,10 @@ export interface TLobbyState {
     players: { id: string; name: string; ready: boolean }[]
     hostId: string
     displaySlots: number
+    status?: 'pending' | 'bracket' | 'running' | 'finished';
   }
 
-export interface MatchAssignedMsg {
+export interface matchAssignedMsg {
   type: 'matchAssigned';
   payload: {
     tournamentId: string;
@@ -45,4 +46,9 @@ export interface TournamentBracketMsg {
     tournamentId: string;
     rounds: BracketRounds;
   };
+}
+
+export interface TournamentBracketPayload {
+  tournamentId: string;
+  rounds: MatchStub[][] | MatchStub[];   // может быть 1-мерный или 2-мерный массив
 }

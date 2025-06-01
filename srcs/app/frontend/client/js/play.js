@@ -1,3 +1,12 @@
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 import { initGameCanvas, startGame, stopGame, setOnGameEnd, } from './game.js';
 import { renderTournamentList, joinByCode, renderTLobby, renderBracketOverlay } from './tournament.js';
 import { setupButtonsDelegated } from './buttons.js';
@@ -8,6 +17,7 @@ import { on, send, getSocket } from './socket.js';
 const socket = getSocket();
 let currentRoomId = null;
 let userId = null;
+let currentMatch = null;
 on('welcome', (msg) => {
     const { userId } = msg.payload;
     localStorage.setItem('playerId', userId);
@@ -32,8 +42,8 @@ on('matchAssigned', (msg) => {
     var _a;
     const { tournamentId, matchId, players } = msg.payload;
     const myId = (_a = localStorage.getItem('playerId')) !== null && _a !== void 0 ? _a : socket.userId;
-    const me = players.find((p) => p.id === myId);
-    const rival = players.find((p) => p.id !== myId);
+    const me = players.find(p => p.id === myId);
+    const rival = players.find(p => p.id !== myId);
     if (!me || !rival)
         return;
     localStorage.setItem('currentGameId', matchId);
@@ -43,29 +53,26 @@ on('matchAssigned', (msg) => {
         navigate('/game/1v1');
     }, 3000);
 });
-on('tournamentBracketMsg', (msg) => {
-    let rounds = msg.payload.rounds;
-    if (Array.isArray(rounds) && !Array.isArray(rounds[0])) {
-        rounds = [rounds];
+on('tournamentBracketMsg', (msg) => __awaiter(void 0, void 0, void 0, function* () {
+    const { tournamentId, rounds } = msg.payload;
+    const normalized = Array.isArray(rounds[0])
+        ? rounds
+        : [rounds];
+    renderBracketOverlay(normalized);
+    if (!amHost())
+        return;
+    yield new Promise(r => setTimeout(r, 700));
+    const firstRound = normalized[0];
+    const firstReal = firstRound.find(m => m.players.filter(p => p && !('pendingMatchId' in p)).length === 2);
+    if (firstReal) {
+        const [A, B] = firstReal.players;
+        yield showVersusOverlay(A.name, B.name);
     }
-    renderBracketOverlay(rounds);
-    setTimeout(() => {
-        const br = rounds;
-        if (!Array.isArray(br) || br.length === 0) {
-            return;
-        }
-        const firstRound = br[0];
-        for (const match of firstRound) {
-            const realPlayers = match.players.filter((p) => p !== null && typeof p.pendingMatchId === 'undefined');
-            if (realPlayers.length === 2) {
-                const leftName = realPlayers[0].name;
-                const rightName = realPlayers[1].name;
-                showVersusOverlay(leftName, rightName);
-                return;
-            }
-        }
-    }, 1000);
-});
+    send({
+        type: 'beginRound',
+        payload: { tournamentId }
+    });
+}));
 on('tournamentCreated', (msg) => {
     const TLobby = msg.payload;
     setMyId(TLobby.hostId);
@@ -103,20 +110,41 @@ let markQueued;
 let currentMode = null;
 let queued = false;
 function showVersusOverlay(left, right) {
-    let el = document.getElementById('vs-overlay');
-    if (!el) {
-        el = document.createElement('div');
-        el.id = 'vs-overlay';
-        el.style.cssText = `
-      position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-      background:rgba(0,0,0,.8);color:#fff;font:700 3rem sans-serif;z-index:9999;
-      text-align:center;`;
-        document.body.appendChild(el);
-    }
-    el.textContent = `${left}  vs  ${right}`;
-    el.style.opacity = '1';
-    setTimeout(() => { el.style.transition = 'opacity .4s'; el.style.opacity = '0'; }, 2500);
-    setTimeout(() => { el.remove(); }, 3000);
+    return new Promise((resolve) => {
+        let el = document.getElementById('vs-overlay');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'vs-overlay';
+            el.style.cssText = `
+        position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+        background:rgba(0,0,0,.8); color:#fff; font:700 3rem/1 sans-serif; z-index:9999;
+        text-align:center; opacity:0; transition:opacity .4s;
+      `;
+            document.body.appendChild(el);
+        }
+        el.textContent = `${left}  vs  ${right}`;
+        requestAnimationFrame(() => (el.style.opacity = '1'));
+        const SHOW_MS = 2500;
+        const HIDE_MS = 400;
+        const hideTimer = setTimeout(() => {
+            el.style.opacity = '0';
+        }, SHOW_MS);
+        const onEnd = () => {
+            cleanup();
+            resolve();
+        };
+        el.addEventListener('transitionend', onEnd, { once: true });
+        const fallbackTimer = setTimeout(() => {
+            cleanup();
+            resolve();
+        }, SHOW_MS + HIDE_MS + 50);
+        function cleanup() {
+            clearTimeout(hideTimer);
+            clearTimeout(fallbackTimer);
+            el === null || el === void 0 ? void 0 : el.removeEventListener('transitionend', onEnd);
+            el === null || el === void 0 ? void 0 : el.remove();
+        }
+    });
 }
 function joinByCodeWithSocket(code) {
     joinByCode(socket, code);
@@ -125,9 +153,10 @@ setOnGameEnd((winnerId) => {
     alert(`Player ${winnerId} wins!`);
 });
 const navigate = (path) => {
-    if (path === window.location.pathname)
-        return;
-    history.pushState({}, '', path);
+    const samePath = path === window.location.pathname;
+    if (!samePath) {
+        history.pushState({}, '', path);
+    }
     route();
 };
 function route() {
@@ -187,6 +216,12 @@ function leaveMatchmaking() {
         return;
     queued = false;
     send({ type: 'leaveQueue' });
+}
+function amHost() {
+    var _a;
+    const lobby = getCurrentTLobby();
+    const myId = (_a = localStorage.getItem('playerId')) !== null && _a !== void 0 ? _a : socket.userId;
+    return (lobby === null || lobby === void 0 ? void 0 : lobby.hostId) === myId;
 }
 function setupCodeJoinHandlers() {
     const codeInput = document.getElementById('t-code-input');

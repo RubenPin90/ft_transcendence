@@ -52,7 +52,7 @@ matchManager.tournamentManager = tournamentManager; // Optional: wire back if ne
 // Broadcast tournament state every second
 setInterval(() => {
   tournamentManager.broadcastTournamentUpdate();
-}, 5000);
+}, 3000);
 
 // Create initial tournaments from SERVER
 for (let i = 0; i < 3; i++) {

@@ -47,56 +47,74 @@ export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager)
 
     case 'generateBracket': {
       const { tournamentId } = data.payload;
-      if (isHost(ws.userId, tournamentId, tournamentManager)) {
-        tournamentManager.generateBracket(tournamentId);
-      }
+      if (!isHost(ws.userId, tournamentId, tournamentManager)) break;
+      const ok = tournamentManager.generateBracket(tournamentId);
       break;
     }
 
-    case 'beginFirstRound': {
+    case 'beginRound': {
       const { tournamentId } = data.payload;
-      if (isHost(ws.userId, tournamentId, tournamentManager)) {
-        tournamentManager.beginFirstRound(tournamentId);
-      }
+      if (!isHost(ws.userId, tournamentId, tournamentManager)) break;
+      tournamentManager.beginRound(tournamentId);
       break;
     }
+    
 
 
     case 'joinMatchRoom': {
       const { tournamentId, matchId } = data.payload;
       const room = tournamentManager.rooms[matchId];
+    
       if (!room) {
-        ws.send(JSON.stringify({ type: 'error', payload: { message: 'Match room not found.' }}));
+        ws.send(JSON.stringify({
+          type: 'error',
+          payload: { message: 'Match room not found.' }
+        }));
         break;
       }
-
+    
       if (!room.players.some(p => getPlayerId(p) === ws.userId)) {
-        ws.send(JSON.stringify({ type: 'error', payload: { message: 'You are not a member of this match.' }}));
+        ws.send(JSON.stringify({
+          type: 'error',
+          payload: { message: 'You are not a member of this match.' }
+        }));
         break;
       }
-
+    
+      // 1) Register player in MatchManager
+      tournamentManager.matchManager.joinRoom(matchId, ws.userId);
+    
+      // 2) Track WebSocket connections and ready status
       room.sockets  ??= new Map();
       room.readySet ??= new Set();
-
+    
       room.sockets.set(ws.userId, ws);
       room.readySet.add(ws.userId);
-
+    
+      // 3) Start the match when both players have joined
       if (room.readySet.size === 2) {
-        room.status = 'inProgress';
         const startPayload = {
-          type   : 'matchStart',
+          type: 'matchStart',
           payload: {
             tournamentId,
             matchId,
-            players: room.players.map(p => ({ id: getPlayerId(p), name: p.name })),
+            players: room.players.map(p => ({
+              id: getPlayerId(p),
+              name: p.name,
+            })),
           },
         };
-        for (const sock of room.sockets.values())
-          sock.readyState === WebSocket.OPEN && sock.send(JSON.stringify(startPayload));
+    
+        for (const sock of room.sockets.values()) {
+          if (sock.readyState === WebSocket.OPEN) {
+            sock.send(JSON.stringify(startPayload));
+          }
+        }
       }
+    
       break;
     }
-
+    
     case 'joinQueue': {
       const { mode } = data.payload;
       if (mode === 'pve')      createGameAI(matchManager, ws.userId, ws);

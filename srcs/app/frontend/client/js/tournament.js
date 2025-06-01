@@ -45,7 +45,7 @@ export function renderBracketOverlay(rounds) {
         if (amHost) {
             beginBtn.onclick = () => {
                 socket === null || socket === void 0 ? void 0 : socket.send(JSON.stringify({
-                    type: 'beginFirstRound',
+                    type: 'beginRound',
                     payload: { tournamentId: TLobby.id }
                 }));
                 overlay.hidden = true;

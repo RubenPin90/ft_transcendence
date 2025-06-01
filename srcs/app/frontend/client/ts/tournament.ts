@@ -67,7 +67,7 @@
       if (amHost) {
         beginBtn.onclick = () => {
           socket?.send(JSON.stringify({
-            type: 'beginFirstRound',
+            type: 'beginRound',
             payload: { tournamentId: TLobby.id }
           }));
           overlay.hidden = true;

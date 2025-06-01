@@ -19,6 +19,7 @@ import type {
   BracketRounds,
   TournamentBracketMsg,
   TourneySummary,
+  TournamentBracketPayload,
   PlayerStub
 } from './types.js';
 import { setMyId, setCurrentTLobby, getCurrentTLobby } from './state.js';
@@ -33,6 +34,7 @@ const socket = getSocket();
 
 let currentRoomId: string | null = null;
 let userId: string | null = null;
+let currentMatch: string | null = null;
 
 // ────────────────────────────────────────────────────────────
 //  2.  generic error banner
@@ -64,12 +66,10 @@ on('joinedTLobby', (msg) => {
 });
 
 on<'matchAssigned'>('matchAssigned', (msg) => {
-  // We no longer show the versus‐overlay here; just do the join/navigation logic.
   const { tournamentId, matchId, players } = msg.payload;
-  const myId =
-    localStorage.getItem('playerId') ?? (socket as any).userId;
-  const me = players.find((p) => p.id === myId);
-  const rival = players.find((p) => p.id !== myId);
+  const myId   = localStorage.getItem('playerId') ?? (socket as any).userId;
+  const me     = players.find(p => p.id === myId);
+  const rival  = players.find(p => p.id !== myId);
   if (!me || !rival) return;
 
   localStorage.setItem('currentGameId', matchId);
@@ -81,42 +81,36 @@ on<'matchAssigned'>('matchAssigned', (msg) => {
   }, 3000);
 });
 
-on<'tournamentBracketMsg'>('tournamentBracketMsg', (msg) => {
-  let rounds = msg.payload.rounds as unknown;
-  if (Array.isArray(rounds) && !Array.isArray(rounds[0])) {
-    rounds = [rounds];
+on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
+  const { tournamentId, rounds } = msg.payload as {
+    tournamentId: string;
+    rounds: MatchStub[][] | MatchStub[];
+  };
+
+  const normalized: MatchStub[][] = Array.isArray(rounds[0])
+    ? rounds as MatchStub[][]
+    : [rounds as MatchStub[]];
+
+  renderBracketOverlay(normalized);
+
+  if (!amHost()) return;
+
+  await new Promise(r => setTimeout(r, 700));
+
+  const firstRound = normalized[0];
+  const firstReal  = firstRound.find(
+    m => m.players.filter(p => p && !('pendingMatchId' in p)).length === 2
+  );
+
+  if (firstReal) {
+    const [A, B] = firstReal.players as PlayerStub[];
+    await showVersusOverlay(A.name, B.name);
   }
 
-  // Render the bracket immediately:
-  renderBracketOverlay(rounds as BracketRounds);
-
-  // After 1 second, find the first fully-known match in the first round:
-  setTimeout(() => {
-    const br = rounds as BracketRounds;
-    if (!Array.isArray(br) || br.length === 0) {
-      return;
-    }
-
-    const firstRound: MatchStub[] = br[0];
-    // Iterate over each MatchStub in round 1 until we find two real PlayerStubs:
-    for (const match of firstRound) {
-      // Filter out anything that is not a real PlayerStub:
-      const realPlayers = match.players.filter(
-        (p): p is PlayerStub =>
-          p !== null && typeof (p as any).pendingMatchId === 'undefined');
-
-      if (realPlayers.length === 2) {
-        const leftName = realPlayers[0].name;
-        const rightName = realPlayers[1].name;
-        showVersusOverlay(leftName, rightName);
-        return; // stop after showing the first valid “vs” overlay
-      }
-      // If you want to allow a “waiting on opponent” display when one side is pendingMatchId,
-      // you could check for p having pendingMatchId and show a different overlay. But
-      // as written, we only show “X vs Y” when both are non-null PlayerStub.
-    }
-    // If no match in round 1 has two concrete players yet, do nothing.
-  }, 1000);
+  send({
+    type   : 'beginRound',
+    payload: { tournamentId }
+  });
 });
 
 
@@ -170,21 +164,48 @@ let markQueued: (v: boolean) => void;
 let currentMode: string | null = null;
 let queued = false;
 
-function showVersusOverlay(left: string, right: string) {
-  let el = document.getElementById('vs-overlay') as HTMLElement | null;
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'vs-overlay';
-    el.style.cssText = `
-      position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-      background:rgba(0,0,0,.8);color:#fff;font:700 3rem sans-serif;z-index:9999;
-      text-align:center;`;
-    document.body.appendChild(el);
-  }
-  el.textContent = `${left}  vs  ${right}`;
-  el.style.opacity = '1';
-  setTimeout(() => { el.style.transition = 'opacity .4s'; el.style.opacity = '0'; }, 2500);
-  setTimeout(() => { el.remove(); }, 3000);
+function showVersusOverlay(left: string, right: string): Promise<void> {
+  return new Promise<void>((resolve) => {
+    let el = document.getElementById('vs-overlay') as HTMLElement | null;
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'vs-overlay';
+      el.style.cssText = `
+        position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+        background:rgba(0,0,0,.8); color:#fff; font:700 3rem/1 sans-serif; z-index:9999;
+        text-align:center; opacity:0; transition:opacity .4s;
+      `;
+      document.body.appendChild(el);
+    }
+
+    el.textContent   = `${left}  vs  ${right}`;
+    requestAnimationFrame(() => (el!.style.opacity = '1'));
+
+    const SHOW_MS = 2500;
+    const HIDE_MS = 400;
+
+    const hideTimer = setTimeout(() => {
+      el!.style.opacity = '0';
+    }, SHOW_MS);
+
+    const onEnd = () => {
+      cleanup();
+      resolve();
+    };
+    el.addEventListener('transitionend', onEnd, { once: true });
+
+    const fallbackTimer = setTimeout(() => {
+      cleanup();
+      resolve();
+    }, SHOW_MS + HIDE_MS + 50);
+
+    function cleanup() {
+      clearTimeout(hideTimer);
+      clearTimeout(fallbackTimer);
+      el?.removeEventListener('transitionend', onEnd);
+      el?.remove();
+    }
+  });
 }
 
 function joinByCodeWithSocket(code?: string) {
@@ -196,10 +217,13 @@ setOnGameEnd((winnerId: string) => {
 });
 
 const navigate = (path: string) => {
-  if (path === window.location.pathname) return;
-  history.pushState({}, '', path);
+  const samePath = path === window.location.pathname;
+  if (!samePath) {
+    history.pushState({}, '', path);
+  }
   route();
 };
+
 
 function route() {
   const path = window.location.pathname;
@@ -257,6 +281,12 @@ function leaveMatchmaking() {
   if (!queued) return;
   queued = false;
   send({ type: 'leaveQueue' });
+}
+
+function amHost(): boolean {
+  const lobby = getCurrentTLobby();
+  const myId  = localStorage.getItem('playerId') ?? (socket as any).userId;
+  return lobby?.hostId === myId;
 }
 
 function setupCodeJoinHandlers() {

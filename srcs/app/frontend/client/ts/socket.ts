@@ -14,7 +14,10 @@ export type ServerMessage =
   | { type: 'tournamentUpdated';  payload: TLobbyState }
   | { type: 'tLobbyState';        payload: TLobbyState }
   | { type: 'matchAssigned';      payload: { tournamentId: string; matchId: string; players: { id: string; name: string }[] } }
+  | { type: 'TournamentBracket'; payload: { tournamentId: string; rounds: { matchId: string; players: { id: string; name: string }[] }[] } }
   | { type: 'tournamentBracketMsg'; payload: { tournamentId: string; rounds: { matchId: string; players: { id: string; name: string }[] }[] } };
+
+
 
 export type MsgType = ServerMessage['type'];
 
