@@ -622,7 +622,6 @@ async function replace_all_templates(request, response, state) {
 	var settings_html_mfa_string = "";
 	settings_html_mfa_string += '<div id="mfa_div" class="hidden">';
 	settings_html_mfa_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
-
 	settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_otc()">';
 	settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
 	settings_html_mfa_string += '<span class="button_text">Create OTC</span>';
