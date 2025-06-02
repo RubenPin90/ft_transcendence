@@ -9,6 +9,7 @@ import * as friends_request from '../database/db_friend_request.js'
 import qrcode from 'qrcode';
 import { json } from 'stream/consumers';
 import { response } from 'express';
+import { promises as fs, utimes } from 'fs';
 import { encrypt_google } from './utils.js';
 import http from 'http';
 
@@ -63,7 +64,7 @@ async function register(request, response) {
             response.raw.end(JSON.stringify({"Response": 'Bcrypt error', "Content": null}));
             return true;
         }
-        const settings = await settings_db.create_settings_value(hashed, '', 0, replace_data.email, 'en', '', '');
+        const settings = await settings_db.create_settings_value(hashed, replace_data.pfp, 0, replace_data.email, 'en', '', '');
         if (!settings || settings === undefined || settings < 0) {
             response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
             response.raw.end(JSON.stringify({"Response": 'Failed creating table in settings', "Content": null}));
@@ -116,8 +117,9 @@ async function home(request, response) {
     }
     const check = await send.send_html('index.html', response, 200, async (data) => {
         data = await utils.replace_all_templates(request, response);
-        // data = utils.show_page(data, "home_div");//changed from register to home?
-        data = utils.show_page(data, "register_div");//changed from register to home?
+        //check if should be commented out or in
+        data = utils.show_page(data, "home_div");//changed from register to home?
+        // data = utils.show_page(data, "register_div");//changed from register to home?
         return data;
     });
     if (!check || check === undefined || check == false)
@@ -139,6 +141,7 @@ async function mfa(request, response) {
         } else if (data.Function == 'verify_otc') {
             response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
             var verified = await utils.verify_otc(request, response, data, null);
+            console.log(verified);
             if (verified && verified !== undefined && !(verified < 0)) {
                 const check_mfa = await mfa_db.get_mfa_value('self', userid);
                 var new_otc_str = check_mfa.otc;
@@ -147,10 +150,10 @@ async function mfa(request, response) {
                 await mfa_db.update_mfa_value('otc', new_otc_str, userid);
                 if (check_mfa.prefered === 0)
                     await mfa_db.update_mfa_value('prefered', 2, userid);
-                response.raw.end(JSON.stringify({"Response": "Success"}));
+                response.raw.end(JSON.stringify({"Response": "success"}));
             }
             else
-                response.raw.end(JSON.stringify({"Response": "Failed"}));
+                response.raw.end(JSON.stringify({"Response": "failed"}));
             return true;
         } else if (data.Function == 'create_custom') {
             return await utils.create_custom_code(userid, response, data);
@@ -236,15 +239,6 @@ async function mfa(request, response) {
         if (select_number < 2)
             return data.replace("{{mfa-button}}", `${replace_string} <a href="/" data-link><button>Back</button></a> \
                 <button onclick="logout()">Logout</button>`);
-        select_menu = `
-        <form id="mfa_select_form">
-            <select name="mfa" id="mfa">
-                <option value="" selected disabled hidden>Choose a default authentication method</option>
-                    ${select_menu}
-            </select>
-            <button type="submit">Submit</button>
-        </form>
-        <br>`;
         return data.replace("{{mfa-button}}", `${replace_string} ${select_menu} <div><a href="/settings" data-link><button>Back</button></a></div> \
         <button onclick="logout()">Logout</button>`);
     });
@@ -254,43 +248,58 @@ async function mfa(request, response) {
 }
 
 
-// async function user(request, response){
-//     var [keys, values] = modules.get_cookies(request.headers.cookie);
-//     if (!keys?.includes('token'))
-//         return // Here was a redirect(response, '/login', 302);
-//     var request_url = request.url.slice(14);
-//     if (request_url == '/select_language')
-//         return await select_language(request, response);
-//     if (request_url == '/profile_settings')
-//         return await user_settings(request, response);
+async function user(request, response){
+    var [keys, values] = modules.get_cookies(request);
+    if (!keys?.includes('token'))
+        return // Here was a redirect(response, '/login', 302);
+    const data = request.body;
+    if (data.Function == "change_language") {
+        const new_lang = data.Lang;
+        const old_lang = modules.get_jwt(values[keys.indexOf('lang')]);
+        const new_lang_decrypted = modules.create_jwt(new_lang, '1h');
+        modules.set_cookie(response, 'lang', new_lang_decrypted, 3600);
+        const userid = modules.get_jwt(values[keys.indexOf('token')]);
+        await settings_db.update_settings_value('lang', new_lang, userid.userid);
+        console.log(modules.get_jwt(values[keys.indexOf('lang')]));
+        const new_page = await translator.cycle_translations(data.Page, new_lang, old_lang);
+        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'success', 'Content': new_page}); // 'Content': data.Page
+        return true;
+    }
 
-//     const status = await send.send_html('settings.html', response, 200, async  (data) => {
-//         var replace_string = "";
-//         replace_string += '<div><a href="/settings/user/select_language" data-link><div class="buttons mb-6"></a></div>';
-//         replace_string += '<button class="block w-full mb-6 mt-6">';
-//         replace_string += '<span class="button_text">Select Language</span>';
-//         replace_string += '</button></div>';
+    if (data.Function == "change_language_site") {
+        // const new_page = await fs.readFile('./translations.json', 'utf8');
+        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'success', 'Content': data.Page}); // 'Content': data.Page
+        return true;
+    }
 
-//         replace_string += '<div><a href="/settings/user" data-link><div class="buttons mb-6"></a></div>';
-//         replace_string += '<button class="block w-full mb-6 mt-6">';
-//         replace_string += '<span class="button_text">Profile changes</span>';
-//         replace_string += '</button></div>';
+    const status = await send.send_html('settings.html', response, 200, async  (data) => {
+        var replace_string = "<span>In here??????</span>";
+        // var replace_string = "";
+        // replace_string += '<div><a href="/settings/user/select_language" data-link><div class="buttons mb-6"></a></div>';
+        // replace_string += '<button class="block w-full mb-6 mt-6">';
+        // replace_string += '<span class="button_text">Select Language</span>';
+        // replace_string += '</button></div>';
 
-//         replace_string += '<div class="flex mt-12 gap-4 w-full">';
-//         replace_string += '<a class="flex-1" href="/settings" data-link>';
-//         replace_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-//         replace_string += '<span class="button_text">Back</span>';
-//         replace_string += '</button></a>';
-//         replace_string += '<a class="flex-1">';
-//         replace_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-//         replace_string += '<span class="button_text">Logout</span>';
-//         replace_string += '</button></a></div>';
-//         return data.replace('{{mfa-button}}', replace_string);
-//     });
-//     if (!status || status === undefined || status < 0)
-//         return `_${status}`
-//     return true;
-// }
+        // replace_string += '<div><a href="/settings/user" data-link><div class="buttons mb-6"></a></div>';
+        // replace_string += '<button class="block w-full mb-6 mt-6">';
+        // replace_string += '<span class="button_text">Profile changes</span>';
+        // replace_string += '</button></div>';
+
+        // replace_string += '<div class="flex mt-12 gap-4 w-full">';
+        // replace_string += '<a class="flex-1" href="/settings" data-link>';
+        // replace_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+        // replace_string += '<span class="button_text">Back</span>';
+        // replace_string += '</button></a>';
+        // replace_string += '<a class="flex-1">';
+        // replace_string += '<button onclick="logout()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+        // replace_string += '<span class="button_text">Logout</span>';
+        // replace_string += '</button></a></div>';
+        return data.replace('{{mfa-button}}', replace_string);
+    });
+    if (!status || status === undefined || status < 0)
+        return `_${status}`
+    return true;
+}
 
 async function settings(request, response) {
     var [keys, values] = modules.get_cookies(request);
@@ -384,7 +393,7 @@ async function settings_prefered_language(request, response) {
         return false;
     const langIndex = keys.indexOf('lang');
     var lang = values[langIndex];
-    lang = await modules.get_jwt(lang);
+    lang = modules.get_jwt(lang);
     if (lang.userid == method)
         return // Here was a redirect(response, '/settings/user', 302);
     const lang_jwt = modules.create_jwt(method, '1h');
@@ -463,9 +472,9 @@ async function verify_custom(request, response) {
 
 async function profile(request, response){
     var [keys, values] = modules.get_cookies(request);
-    if (keys?.includes('token'))
+    if (!keys?.includes('token')){
         return await home(request, response);
-
+    }
 
     const tokenIndex = keys.findIndex((key) => key === 'token');
     const token = values[tokenIndex];
@@ -476,32 +485,31 @@ async function profile(request, response){
         console.error(`Error in profile views.js: ${err}`);
         return // Here was a redirect(response, '/login', 302);
     }
-
     const user = await users_db.get_users_value('self', decoded.userid);
     if (!user || user === undefined){
         return response.code(404).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": 'fail', "Content": "No user or user undefined"});
-
         // return send.send_error_page('404.html', response, 404);
     }
 
     const settings = await settings_db.get_settings_value('self', decoded.userid);
     if (!settings || settings === undefined){
         return response.code(404).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": 'fail', "Content": "no settings or settings undefined"});
-
         // return send.send_error_page('404.html', response, 404);
     }
 
     const userid = decoded.userid;
 
 
-    const inner = request.body;
+    var inner = request.body.innervalue;
+    // console.log(inner);
+
     inner = inner.replace('{{username}}', user.username);
-    inner = inner.replace('{{email}}', settings.email || 'Not provided');
-    inner = inner.replace('{{picture}}', settings.pfp || 'public/default_profile.svg');
+    inner = inner.replace('{{email}}', settings.email);
+    inner = inner.replace('{{picture}}', settings.pfp);
     inner = inner.replace('{{status}}', ()=> {if (user.status === 1) return 'online'; else return 'offline'});
     inner = inner.replace('{{Friends}}', await friends_request.show_accepted_friends(userid))
-
-
+    // console.log("------------------------------");
+    // console.log(inner);
 
     return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": 'success', "Content": inner});
 
@@ -584,19 +592,25 @@ async function update_settings(request, response) {
     if (!data || data === undefined){
         return response.code(400).send({ message: 'Invalid data'});
     }
-    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    const [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token')) {
-        return // Here was a redirect(response, '/login', 302);
+        return login(request, response);
     }
 
     const { email, password, avatar } = data;
+
+    console.log("----------------------");
+    console.log(email);
+    console.log(password);
+    console.log(avatar);
+    console.log("----------------------");
 
 
     const tokenIndex = keys.findIndex((key) => key === 'token');
     const token = values[tokenIndex];
     let decoded;
     try {
-        decoded = await modules.get_jwt(token);
+        decoded = modules.get_jwt(token);
     }
     catch (err) {
         return // Here was a redirect(response, '/login', 302);
@@ -631,16 +645,13 @@ async function update_settings(request, response) {
 }
 
 async function update_user(request, response) {
-    if (request.method !== 'POST') {
-        return send.send_error_page('404.html', response, 404);
-    }
-
     const data = request.body;
     if (data === null || data === undefined){
         return response.code(400).send({ message: 'Invalid data'});
     }
-    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    const [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token')) {
+        return login(request, response);
         return // Here was a redirect(response, '/login', 302);
     }
 
@@ -648,61 +659,66 @@ async function update_user(request, response) {
     const token = values[tokenIndex];
     let decoded;
     try {
-        decoded = await modules.get_jwt(token);
+        decoded = modules.get_jwt(token);
     }
     catch (err) {
         return // Here was a redirect(response, '/login', 302);
     }
 
     const userid = decoded.userid;
-
+    console.log("DATA: ", data);
     try {
-        const result = await users_db.update_users_value('username', data.usernameValue, userid);
+        const result = await users_db.update_users_value('username', data, userid);
         if (result) {
-            return response.code(200).send({ message: 'Successfully updated Username'});
+            return response.code(200).send({ "Response": 'Successfully updated Username'});
         }
         else{
-            return response.code(500).send({ message: 'Failed to update Username'});
+            return response.code(500).send({ "Response": 'Failed to update Username'});
         }
     }
     catch (err){
-        return response.code(500).send({ message: 'Server error'});
+        return response.code(500).send({ "Response": 'Server error'});
     }
 }
 
 async function friends(request, response){
-    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    const [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token')) {
-        return // Here was a redirect(response, '/login', 302);
+        return login(request, response);
     }
 
-    const tokenIndex = keys.findIndex((key) => key === 'token');
-    const token = values[tokenIndex];
+    const token = values[keys.indexOf("token")];
     let decoded;
     try {
-        decoded = await modules.get_jwt(token);
+        decoded = modules.get_jwt(token);
     } catch (err) {
         return // Here was a redirect(response, '/login', 302);
     }
 
     const userid = decoded.userid;
 
-    const status = await send.send_html('index.html', response, 200, async(data) => {
-        var [keys, values] = modules.get_cookies(request.headers.cookie);
-        const lang_check = keys?.find((key) => key === 'lang');
-        if (!lang_check || lang_check === undefined || lang_check == false)
-            return false;
-        const langIndex = keys.indexOf('lang');
-        const lang = values[langIndex];
-        try {
-            var decoded_lang = modules.get_jwt(lang);
-        } catch (err) {
-            return false;
-        }
-        data = await translator.cycle_translations(data, decoded_lang.userid);
-        data = data.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
-        return data;
-    });
+
+    var inner = request.body.innervalue;
+    // inner = await translator.cycle_translations(inner, decoded_lang);
+    inner = inner.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
+    return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": 'success', "Content": inner});
+
+    // const status = await send.send_html('index.html', response, 200, async(data) => {
+    //     var [keys, values] = modules.get_cookies(request.headers.cookie);
+    //     const lang_check = keys?.find((key) => key === 'lang');
+    //     if (!lang_check || lang_check === undefined || lang_check == false)
+    //         return false;
+    //     const langIndex = keys.indexOf('lang');
+    //     const lang = values[langIndex];
+    //     try {
+    //         var decoded_lang = modules.get_jwt(lang);
+    //     } catch (err) {
+    //         return false;
+    //     }
+    //     data = await translator.cycle_translations(data, decoded_lang.userid);
+    //     data = data.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
+    //     return data;
+    // });
 
 
 
@@ -716,9 +732,9 @@ async function friends(request, response){
 
 
 async function add_friends(request, response){
-    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    const [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token')) {
-        return // Here was a redirect(response, '/login', 302);
+        return login(request, response);
     }
 
     const data = request.body;
@@ -729,7 +745,7 @@ async function add_friends(request, response){
     const token = values[tokenIndex];
     let decoded;
     try {
-        decoded = await modules.get_jwt(token);
+        decoded = modules.get_jwt(token);
     } catch (err) {
         return // Here was a redirect(response, '/login', 302);
     }
@@ -740,7 +756,11 @@ async function add_friends(request, response){
     const receiver_db = await users_db.get_users_value('username', receiver);
     if (!receiver_db || receiver_db === undefined){
         console.error("no user in database");
-        return;
+        return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": "no user in database" });
+    }
+    if (receiver_db.self == userid){
+        console.error("cant send youself the request");
+        return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": "Sending request to self" });
     }
 
     const result = await friends_request.create_friend_request_value(userid, receiver_db.self);
@@ -748,89 +768,68 @@ async function add_friends(request, response){
         console.error("create_friend_request_value caught an error");
         return null;
     }
-    return true;
+    return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": "success" });
 }
 
-async function accept_friend(request, response){
-    const [keys, values] = modules.get_cookies(request.headers.cookie);
-    if (!keys?.includes('token')) {
-        return // Here was a redirect(response, '/login', 302);
-    }
-
+async function accept_friends(request, response){
+    const [keys, values] = modules.get_cookies(request);
     const data = request.body;
     if (!data || data === undefined){
         return response.code(400).send({ message: 'Invalid data'});
     }
-    const tokenIndex = keys.findIndex((key) => key === 'token');
-    const token = values[tokenIndex];
+
     let decoded;
     try {
-        decoded = await modules.get_jwt(token);
+        decoded = modules.get_jwt(values[keys.indexOf("token")]);
     } catch (err) {
-        return // Here was a redirect(response, '/login', 302);
+        return response.code(400).send({ message: 'Invalid decoded'});
     }
 
-    // const userid = decoded.userid;
-
     const receiver = data.userid;
-    // const result = await friends_request.delete_friend_request_value(receiver);
     const result = await friends_request.update_friend_request_value(receiver, 'accepted');
     if (!result || result === undefined){
         console.error("error in deleting accepted friend request");
         return null;
     }
-    return true;
+    return response.code(200).send({ message: 'success'});
 }
 
 async function reject_friend(request, response){
-const [keys, values] = modules.get_cookies(request.headers.cookie);
-    if (!keys?.includes('token')) {
-        return // Here was a redirect(response, '/login', 302);
-    }
-
+    const [keys, values] = modules.get_cookies(request);
     const data = request.body;
     if (!data || data === undefined){
         return response.code(400).send({ message: 'Invalid data'});
     }
-    const tokenIndex = keys.findIndex((key) => key === 'token');
-    const token = values[tokenIndex];
+
     let decoded;
     try {
-        decoded = await modules.get_jwt(token);
+        decoded = modules.get_jwt(values[keys.indexOf("token")]);
     } catch (err) {
-        return // Here was a redirect(response, '/login', 302);
+        return response.code(400).send({ message: 'Invalid decoded'});
     }
 
-    // const userid = decoded.userid;
-
     const receiver = data.userid;
-    console.log("RECEIVER: ", receiver);
     const result = await friends_request.delete_friend_request_value(receiver);
     if (!result || result === undefined){
         console.error("error in deleting accepted friend request");
         return null;
     }
-    return true;
+    return response.code(200).send({ message: 'success'});
 }
 
 
 async function block_friend(request, response){
-    const [keys, values] = modules.get_cookies(request.headers.cookie);
-    if (!keys?.includes('token')) {
-        return // Here was a redirect(response, '/login', 302);
-    }
-
+    const [keys, values] = modules.get_cookies(request);
     const data = request.body;
     if (!data || data === undefined){
         return response.code(400).send({ message: 'Invalid data'});
     }
-    const tokenIndex = keys.findIndex((key) => key === 'token');
-    const token = values[tokenIndex];
+
     let decoded;
     try {
-        decoded = await modules.get_jwt(token);
+        decoded = modules.get_jwt(values[keys.indexOf("token")]);
     } catch (err) {
-        return // Here was a redirect(response, '/login', 302);
+        return response.code(400).send({ message: 'Invalid decoded'});
     }
 
     // const userid = decoded.userid;
@@ -842,10 +841,58 @@ async function block_friend(request, response){
         console.error("error in deleting accepted friend request");
         return null;
     }
-    return true;
+    return response.code(200).send({ message: 'success'});
 }
 
 
+async function delete_account(request, response) {
+    const data = request.body;
+    const [keys, values] = modules.get_cookies(request);
+    const token = values[keys.indexOf('token')];
+    var decrypted;
+    try {
+        decrypted = modules.get_jwt(token);
+    } catch (err) {}
+    const decrypted_user = decrypted.userid;
+    await settings_db.delete_settings_value(decrypted_user);
+    response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+    response.raw.end(JSON.stringify({"Response": 'success'}));
+    return true;
+}
+
+async function play(request, response) {
+    console.log("play page requested");
+    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    if (!keys?.includes('token')) {
+        return send.redirect(response, '/login', 302);
+    }
+
+    const tokenIndex = keys.findIndex((key) => key === 'token');
+    const token = values[tokenIndex];
+    let decoded;
+    try {
+        decoded = await modules.get_jwt(token);
+    } catch (err) {
+        return send.redirect(response, '/login', 302);
+    }
+
+    const user = await users_db.get_users_value('self', decoded.userid);
+    if (!user || user === undefined){
+        return send.send_error_page('404.html', response, 404);
+    }
+
+    const status = await send.send_html('index.html', response, 200, async(data) => {
+        data = await utils.replace_all_templates(request, response);
+        data = data.replace("{{uname}}", user.username);
+        data = utils.show_page(data, "play_div");
+        return data;
+    });
+
+    if (!status || status === undefined || status < 0){
+        return `Error rendering play page: ${status}`;
+    }
+    return true;
+}
 
 export {
     login,
@@ -864,7 +911,9 @@ export {
     update_settings,
     friends,
     add_friends,
-    accept_friend,
+    accept_friends,
     reject_friend,
-    block_friend
+    block_friend,
+    delete_account,
+    play
 }

@@ -1,8 +1,7 @@
-const available_divs = ['change_avatar_div','user_prof_div', 'userpass_div', 'useravatar_div', 'username_div' ,'lang_prof_div' ,'settings_main_div', 'mfa_div','user_settings_div', 'register_div', 'profile_div', 'menu_div', 'login_div', 'home_div', 'game_div', 'friends_div', 'change_user_div', 'change_login_div']
+const available_divs = ['change_avatar_div','user_prof_div', 'userpass_div', 'useravatar_div', 'username_div' ,'lang_prof_div' ,'settings_main_div', 'mfa_div','user_settings_div', 'register_div', 'lang_div', 'profile_div', 'menu_div', 'login_div', 'home_div', 'game_div', 'friends_div', 'change_user_div', 'change_login_div']
 
 async function show_profile_page() : Promise<string>{
-    console.log("in here");
-    var innervalue = document.getElementById("personal_info")?.innerHTML;
+    var innervalue = document.getElementById("profile_div")?.innerHTML;
 
 
     const response = await fetch ('/profile', {
@@ -10,23 +9,59 @@ async function show_profile_page() : Promise<string>{
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(innervalue),
+        body: JSON.stringify({innervalue}),
     });
 
     if (!response.ok){
         alert("error with profile response");
-        return '';
+        return 'home_div';
     }
 
     const data = await response.json();
-    if (data.Response === 'success')
-        innervalue = data.Content;
+    if (data.Response === 'success'){
+        var element = document.getElementById("profile_div");
+        if (element){
+            element.innerHTML = data.Content;
+        }
+    }
     else if (data.Response === 'fail'){
         alert(`error with data of profile ${data.Content}`);
         return 'home_div';
     }
     return 'profile_div';
 }
+
+async function show_friends_page() : Promise<string>{
+    var innervalue = document.getElementById("friends_field")?.innerHTML;
+
+    console.log(innervalue);
+
+    const response = await fetch ('/friends', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({innervalue}),
+    });
+    if (!response.ok){
+        alert("error with friends response");
+        return 'home_div';
+    };
+
+    const data = await response.json();
+    if (data.Response === 'success'){
+        var element = document.getElementById("friends_field");
+        if (element){
+            element.innerHTML = data.Content;
+        }
+    }
+    else if (data.Response === 'fail'){
+        alert (`error with data of friends ${data.Content}`)
+        return 'home_div';
+    }
+    return 'friends_div';
+}
+
 
 function toggle_divs(render : string){
     available_divs.forEach(divs => {
@@ -107,6 +142,12 @@ async function where_am_i(path : string) : Promise<string> {
                 return 'login_div';
             }
             return 'user_prof_div';
+        case '/settings/language': 
+        if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'lang_div';
         case '/settings/mfa': 
         if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');
@@ -136,7 +177,7 @@ async function where_am_i(path : string) : Promise<string> {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
-            return 'friends_div';
+            return await show_friends_page();
         default: return 'home_div';
     }
 }

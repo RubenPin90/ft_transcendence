@@ -1,21 +1,27 @@
-// main.ts — fixed to keep the original `on()` event-bus style
-
 import {
   initGameCanvas,
   startGame,
   stopGame,
   setOnGameEnd,
-  GameMode
+  GameMode,
+  drawFrame,
 } from './game.js';
 import {
   renderTournamentList,
   joinByCode,
-  TourneySummary,
   renderTLobby,
   renderBracketOverlay
 } from './tournament.js';
 import { setupButtonsDelegated } from './buttons.js';
-import type { TLobbyState } from './types.js';
+import type {
+  TLobbyState,
+  MatchStub,
+  BracketRounds,
+  TournamentBracketMsg,
+  TourneySummary,
+  TournamentBracketPayload,
+  PlayerStub
+} from './types.js';
 import { setMyId, setCurrentTLobby, getCurrentTLobby } from './state.js';
 import { hideAllPages } from './helpers.js';
 import { setupMatchmakingHandlers } from './matchmaking.js';
@@ -24,18 +30,21 @@ import { on, send, getSocket } from './socket.js';
 // ────────────────────────────────────────────────────────────
 //  1.  guarantee we have a socket right away and recover userId
 // ────────────────────────────────────────────────────────────
-const socket = getSocket(); // getSocket() now builds WS with stored playerId as sub-protocol
+const socket = getSocket();
 
-on('welcome', (msg) => {
-  // server confirms what userId it finally assigned to this tab
-  const { userId } = msg.payload;
-  localStorage.setItem('playerId', userId);
-  (socket as any).userId = userId;           // keep a live copy on the WS object
-});
+let currentRoomId: string | null = null;
+let userId: string | null = null;
+let currentMatch: string | null = null;
 
 // ────────────────────────────────────────────────────────────
 //  2.  generic error banner
 // ────────────────────────────────────────────────────────────
+on('welcome', (msg) => {
+  const { userId } = msg.payload;
+  localStorage.setItem('playerId', userId);
+  (socket as any).userId = userId;
+});
+
 on('error', (msg) => {
   const banner = document.getElementById('error-banner')!;
   banner.textContent = msg.payload.message;
@@ -56,9 +65,54 @@ on('joinedTLobby', (msg) => {
   }
 });
 
-on<'tournamentBracketMsg'>('tournamentBracketMsg', (msg) => {
-  renderBracketOverlay(msg.payload.rounds);
+on<'matchAssigned'>('matchAssigned', (msg) => {
+  const { tournamentId, matchId, players } = msg.payload;
+  const myId   = localStorage.getItem('playerId') ?? (socket as any).userId;
+  const me     = players.find(p => p.id === myId);
+  const rival  = players.find(p => p.id !== myId);
+  if (!me || !rival) return;
+
+  localStorage.setItem('currentGameId', matchId);
+  currentRoomId = matchId;
+
+  setTimeout(() => {
+    send({ type: 'joinMatchRoom', payload: { tournamentId, matchId } });
+    navigate('/game/1v1');
+  }, 3000);
 });
+
+on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
+  const { tournamentId, rounds } = msg.payload as {
+    tournamentId: string;
+    rounds: MatchStub[][] | MatchStub[];
+  };
+
+  const normalized: MatchStub[][] = Array.isArray(rounds[0])
+    ? rounds as MatchStub[][]
+    : [rounds as MatchStub[]];
+
+  renderBracketOverlay(normalized);
+
+  if (!amHost()) return;
+
+  await new Promise(r => setTimeout(r, 700));
+
+  const firstRound = normalized[0];
+  const firstReal  = firstRound.find(
+    m => m.players.filter(p => p && !('pendingMatchId' in p)).length === 2
+  );
+
+  if (firstReal) {
+    const [A, B] = firstReal.players as PlayerStub[];
+    await showVersusOverlay(A.name, B.name);
+  }
+
+  send({
+    type   : 'beginRound',
+    payload: { tournamentId }
+  });
+});
+
 
 on('tournamentCreated', (msg) => {
   const TLobby: TLobbyState = msg.payload;
@@ -84,7 +138,7 @@ on('tournamentList', (msg) => {
 on('tLobbyState', (msg) => {
   const lobby = msg.payload as TLobbyState;
   const current = getCurrentTLobby();
-  if (current && current.id !== lobby.id) return; // ignore lobbies that are not ours
+  if (current && current.id !== lobby.id) return;
   setCurrentTLobby(lobby);
   renderTLobby(lobby, socket);
 });
@@ -101,43 +155,57 @@ on('matchFound', (msg) => {
   navigate(`/game/${mode === 'PVP' || mode === '1v1' ? '1v1' : 'pve'}`);
 });
 
-on<'matchAssigned'>('matchAssigned', (msg) => {
-  const { tournamentId, matchId, players } = msg.payload;
-  // fall back to the freshly received socket.userId if LS is empty (first load)
-  const myId = localStorage.getItem('playerId') ?? (socket as any).userId;
-  const me    = players.find(p => p.id === myId);
-  const rival = players.find(p => p.id !== myId);
-  if (!me || !rival) return;
-  showVersusOverlay(me.name, rival.name);
-  send({ type: 'joinMatchRoom', payload: { tournamentId, matchId } });
-  setTimeout(() => {
-    localStorage.setItem('currentGameId', matchId);
-    navigate('/game/1v1');
-  }, 3000);
-});
+
 
 // ────────────────────────────────────────────────────────────
-//  5.  UI helpers & routing (original code, lightly trimmed)
+//  5.  UI helpers & routing
 // ────────────────────────────────────────────────────────────
 let markQueued: (v: boolean) => void;
 let currentMode: string | null = null;
 let queued = false;
 
-function showVersusOverlay(left: string, right: string) {
-  let el = document.getElementById('vs-overlay') as HTMLElement | null;
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'vs-overlay';
-    el.style.cssText = `
-      position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-      background:rgba(0,0,0,.8);color:#fff;font:700 3rem sans-serif;z-index:9999;
-      text-align:center;`;
-    document.body.appendChild(el);
-  }
-  el.textContent = `${left}  vs  ${right}`;
-  el.style.opacity = '1';
-  setTimeout(() => { el.style.transition = 'opacity .4s'; el.style.opacity = '0'; }, 2500);
-  setTimeout(() => { el.remove(); }, 3000);
+function showVersusOverlay(left: string, right: string): Promise<void> {
+  return new Promise<void>((resolve) => {
+    let el = document.getElementById('vs-overlay') as HTMLElement | null;
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'vs-overlay';
+      el.style.cssText = `
+        position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+        background:rgba(0,0,0,.8); color:#fff; font:700 3rem/1 sans-serif; z-index:9999;
+        text-align:center; opacity:0; transition:opacity .4s;
+      `;
+      document.body.appendChild(el);
+    }
+
+    el.textContent   = `${left}  vs  ${right}`;
+    requestAnimationFrame(() => (el!.style.opacity = '1'));
+
+    const SHOW_MS = 2500;
+    const HIDE_MS = 400;
+
+    const hideTimer = setTimeout(() => {
+      el!.style.opacity = '0';
+    }, SHOW_MS);
+
+    const onEnd = () => {
+      cleanup();
+      resolve();
+    };
+    el.addEventListener('transitionend', onEnd, { once: true });
+
+    const fallbackTimer = setTimeout(() => {
+      cleanup();
+      resolve();
+    }, SHOW_MS + HIDE_MS + 50);
+
+    function cleanup() {
+      clearTimeout(hideTimer);
+      clearTimeout(fallbackTimer);
+      el?.removeEventListener('transitionend', onEnd);
+      el?.remove();
+    }
+  });
 }
 
 function joinByCodeWithSocket(code?: string) {
@@ -149,10 +217,13 @@ setOnGameEnd((winnerId: string) => {
 });
 
 const navigate = (path: string) => {
-  if (path === window.location.pathname) return;
-  history.pushState({}, '', path);
+  const samePath = path === window.location.pathname;
+  if (!samePath) {
+    history.pushState({}, '', path);
+  }
   route();
 };
+
 
 function route() {
   const path = window.location.pathname;
@@ -177,10 +248,6 @@ function route() {
     currentMode = mode;
     initGameCanvas();
     if (['pve', '1v1'].includes(mode)) startGame(mode as GameMode);
-    setOnGameEnd((winnerId) => {
-      stopGame();
-      alert(`Game over! Player ${winnerId} wins!`);
-    });
     return;
   }
   if (path.startsWith('/tournament/')) {
@@ -214,6 +281,12 @@ function leaveMatchmaking() {
   if (!queued) return;
   queued = false;
   send({ type: 'leaveQueue' });
+}
+
+function amHost(): boolean {
+  const lobby = getCurrentTLobby();
+  const myId  = localStorage.getItem('playerId') ?? (socket as any).userId;
+  return lobby?.hostId === myId;
 }
 
 function setupCodeJoinHandlers() {

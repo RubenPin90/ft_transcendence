@@ -226,6 +226,9 @@ async function show_accepted_friends(userid){
         return null;
     } finally {
         await db.close();
+        if (html == ''){
+            return `<span>No friends currenlty :'( you lonely MF</span>`;
+        }
         return html;
     }
 }
