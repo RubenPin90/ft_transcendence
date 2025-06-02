@@ -239,15 +239,6 @@ async function mfa(request, response) {
         if (select_number < 2)
             return data.replace("{{mfa-button}}", `${replace_string} <a href="/" data-link><button>Back</button></a> \
                 <button onclick="logout()">Logout</button>`);
-        select_menu = `
-        <form id="mfa_select_form">
-            <select name="mfa" id="mfa">
-                <option value="" selected disabled hidden>Choose a default authentication method</option>
-                    ${select_menu}
-            </select>
-            <button onclick="change_language()">Submit</button>
-        </form>
-        <br>`;
         return data.replace("{{mfa-button}}", `${replace_string} ${select_menu} <div><a href="/settings" data-link><button>Back</button></a></div> \
         <button onclick="logout()">Logout</button>`);
     });

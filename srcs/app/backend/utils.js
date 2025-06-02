@@ -677,11 +677,13 @@ async function replace_all_templates(request, response, state, override) {
 	settings_html_user_select_language_string += '<div id="lang_div" class="hidden">';
 	settings_html_user_select_language_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
 
-	settings_html_user_select_language_string += '<button onclick="change_language()">Change language</button>';
-	settings_html_user_select_language_string += `
-	<form id="language">
-		<select name="lang" id="lang">
-			<option value="" selected disabled hidden>Choose your main language</option>
+
+
+	settings_html_user_select_language_string += '<div id="mfa-button" class="flex flex-col items-center w-full mx-auto">'
+	settings_html_user_select_language_string += '<label for="language" class="justify-center font-bold text-2xl pb-5 text-yellow-100">Choose your main language</label>'
+	settings_html_user_select_language_string += '<form id="language" class="w-full mx-auto">'
+	settings_html_user_select_language_string += '<select name="lang" id="lang" class="w-full p-4 text-center rounded-lg text-lg font-[Roboto] border border-[#e0d35f] border-spacing-8 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]">'
+	settings_html_user_select_language_string += `<option value="" selected disabled hidden>Choose your main language</option>
 			<option value="af">Afrikaans</option>
 			<option value="az">Azərbaycanca</option>
 			<option value="id">Bahasa Indonesia</option>
@@ -783,24 +785,15 @@ async function replace_all_templates(request, response, state, override) {
 			<option value="ja">日本語</option>
 			<option value="zh-cn">简体中文</option>
 			<option value="zh-tw">繁體中文</option>
-			<option value="ko">한국어</option>
-		</select>
-		<a data-link>
-			<button onclick="change_language()">Submit</button>
-		</a>
-	</form>`
-	settings_html_user_select_language_string += '<div class="flex mt-12 w-1/2">';
-	settings_html_user_select_language_string += '<a href="/settings" class="flex-1" data-link>';
-	settings_html_user_select_language_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full"><span class="font-bold text-lg">Back</span></button></a>';
-	settings_html_user_select_language_string += `<a href="/" class="flex-1" data-link>
-            <button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
-                <span class="font-bold text-lg">Home</span>
-            </button>
-        </a>`;
-	settings_html_user_select_language_string += '';
-	settings_html_user_select_language_string += '';
-	settings_html_user_select_language_string += ' \
-	</div></div></div></div></div>';
+			<option value="ko">한국어</option>`
+	settings_html_user_select_language_string += '</select></form></div>'
+	settings_html_user_select_language_string += '<div class="flex mt-4 gap-4 w-full">'
+	settings_html_user_select_language_string += '<a class="flex-1">'
+	settings_html_user_select_language_string += '<button onclick="change_language()" type="submit" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">'
+	settings_html_user_select_language_string += '<span class="font-bold text-lg">Submit</span></button></a>'
+	settings_html_user_select_language_string += '<a href="/" data-link class="flex-1">'
+	settings_html_user_select_language_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">'
+	settings_html_user_select_language_string += '<span class="font-bold text-lg">Home</span></button></a></div></div></div></div>'
 	const settings_html_user_select_language_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_select_language_string);
 
 	var settings_html_user_profile_settings_string = "";

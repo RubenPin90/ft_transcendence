@@ -53,7 +53,7 @@ async function translate_text(content) {
 	} catch (err) {
 		available = false;
 	}
-	
+
 	var data;
 	if (available) {
 		data = await fs.readFile('./translations.json', 'utf8');
