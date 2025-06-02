@@ -7,6 +7,9 @@ interface PlayerState {
   y: number;
 }
 
+let searchingForMatch = false;
+
+
 export interface GameState {
   roomId: string;
   players: PlayerState[];
@@ -41,39 +44,34 @@ export function initGameCanvas(): void {
   ctx = canvas.getContext('2d');
 }
 
-let searchingForMatch = false; 
 
 export function startGame(mode: GameMode): void {
   ws = getSocket();
-
-  if (!currentRoomId) {
-    currentRoomId = localStorage.getItem('currentGameId');
-  }
   if (!userId) {
     userId = localStorage.getItem('playerId');
   }
 
   if (mode === 'pve') {
     if (searchingForMatch || currentRoomId) return;
-    searchingForMatch = true;
-
-    const sendJoinQueue = () => {
-      if (!searchingForMatch) return; // already matched → don’t re-queue
+    searchingForMatch = true; // ← важно установить до отправки
+  
+    const sendJoinQueue = () =>
       send({ type: 'joinQueue', payload: { mode } });
-    };
-
+  
     if (ws.readyState === WebSocket.OPEN) {
       sendJoinQueue();
     } else {
       ws.addEventListener('open', sendJoinQueue, { once: true });
     }
   }
+  
 
   if (!matchFoundListener) {
     matchFoundListener = (msg) => {
       searchingForMatch = false;
-      currentRoomId     = msg.payload.gameId;
-      userId            = msg.payload.userId;
+      currentRoomId = msg.payload.gameId;
+      userId        = msg.payload.userId;
+      localStorage.setItem('currentGameId', currentRoomId);
       console.log(`Match ready: room=${currentRoomId}, user=${userId}`);
     };
     on('matchFound', matchFoundListener);
@@ -99,14 +97,12 @@ export function startGame(mode: GameMode): void {
 }
 
 export function stopGame(): void {
+  searchingForMatch = false;
   if (ws && ws.readyState === WebSocket.OPEN) {
     send({
       type: 'leaveGame',
       payload: { roomId: currentRoomId, userId }
     });
-    searchingForMatch = false;
-    currentRoomId = null;
-    userId        = null;
   }
 
   if (matchFoundListener) {
