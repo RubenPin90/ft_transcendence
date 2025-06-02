@@ -9,6 +9,7 @@ import * as friends_request from '../database/db_friend_request.js'
 import qrcode from 'qrcode';
 import { json } from 'stream/consumers';
 import { response } from 'express';
+import { promises as fs, utimes } from 'fs';
 import { encrypt_google } from './utils.js';
 import http from 'http';
 
@@ -262,33 +263,21 @@ async function user(request, response){
         return // Here was a redirect(response, '/login', 302);
     const data = request.body;
     if (data.Function == "change_language") {
-        console.log('1------------------');
         const new_lang = data.Lang;
-        console.log('2------------------');
-        // console.log(modules.get_jwt(values[keys.indexOf('lang')]));
-        if (keys?.indexOf('lang')) {
-            const old_lang = modules.get_jwt(values[keys.indexOf('lang')]);
-            console.log('3------------------');
-            console.log(old_lang.userid, new_lang);
-            if (old_lang.userid != new_lang) {
-                console.log('4.1------------------');
-                modules.delete_cookie(response, 'lang');
-                console.log('4.2------------------');
-            }
-        }
-        console.log(new_lang);
+        const old_lang = modules.get_jwt(values[keys.indexOf('lang')]);
         const new_lang_decrypted = modules.create_jwt(new_lang, '1h');
-        console.log(new_lang_decrypted);
-        console.log('5------------------');
-        // modules.set_cookie(response, 'lang', new_lang_decrypted, 3600);
-        console.log('6------------------');
-        const page_translated = await translator.cycle_translations(data.Page, new_lang);
-        // console.log(page_translated);
-        console.log('7------------------');
+        modules.set_cookie(response, 'lang', new_lang_decrypted, 3600);
         const userid = modules.get_jwt(values[keys.indexOf('token')]);
         await settings_db.update_settings_value('lang', new_lang, userid.userid);
-        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-        response.raw.end(JSON.stringify({"Response": 'success', 'Content': page_translated}));
+        console.log(modules.get_jwt(values[keys.indexOf('lang')]));
+        const new_page = await translator.cycle_translations(data.Page, new_lang, old_lang);
+        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'success', 'Content': new_page}); // 'Content': data.Page
+        return true;
+    }
+
+    if (data.Function == "change_language_site") {
+        // const new_page = await fs.readFile('./translations.json', 'utf8');
+        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'success', 'Content': data.Page}); // 'Content': data.Page
         return true;
     }
 

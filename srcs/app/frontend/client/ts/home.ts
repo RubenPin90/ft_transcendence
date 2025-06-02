@@ -1,4 +1,4 @@
-async function Logout() {
+async function Log_out() {
     //console.log("In Logout function");
     
     try{

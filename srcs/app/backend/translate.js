@@ -65,19 +65,56 @@ async function translate_text(content) {
 	await fs.writeFile('./translations.json', JSON.stringify(data, null, 2), 'utf8');
 }
 
-async function find_translation(to_find, lang) {
-	var data = await fs.readFile("./translations.json", 'utf8');
-	data = JSON.parse(data);
+async function find_translation(to_find, lang, override) {
+	var data;
+	if (override == undefined) {
+		data = await fs.readFile("./translations.json", 'utf8');
+		data = JSON.parse(data);
+	} else {
+		data = override;
+	}
 	const response = data[to_find];
-	return response.content[lang];
+	return response?.content[lang];
 }
 
-async function cycle_translations(text, lang) {
+function find_key_by_value(obj, value, lang = "en") {
+    for (const key in obj) {
+        if (
+            obj[key].content &&
+            obj[key].content[lang] === value
+        ) {
+            return key;
+        }
+    }
+    return null;
+}
+
+function get_translated_keys(translations, lang) {
+    const result = {};
+    for (const key in translations) {
+		const value = translations[key]?.content?.[lang];
+        if (value) {
+			result[value] = translations[key];
+        }
+    }
+    return result;
+}
+
+async function cycle_translations(text, lang, origin) {
 	const data = await fs.readFile("./translations.json", 'utf8');
 	const json_data = await JSON.parse(data);
 	const json_keys = Object.keys(json_data);
-	for (var index = 0; index < json_keys.length; index++) {
-		text = text.replace(json_keys[index], await find_translation(json_keys[index], lang));
+	if (origin == undefined) {
+		for (var index = 0; index < json_keys.length; index++)
+			text = text.replaceAll(json_keys[index], await find_translation(json_keys[index], lang, json_data));
+		return text;
+	}
+	const translated_keys = get_translated_keys(json_data, origin.userid);
+	const json_keys2 = Object.keys(translated_keys);
+	const json_data2 = await JSON.parse(data);
+	for (var index = 0; index < json_keys2.length; index++) {
+		const key = find_key_by_value(json_data2, json_keys2[index], origin.userid);
+		text = text.replaceAll(json_keys2[index], await find_translation(key, lang, json_data));
 	}
 	return text;
 }

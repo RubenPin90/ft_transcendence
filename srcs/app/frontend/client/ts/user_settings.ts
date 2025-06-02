@@ -66,7 +66,7 @@ async function delete_account() {
     try {
         data = await response.json();
         if (data.Response == "success")
-            Logout();
+            Log_out();
     } catch (err) {
         console.log(err);
     }

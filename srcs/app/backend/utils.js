@@ -581,7 +581,7 @@ function split_DOM_elemets(row) {
     return {indent, open_tag, text, closing_tag};
 }
 
-async function replace_all_templates(request, response, state) {
+async function replace_all_templates(request, response, state, override) {
 	const github_login = github_input_handler();
 	const google_login = google_input_handler();
 
@@ -1047,11 +1047,14 @@ async function replace_all_templates(request, response, state) {
 	const [keys, values] = modules.get_cookies(request);
 	// const user_encrypt = modules.get_jwt(values[0]);
 	// const lang_encrypt = modules.get_jwt(values[1]);
-	if (keys?.includes('lang')) {
+	if (keys?.includes('lang') && (override == undefined || !override)) {
 		const lang_encoded = values[keys.indexOf('lang')];
 		const lang_decrypted = modules.get_jwt(lang_encoded);
 		if (lang_decrypted.userid != "en")
 			index_html = await translator.cycle_translations(index_html, lang_decrypted.userid);
+	} else if (override != undefined) {
+		if (override != "en")
+			index_html = await translator.cycle_translations(index_html, override);
 	}
 	const token = values[keys.indexOf('token')];
 	if (!token)
