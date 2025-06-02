@@ -49,7 +49,7 @@ function set_cookie(response, key, value, maxAge) {
 }
 
 function delete_cookie(response, key) {
-	response.setCookie(key, value, {
+	response.setCookie(key, '', {
 		path: '/',
 		httpOnly: true,
 		secure: true,     // auf true setzen, wenn du HTTPS verwendest

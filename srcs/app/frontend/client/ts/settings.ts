@@ -347,17 +347,15 @@ async function change_language() {
             alert("Error: " + result.message);
         }
         var lang_data;
-        try {
-            lang_data = await response.json();
-            if (!lang_data)
-                return;
-            if (lang_data.Response == 'success') {
-                full_page.innerHTML = lang_data.Content;
-                console.log(lang_data);
-            }
-            // lang_field.innerHTML = `${splited[0]}<br>${usernameValue}`;
-            // console.log(lang_field.innerHTML);
-        } catch (err) {}
+        lang_data = await response.json();
+        if (!lang_data)
+            return;
+        if (lang_data.Response == 'success') {
+            full_page.innerHTML = lang_data.Content;
+            console.log(lang_data);
+        }
+        // lang_field.innerHTML = `${splited[0]}<br>${usernameValue}`;
+        // console.log(lang_field.innerHTML);
 
     }
     catch (err){

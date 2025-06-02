@@ -257,7 +257,7 @@ async function mfa(request, response) {
 
 
 async function user(request, response){
-    var [keys, values] = modules.get_cookies(request.headers.cookie);
+    var [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token'))
         return // Here was a redirect(response, '/login', 302);
     const data = request.body;
