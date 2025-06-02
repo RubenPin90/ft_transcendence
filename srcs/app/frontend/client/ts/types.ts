@@ -50,5 +50,5 @@ export interface TournamentBracketMsg {
 
 export interface TournamentBracketPayload {
   tournamentId: string;
-  rounds: MatchStub[][] | MatchStub[];   // может быть 1-мерный или 2-мерный массив
+  rounds: MatchStub[][] | MatchStub[];
 }

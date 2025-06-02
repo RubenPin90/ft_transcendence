@@ -80,6 +80,7 @@ export default fastifyPlugin(async function routes(fastify) {
 
   fastify.post('/field_login', (req, reply) => views.field_login(req, reply));
   fastify.post('/field_signup', (req, reply) => views.field_signup(req, reply));
+  fastify.get('/play', (req, reply) => views.play(req, reply));
 
   fastify.post('/home', async (request, reply) => {
     try {

@@ -83,11 +83,14 @@ wss.on('connection', (ws, req) => {
   ws.userId = userId;
   ws.inGame = false;
   ws.currentGameId = null;
-
   console.log('🔌 WS connected:', userId);
 
-  matchManager.registerSocket(userId, ws);
+  ws.send(JSON.stringify({
+    type: 'welcome',
+    payload: { userId }
+  }));
 
+  matchManager.registerSocket(userId, ws);
   ws.on('message', (raw) => handleClientMessage(ws, raw, matchManager, tournamentManager));
 
   ws.on('close', () => {

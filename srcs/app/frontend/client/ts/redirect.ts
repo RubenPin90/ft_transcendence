@@ -1,3 +1,19 @@
+// import {
+//     navigate,
+//     setupCodeJoinHandlers,
+//     route,
+//     markQueued
+// } from './play.js';
+
+// import { getSocket } from './socket.js';
+
+import { check } from './play.js';
+
+// import { setupButtonsDelegated } from './buttons.js';
+// import { setupMatchmakingHandlers } from './matchmaking.js';
+
+
+
 const available_divs = ['change_avatar_div','user_prof_div', 'userpass_div', 'useravatar_div', 'username_div' ,'lang_prof_div' ,'settings_main_div', 'mfa_div','user_settings_div', 'register_div', 'profile_div', 'menu_div', 'login_div', 'home_div', 'game_div', 'friends_div', 'change_user_div', 'change_login_div']
 
 async function show_profile_page() : Promise<string>{
@@ -75,6 +91,7 @@ async function where_am_i(path : string) : Promise<string> {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
+            check();
             return 'play_div';
         case '/profile': 
             if (!await check_cookie_fe()) {
@@ -169,6 +186,18 @@ document.body.addEventListener('click', (event) => {
     }
 });
 
+// function check(){
+//     const path = window.location.pathname;
+//     if (path != '/login' && path != '/register' && !document.cookie.includes('session_id')) {
+//         document.addEventListener('DOMContentLoaded', () => {
+//             console.log('[play.ts] DOMContentLoaded');
+//             setupCodeJoinHandlers();
+//             setupButtonsDelegated(navigate, getSocket());
+//             ({ markQueued } = setupMatchmakingHandlers(navigate, getSocket()));
+//             window.addEventListener('popstate', route);
+//             route();
+//     });
+// };
 
 window.addEventListener('popstate', handleRouteChange)
 

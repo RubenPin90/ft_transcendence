@@ -53,7 +53,7 @@ export function startGame(mode: GameMode): void {
 
   if (mode === 'pve') {
     if (searchingForMatch || currentRoomId) return;
-    searchingForMatch = true; // ← важно установить до отправки
+    searchingForMatch = true;
   
     const sendJoinQueue = () =>
       send({ type: 'joinQueue', payload: { mode } });

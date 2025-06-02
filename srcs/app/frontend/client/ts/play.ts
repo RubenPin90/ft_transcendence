@@ -30,7 +30,7 @@ import { on, send, getSocket } from './socket.js';
 // ────────────────────────────────────────────────────────────
 //  1.  guarantee we have a socket right away and recover userId
 // ────────────────────────────────────────────────────────────
-const socket = getSocket();
+// const socket = getSocket();
 
 let currentRoomId: string | null = null;
 let userId: string | null = null;
@@ -39,10 +39,13 @@ let currentMatch: string | null = null;
 // ────────────────────────────────────────────────────────────
 //  2.  generic error banner
 // ────────────────────────────────────────────────────────────
+console.log('[play.ts] Initializing play module...');
 on('welcome', (msg) => {
-  const { userId } = msg.payload;
-  localStorage.setItem('playerId', userId);
-  (socket as any).userId = userId;
+  const id = msg.payload.userId;
+  localStorage.setItem('playerId', id);
+
+  const sock = getSocket();
+  (sock as any).userId = id;
 });
 
 on('error', (msg) => {
@@ -61,13 +64,13 @@ on('joinedTLobby', (msg) => {
   if (TLobby) {
     setCurrentTLobby(TLobby);
     history.pushState({}, '', `/tournament/${TLobby.code}`);
-    renderTLobby(TLobby, socket);
+    renderTLobby(TLobby, getSocket());
   }
 });
 
 on<'matchAssigned'>('matchAssigned', (msg) => {
   const { tournamentId, matchId, players } = msg.payload;
-  const myId   = localStorage.getItem('playerId') ?? (socket as any).userId;
+  const myId   = localStorage.getItem('playerId') ?? (getSocket() as any).userId;
   const me     = players.find(p => p.id === myId);
   const rival  = players.find(p => p.id !== myId);
   if (!me || !rival) return;
@@ -119,11 +122,11 @@ on('tournamentCreated', (msg) => {
   setMyId(TLobby.hostId);
   localStorage.setItem('playerId', TLobby.hostId);
   history.pushState({}, '', `/tournament/${TLobby.code}`);
-  renderTLobby(TLobby, socket);
+  renderTLobby(TLobby, getSocket());
 });
 
 on('tournamentUpdated', (msg) => {
-  renderTLobby(msg.payload as TLobbyState, socket);
+  renderTLobby(msg.payload as TLobbyState, getSocket());
 });
 
 let tournaments: TourneySummary[] = [];
@@ -140,7 +143,7 @@ on('tLobbyState', (msg) => {
   const current = getCurrentTLobby();
   if (current && current.id !== lobby.id) return;
   setCurrentTLobby(lobby);
-  renderTLobby(lobby, socket);
+  renderTLobby(lobby, getSocket());
 });
 
 // ────────────────────────────────────────────────────────────
@@ -209,7 +212,7 @@ function showVersusOverlay(left: string, right: string): Promise<void> {
 }
 
 function joinByCodeWithSocket(code?: string) {
-  joinByCode(socket, code);
+  joinByCode(getSocket(), code);
 }
 
 setOnGameEnd((winnerId: string) => {
@@ -276,14 +279,30 @@ function route() {
   // otherwise: do nothing (we’re probably on /login or /register, where #main-menu is not present).
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  setupCodeJoinHandlers();
-  setupButtonsDelegated(navigate, socket);
-  ({ markQueued } = setupMatchmakingHandlers(navigate, socket));
-  window.addEventListener('popstate', route);
-  route();
-});
+// document.addEventListener('DOMContentLoaded', () => {
+//   console.log('[play.ts] DOMContentLoaded');
+//   setupCodeJoinHandlers();
+//   setupButtonsDelegated(navigate, getSocket());
+//   ({ markQueued } = setupMatchmakingHandlers(navigate, getSocket()));
+//   window.addEventListener('popstate', route);
+//   route();
+// });
 
+export function check(){
+  console.log("in check()");
+  const path = window.location.pathname;
+  if (path != '/login' && path != '/register' && !document.cookie.includes('session_id') && path === '/play') {
+    console.log('[play.ts] No session_id cookie, redirecting to /login');
+    console.log('[play.ts] DOMContentLoaded');
+    setupCodeJoinHandlers();
+    setupButtonsDelegated(navigate, getSocket());
+    ({ markQueued } = setupMatchmakingHandlers(navigate, getSocket()));
+    window.addEventListener('popstate', route);
+    route();
+}}
+
+window.addEventListener('popstate', check);
+      
 function enterMatchmaking() {
   if (queued) return;
   queued = true;
@@ -298,11 +317,11 @@ function leaveMatchmaking() {
 
 function amHost(): boolean {
   const lobby = getCurrentTLobby();
-  const myId  = localStorage.getItem('playerId') ?? (socket as any).userId;
+  const myId  = localStorage.getItem('playerId') ?? (getSocket() as any).userId;
   return lobby?.hostId === myId;
 }
 
-function setupCodeJoinHandlers() {
+export function setupCodeJoinHandlers() {
   const codeInput = document.getElementById('t-code-input') as HTMLInputElement | null;
   const codeBtn   = document.getElementById('t-code-btn') as HTMLButtonElement | null;
   if (!codeInput || !codeBtn) return;

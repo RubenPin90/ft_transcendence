@@ -7,11 +7,13 @@ export function setupButtonsDelegated(
   navigate: (path: string) => void,
   TLobbySocket: WebSocket
 ) {
+  console.log('buttonsInitialized:', buttonsInitialized);
   if (buttonsInitialized) return;
   buttonsInitialized = true;
 
   // --- Handle clicks inside the Main Menu ---
   const mainMenu = document.getElementById('main-menu');
+  console.log('Main menu:', mainMenu);
   if (mainMenu) {
     mainMenu.addEventListener('click', (event) => {
       const target = event.target as HTMLElement;

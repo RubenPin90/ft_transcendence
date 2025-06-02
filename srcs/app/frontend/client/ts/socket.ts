@@ -25,7 +25,7 @@ type Listener<T extends MsgType> = (msg: Extract<ServerMessage, { type: T }>) =>
 
 const listeners: { [K in MsgType]?: Set<Listener<any>> } = {};
 
-let socket: WebSocket | null = null;
+let socket: CustomWebSocket | null = null;
 
 function createSocket(): WebSocket {
   const ws = new WebSocket(
@@ -46,24 +46,25 @@ function createSocket(): WebSocket {
   return ws;
 }
 
+// let socket: CustomWebSocket | null = null;
 
+interface CustomWebSocket extends WebSocket {
+  _justFailed?: boolean;
+}
 
 function ensureSocket(): WebSocket {
-  // ⬇️ Return the existing socket while it is CONNECTING (0) or OPEN (1)
   if (socket && socket.readyState <= WebSocket.OPEN) return socket;
 
-  // ⬇️ *If we just failed*, give the stack a chance to unwind so we don’t spin
-  if (socket && socket._justFailed) return socket as WebSocket; // bailout guard
+  if (socket && socket._justFailed) return socket;
 
-  socket = createSocket();
-  (socket as any)._justFailed = false;
+  socket = createSocket() as CustomWebSocket;
+  socket._justFailed = false;
 
   socket.addEventListener('close', () => {
-    // Mark it as failed this tick; next tick we allow one reconnection try
-    (socket as any)._justFailed = true;
+    socket!._justFailed = true;
     setTimeout(() => {
-      if (socket) (socket as any)._justFailed = false;
-    }, 250);               // ¼ s throttle – plenty to avoid a tight loop
+      if (socket) socket._justFailed = false;
+    }, 250);
     socket = null;
   });
 
@@ -77,7 +78,7 @@ export function getSocket(): WebSocket {
 
 export function on<T extends MsgType>(type: T, cb: Listener<T>): void {
   (listeners[type] ??= new Set()).add(cb as any);
-  ensureSocket();
+  // ensureSocket();
 }
 
 export function off<T extends MsgType>(type: T, cb: Listener<T>): void {
