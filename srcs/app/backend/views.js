@@ -592,13 +592,6 @@ async function update_settings(request, response) {
 
     const { email, password, avatar } = data;
 
-    console.log("----------------------");
-    console.log(email);
-    console.log(password);
-    console.log(avatar);
-    console.log("----------------------");
-
-
     const tokenIndex = keys.findIndex((key) => key === 'token');
     const token = values[tokenIndex];
     let decoded;
@@ -659,7 +652,6 @@ async function update_user(request, response) {
     }
 
     const userid = decoded.userid;
-    console.log("DATA: ", data);
     try {
         const result = await users_db.update_users_value('username', data, userid);
         if (result) {
@@ -714,15 +706,12 @@ async function friends(request, response){
     // });
 
 
-
-
     // const status = await send.send_html('friends.html', response, 200);
     // if (!status || status === undefined){
     //     return `Error rendering user settings page: ${status}`;
     // }
     return true;
 }
-
 
 async function add_friends(request, response){
     const [keys, values] = modules.get_cookies(request);
@@ -810,7 +799,6 @@ async function reject_friend(request, response){
     return response.code(200).send({ message: 'success'});
 }
 
-
 async function block_friend(request, response){
     const [keys, values] = modules.get_cookies(request);
     const data = request.body;
@@ -836,7 +824,6 @@ async function block_friend(request, response){
     }
     return response.code(200).send({ message: 'success'});
 }
-
 
 async function delete_account(request, response) {
     const data = request.body;
@@ -887,6 +874,86 @@ async function play(request, response) {
     return true;
 }
 
+async function set_up_mfa_buttons(request, response){
+    const [keys, values] = modules.get_cookies(request);
+    if (!keys?.includes('token')) {
+        return login(request, response);
+    }
+
+    var inner = request.body.innervalue;
+    var settings_html_mfa_string = "";
+	// settings_html_mfa_string += '<div id="mfa_div" class="hidden">';
+	settings_html_mfa_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
+	settings_html_mfa_string += '<div id="mfa"></div>'
+    settings_html_mfa_string += '<div id="mfa-button">'
+
+
+    //if (no or only one 2FA selected dont show this element)
+    settings_html_mfa_string +='<div class="flex gap-2">'
+    settings_html_mfa_string +='<form id="mfa_options" class="w-5/6">'
+    settings_html_mfa_string +='<select name="lang" id="select_mfa" class="w-full p-4 text-center rounded-xl text-2xl border border-[#e0d35f] border-spacing-8 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]">'
+    settings_html_mfa_string +='<option value="" selected disabled hidden>Choose your main 2FA</option>'
+    settings_html_mfa_string +='{{2FAOPTIONS}}'
+    settings_html_mfa_string +='</select></form>'
+
+    settings_html_mfa_string +='<div class="flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl cursor-pointer">'
+    settings_html_mfa_string +='<button onclick="change_preffered_mfa()">'
+    settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">'
+    settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />'
+    settings_html_mfa_string +='</svg></button></div></div>'
+
+
+
+
+
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex gap-2">';
+	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_otc()">';
+	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
+	settings_html_mfa_string +='<span class="button_text">Create OTC</span></button></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div id="trash_otc" class="trash_disable">';
+	settings_html_mfa_string +='<button id="trash_otc_button" class="pointer-events-none">';
+	settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
+	settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg></button></div></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex gap-2">';
+	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_custom_code()">';
+	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
+	settings_html_mfa_string +='<span class="button_text">Create custom 6 digit code</span></button></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div id="trash_custom" class="trash_enable">';
+	settings_html_mfa_string +='<button id="trash_custom_button" class="pointer-events-none">';
+	settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
+	settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg></button></div></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex gap-2">';
+	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_email()">';
+	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
+	settings_html_mfa_string +='<span class="button_text">Enable email authentication</span></button></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div id="trash_email" class="trash_disable">';
+	settings_html_mfa_string +='<button id="trash_email_button" class="pointer-events-none">';
+	settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
+	settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />';
+	settings_html_mfa_string +='</svg></button></div></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex mt-12 gap-4 w-full">';
+	settings_html_mfa_string +='<a class="flex-1" href="/settings" data-link>';
+	settings_html_mfa_string +='<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	settings_html_mfa_string +='<span class="font-bold text-lg">Back</span>';
+	settings_html_mfa_string +='</button></a>';
+	settings_html_mfa_string +='<a href="/" class="flex-1" data-link>';
+	settings_html_mfa_string +='<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	settings_html_mfa_string +='<span class="font-bold text-lg">Home</span>';
+	settings_html_mfa_string +='</button></a></div></div></div></div></div>';
+	// settings_html_mfa_string +='</div>';
+    return response.code(200).headers({'Content-Type': 'application/json','Access-Control-Allow-Origin': '*'}).send({"Response": "success","Content": settings_html_mfa_string});
+}
+
 export {
     login,
     register,
@@ -908,5 +975,6 @@ export {
     reject_friend,
     block_friend,
     delete_account,
-    play
+    play,
+    set_up_mfa_buttons
 }

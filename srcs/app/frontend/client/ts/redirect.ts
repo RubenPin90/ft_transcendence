@@ -34,8 +34,6 @@ async function show_profile_page() : Promise<string>{
 async function show_friends_page() : Promise<string>{
     var innervalue = document.getElementById("friends_field")?.innerHTML;
 
-    console.log(innervalue);
-
     const response = await fetch ('/friends', {
         method: 'POST',
         headers: {
@@ -100,6 +98,38 @@ async function check_cookie_fe(): Promise<boolean> {
     return false;
 }
 
+async function render_mfa() : Promise<string>{
+    // console.log("HERE");
+    var innervalue = document.getElementById("mfa_div")?.innerHTML;
+
+    const response = await fetch ('/mfa_setup', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({innervalue}),
+    });
+    if (!response.ok){
+        alert("error with MFA response");
+        return 'home_div';
+    };
+
+    const data = await response.json();
+    console.log("RESPONSE: ", data.Response);
+    if (data.Response === 'success'){
+        var element = document.getElementById("mfa_div");
+        if (element){
+            element.innerHTML = data.Content;
+        }
+        console.log("ELEMENT: ", element?.innerHTML);
+    }
+    else if (data.Response === 'fail'){
+        alert (`error with data of MFA ${data.Content}`)
+        return 'home_div';
+    }
+    return 'mfa_div';
+}
+
 //TODO add more routes
 //TODO change window.location.href since it force refreshes the webpage
 async function where_am_i(path : string) : Promise<string> {
@@ -147,7 +177,7 @@ async function where_am_i(path : string) : Promise<string> {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
-            return 'mfa_div';
+            return await render_mfa();
         case '/settings/user/change_user': 
         if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');
