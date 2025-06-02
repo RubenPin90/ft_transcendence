@@ -86,7 +86,7 @@ async function update_users_value(search_value, value, self) {
         filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
-
+ 
     try {
         const check = await db.get(`
             SELECT * FROM settings
