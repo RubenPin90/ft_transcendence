@@ -257,22 +257,39 @@ async function mfa(request, response) {
 
 
 async function user(request, response){
-    var [keys, values] = modules.get_cookies(request.headers.cookie);
+    var [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token'))
         return // Here was a redirect(response, '/login', 302);
     const data = request.body;
     if (data.Function == "change_language") {
+        console.log('1------------------');
         const new_lang = data.Lang;
+        console.log('2------------------');
+        // console.log(modules.get_jwt(values[keys.indexOf('lang')]));
         if (keys?.indexOf('lang')) {
             const old_lang = modules.get_jwt(values[keys.indexOf('lang')]);
-            if (old_lang != new_lang)
+            console.log('3------------------');
+            console.log(old_lang.userid, new_lang);
+            if (old_lang.userid != new_lang) {
+                console.log('4.1------------------');
                 modules.delete_cookie(response, 'lang');
+                console.log('4.2------------------');
+            }
         }
+        console.log(new_lang);
         const new_lang_decrypted = modules.create_jwt(new_lang, '1h');
-        modules.set_cookie(response, 'lang', new_lang_decrypted, 3600);
+        console.log(new_lang_decrypted);
+        console.log('5------------------');
+        // modules.set_cookie(response, 'lang', new_lang_decrypted, 3600);
+        console.log('6------------------');
         const page_translated = await translator.cycle_translations(data.Page, new_lang);
+        // console.log(page_translated);
+        console.log('7------------------');
+        const userid = modules.get_jwt(values[keys.indexOf('token')]);
+        await settings_db.update_settings_value('lang', new_lang, userid.userid);
         response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
         response.raw.end(JSON.stringify({"Response": 'success', 'Content': page_translated}));
+        return true;
     }
 
     const status = await send.send_html('settings.html', response, 200, async  (data) => {
