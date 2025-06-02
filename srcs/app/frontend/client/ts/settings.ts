@@ -307,23 +307,38 @@ async function remove_email() {
     }
 }
 
-// async function change_language() {
-//     const response = await fetch("/settings/user", {
-//         method: 'POST',
-//         headers: {'Content-Type': 'application/json'},
-//         body: JSON.stringify({'Function': 'change_language'})
-//     });
-
-//     if (!response.ok)
-//         throw new Error(`HTTP Fehler! Status: ${response.status}`);
-
-//     let data;
-//     try {
-        
-//     } catch (err) {
-//         console.error(`Error in change language: ${err}`)
-//     }
-// }
+async function change_language() {
+    const langField = document.getElementById('lang') as HTMLInputElement;
+    try{
+        const lang = langField.value;
+        const full_page = document.getElementById('main_body');
+        if (!full_page)
+            return;
+        if (!lang){
+            alert("Please enter a language"); //TODO MAKE IT MORE APPEALING WITH CSS
+            return;
+        }
+        const response = await fetch('/settings/user', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({'Function': 'change_language', 'Lang': lang, 'Page': full_page.innerHTML}),
+        });
+        var lang_data = await response.json();
+        if (!lang_data)
+            return;
+        if (lang_data.Response == 'success') {
+            full_page.innerHTML = lang_data.Content;
+            
+        }
+    }
+    catch (err){
+        console.error("error with update: " + err);
+        alert("error with update");
+    };
+}
 
 // async function logout() {
 //     delete_cookie("token");
