@@ -163,7 +163,7 @@ async function create_custom_code() {
                 });
 
                 const data = await response.json();
-                if (data.Response === "Success") {
+                if (data.Response === "success") {
                     qrcodeDiv.innerHTML = '<h2>Verify your 2FA custom 6 diggit code</h2>';
                     inputField.value = "";
                     nextButton.removeEventListener('click', firstClick);
