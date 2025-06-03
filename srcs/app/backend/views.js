@@ -96,8 +96,10 @@ async function register(request, response) {
 }
 
 async function home(request, response) {
-    console.log(await utils.check_for_invalid_token(request, response));
     var [keys, values] = modules.get_cookies(request);
+    console.log(await utils.check_for_invalid_token(request, response, keys, values));
+    if (await utils.check_for_invalid_token(request, response, keys, values) == true)
+        return await login(request, response);
     if (request.url === '/' && !keys?.includes('token'))
         return await login(request, response);
     const code = request.query.code;
@@ -557,7 +559,8 @@ async function logout(request, response) {
             maxAge: 0
         });
     }
-    response.code(200).send({ message: 'Logged out successfully' });
+    if (request.body)
+        response.code(200).send({ message: 'Logged out successfully' });
 }
 
 

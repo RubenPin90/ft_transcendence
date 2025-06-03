@@ -10,8 +10,9 @@ import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
 import * as friends_request from '../database/db_friend_request.js'
 import { promises as fs, utimes } from 'fs';
-import { profile } from 'console';
+import { log, profile } from 'console';
 import * as translator from './translate.js';
+import * as views from './views.js';
 
 dotenv.config();
 
@@ -1116,8 +1117,25 @@ async function get_data(request, response) {
 }
 
 
-async function check_for_invalid_token(request, response){
-	console.log(request.body);
+async function check_for_invalid_token(request, response, keys, values) {
+	if (keys.length == 0)
+		return false;
+	const token_decrypted = modules.get_jwt(values[keys.indexOf('token')]);
+	if (token_decrypted < 0) {
+		await views.logout(request, response);
+		return true;
+	}
+	const token = token_decrypted.userid;
+	if (!token || token == undefined || token < 0) {
+		await views.logout(request, response);
+		return true;
+	}
+	const check_settings = await settings_db.get_settings_value('self', token);
+	if (check_settings == undefined) {
+		await views.logout(request, response);
+		return true;
+	}
+	return false;
 }
 
 

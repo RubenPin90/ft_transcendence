@@ -33,7 +33,7 @@ function get_jwt(token) {
 	try {
 		token2 = jwt.verify(token, JWT_KEY);
 	} catch (err) {
-		console.log(err);
+		// console.log(err);
 		return -1;
 	}
 	return token2;
