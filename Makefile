@@ -74,9 +74,9 @@ re: .init_setup
 	fi
 	@echo "Initial setup completed!"
 
-clean:
-	@$(CMD) $(FLAG) $(COMPOSE_FILE) down -v
+clean: 
 	@if [ -f $(ENV_FILE) ]; then \
+		$(CMD) $(FLAG) $(COMPOSE_FILE) down -v \
 		echo "Removing .env file..."; \
 		rm -rf $(ENV_FILE); \
     fi
