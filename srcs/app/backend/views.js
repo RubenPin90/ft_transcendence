@@ -22,16 +22,13 @@ async function login(request, response) {
         if (!parsed || parsed === undefined || parsed < 0)
             return true;
         const token = modules.create_jwt(parsed.settings.self, '1h');
-        // const lang = modules.create_jwt(parsed.settings.lang, '1h');
-        const lang = modules.create_jwt('en', '1h'); //todo change later to actual settings value
+        const lang = modules.create_jwt(parsed.settings.lang, '1h');
 
         modules.set_cookie(response, 'token', token, 3600);
         modules.set_cookie(response, 'lang', lang, 3600);
 
-        // response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-        // response.raw.end(JSON.stringify({"Response": 'success', "Settings": parsed.settings, "Mfa": parsed.mfa, "Content": null}));
-        return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({"Response": 'success', "Settings": parsed.settings, "Mfa": parsed.mfa, "Content": null})
-        // return true;
+        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'success', "Settings": parsed.settings, "Mfa": parsed.mfa, "Content": null})
+        return true;
     }
     await send.send_html('index.html', response, 200, async (data) => {
         data = await utils.replace_all_templates(request, response, 1);
@@ -49,32 +46,27 @@ async function register(request, response) {
         const replace_data = request.body;
         const check_settings = await settings_db.get_settings_value('email', replace_data.email);
         if (check_settings || check_settings !== undefined) {
-            response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-            response.raw.end(JSON.stringify({"Response": 'User already exists', "Content": null}));
+            response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'User already exists', "Content": null});
             return true;
         }
         if (replace_data.password.length > 71) {
-            response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-            response.raw.end(JSON.stringify({"Response": 'Password to long', "Content": null}));
+            response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Password too long', "Content": null});
             return true;
         }
         const hashed = await modules.create_encrypted_password(replace_data.password);
         if (!hashed || hashed === undefined || hashed < 0) {
-            response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-            response.raw.end(JSON.stringify({"Response": 'Bcrypt error', "Content": null}));
+            response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Bcrypt error', "Content": null});
             return true;
         }
         const settings = await settings_db.create_settings_value(hashed, replace_data.pfp, 0, replace_data.email, 'en', '', '');
         if (!settings || settings === undefined || settings < 0) {
-            response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-            response.raw.end(JSON.stringify({"Response": 'Failed creating table in settings', "Content": null}));
+            response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Failed creating table in settings', "Content": null});
             return true;
         }
         const user = await users_db.create_users_value(0, replace_data.username, settings.self);
         if (!user || user === undefined || user < 0) {
             await settings_db.delete_settings_value(settings.self);
-            response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-            response.raw.end(JSON.stringify({"Response": 'Failed creating table in user', "Content": null}));
+            response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Failed creating table in user', "Content": null});
             return true;
         }
         const token = modules.create_jwt(settings.self, '1h');
@@ -82,9 +74,7 @@ async function register(request, response) {
         
         modules.set_cookie(response, 'token', token, 3600);
         modules.set_cookie(response, 'lang', lang, 3600);
-        // response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-        // response.raw.end(JSON.stringify({"Response": 'success', "Content": null}));
-        return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": 'success', "Content": null })
+        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": null });
         return true;
     }
     const check = await send.send_html('index.html', response, 200, async (data) => {
@@ -139,7 +129,6 @@ async function mfa(request, response) {
                 return `2_${otc_return}`;
             return true;
         } else if (data.Function == 'verify_otc') {
-            response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
             var verified = await utils.verify_otc(request, response, data, null);
             console.log(verified);
             if (verified && verified !== undefined && !(verified < 0)) {
@@ -150,10 +139,10 @@ async function mfa(request, response) {
                 await mfa_db.update_mfa_value('otc', new_otc_str, userid);
                 if (check_mfa.prefered === 0)
                     await mfa_db.update_mfa_value('prefered', 2, userid);
-                response.raw.end(JSON.stringify({"Response": "success"}));
+                response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "success", "Content": null});
             }
             else
-                response.raw.end(JSON.stringify({"Response": "failed"}));
+                response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "failed", "Content": null});
             return true;
         } else if (data.Function == 'create_custom') {
             return await utils.create_custom_code(userid, response, data);
@@ -416,14 +405,12 @@ async function verify_email(request, response) {
         return false;
     const valid_password = await modules.check_encrypted_password(frontend_data.code, check_mfa.email);
     if (!valid_password || valid_password === undefined || valid_password < 0) {
-        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-        response.raw.end(JSON.stringify({"Response": 'failed', "Content": null}));
+        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'failed', "Content": null});
     } else {
         const token = modules.create_jwt(frontend_data.userid, '1h');
         
         modules.set_cookie(response, 'token', token, true, true, 'strict');
-        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-        response.raw.end(JSON.stringify({"Response": 'reload', "Content": null}));
+        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'reload', "Content": null});
     }
     return true;
 }
@@ -437,14 +424,12 @@ async function verify_2fa(request, response) {
     const replace_data = {'Function': 'verify', 'Code': frontend_data.code};
     const temp = await utils.verify_otc(request, response, replace_data, frontend_data.userid);
     if (temp === false || !temp || temp === undefined || temp < 0) {
-        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-        response.raw.end(JSON.stringify({"Response": 'failed', "Content": null}));
+        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'failed', "Content": null});
     } else {
         const token = modules.create_jwt(frontend_data.userid, '1h');
         
         modules.set_cookie(response, 'token', token, true, true, 'strict');
-        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-        response.raw.end(JSON.stringify({"Response": 'reload', "Content": null}));
+        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'reload', "Content": null});
     }
     return true;
 }
@@ -458,14 +443,12 @@ async function verify_custom(request, response) {
     const replace_data = {'Function': 'verify', 'Code': frontend_data.code};
     const temp = await utils.verify_custom_code(frontend_data.userid, response, replace_data);
     if (temp === false) {
-        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-        response.raw.end(JSON.stringify({"Response": 'failed', "Content": null}));
+        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'failed', "Content": null});
     } else {
         const token = modules.create_jwt(frontend_data.userid, '1h');
         
         modules.set_cookie(response, 'token', token, true, true, 'strict');
-        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-        response.raw.end(JSON.stringify({"Response": 'reload', "Content": null}));
+        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'reload', "Content": null});
     }
     return true;
 }
@@ -487,13 +470,13 @@ async function profile(request, response){
     }
     const user = await users_db.get_users_value('self', decoded.userid);
     if (!user || user === undefined){
-        return response.code(404).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": 'fail', "Content": "No user or user undefined"});
+        return response.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'fail', "Content": "No user or user undefined"});
         // return send.send_error_page('404.html', response, 404);
     }
 
     const settings = await settings_db.get_settings_value('self', decoded.userid);
     if (!settings || settings === undefined){
-        return response.code(404).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": 'fail', "Content": "no settings or settings undefined"});
+        return response.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'fail', "Content": "no settings or settings undefined"});
         // return send.send_error_page('404.html', response, 404);
     }
 
@@ -511,7 +494,7 @@ async function profile(request, response){
     // console.log("------------------------------");
     // console.log(inner);
 
-    return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": 'success', "Content": inner});
+    return response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": inner});
 
     // const status = await send.send_html('index.html', response, 200, async(data) => {
     //     var [keys, values] = modules.get_cookies(request.headers.cookie);
@@ -701,7 +684,7 @@ async function friends(request, response){
     var inner = request.body.innervalue;
     // inner = await translator.cycle_translations(inner, decoded_lang);
     inner = inner.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
-    return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": 'success', "Content": inner});
+    return response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": inner});
 
     // const status = await send.send_html('index.html', response, 200, async(data) => {
     //     var [keys, values] = modules.get_cookies(request.headers.cookie);
@@ -756,11 +739,11 @@ async function add_friends(request, response){
     const receiver_db = await users_db.get_users_value('username', receiver);
     if (!receiver_db || receiver_db === undefined){
         console.error("no user in database");
-        return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": "no user in database" });
+        return response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "no user in database" });
     }
     if (receiver_db.self == userid){
         console.error("cant send youself the request");
-        return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": "Sending request to self" });
+        return response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "Sending request to self" });
     }
 
     const result = await friends_request.create_friend_request_value(userid, receiver_db.self);
@@ -768,7 +751,7 @@ async function add_friends(request, response){
         console.error("create_friend_request_value caught an error");
         return null;
     }
-    return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": "success" });
+    return response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "success" });
 }
 
 async function accept_friends(request, response){
@@ -855,8 +838,7 @@ async function delete_account(request, response) {
     } catch (err) {}
     const decrypted_user = decrypted.userid;
     await settings_db.delete_settings_value(decrypted_user);
-    response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-    response.raw.end(JSON.stringify({"Response": 'success'}));
+    response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'success'});
     return true;
 }
 
