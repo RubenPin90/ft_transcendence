@@ -5,6 +5,7 @@ import {
   setOnGameEnd,
   GameMode,
   drawFrame,
+  setupInputHandlers
 } from './game.js';
 import {
   renderTournamentList,
@@ -35,6 +36,7 @@ import { on, send, getSocket } from './socket.js';
 let currentRoomId: string | null = null;
 let userId: string | null = null;
 let currentMatch: string | null = null;
+let teardownInput: (() => void) | null = null;
 
 // ────────────────────────────────────────────────────────────
 //  2.  generic error banner
@@ -96,7 +98,7 @@ on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
 
   renderBracketOverlay(normalized);
 
-  if (!amHost()) return;
+  // if (!amHost()) return;
 
   await new Promise(r => setTimeout(r, 700));
 
@@ -163,7 +165,7 @@ on('matchFound', (msg) => {
 // ────────────────────────────────────────────────────────────
 //  5.  UI helpers & routing
 // ────────────────────────────────────────────────────────────
-let markQueued: (v: boolean) => void;
+let markQueued: ((v: boolean) => void) | null = null;
 let currentMode: string | null = null;
 let queued = false;
 
@@ -229,6 +231,11 @@ const navigate = (path: string) => {
 
 function route() {
   const path = window.location.pathname;
+  if (teardownInput) {
+    teardownInput();
+    teardownInput = null;
+  }
+
   hideAllPages();
 
   if (path === '/tournament') {
@@ -239,7 +246,7 @@ function route() {
 
   if (path === '/matchmaking') {
     enterMatchmaking();
-    markQueued(true);
+    markQueued?.(true);
     document.getElementById('matchmaking-page')!.style.display = 'block';
     return;
   }
@@ -247,11 +254,15 @@ function route() {
   if (path.startsWith('/game')) {
     document.getElementById('game-container')!.style.display = 'block';
     const mode = path.split('/')[2] || 'pve';
-    (document.getElementById('game-mode-title') as HTMLElement).textContent = 'Mode: ' + mode;
-    if (currentMode && currentMode !== mode) stopGame();
+    console.log(`[play.ts] Entering game mode: ${mode}`);
+    if (currentMode && currentMode !== mode) stopGame();   // stop previous loop
     currentMode = mode;
+
     initGameCanvas();
     if (['pve', '1v1'].includes(mode)) startGame(mode as GameMode);
+    
+    // set up fresh input listeners every time we enter a game
+    teardownInput = setupInputHandlers();        // new listeners for this room
     return;
   }
 
@@ -276,30 +287,26 @@ function route() {
   if (mainMenuEl) {
     mainMenuEl.style.display = 'block';
   }
-  // otherwise: do nothing (we’re probably on /login or /register, where #main-menu is not present).
 }
 
-// document.addEventListener('DOMContentLoaded', () => {
-//   console.log('[play.ts] DOMContentLoaded');
-//   setupCodeJoinHandlers();
-//   setupButtonsDelegated(navigate, getSocket());
-//   ({ markQueued } = setupMatchmakingHandlers(navigate, getSocket()));
-//   window.addEventListener('popstate', route);
-//   route();
-// });
+setOnGameEnd((winnerId) => {
+  teardownInput?.();           // stop arrow-key listeners
+  teardownInput = null;
+  alert(`Player ${winnerId} wins!`);
+});
 
 export function check(){
   console.log("in check()");
   const path = window.location.pathname;
   if (path != '/login' && path != '/register' && !document.cookie.includes('session_id') && path === '/play') {
     console.log('[play.ts] No session_id cookie, redirecting to /login');
-    console.log('[play.ts] DOMContentLoaded');
+    console.log('[play.ts] DOMContentLoaded or is it');
     setupCodeJoinHandlers();
     setupButtonsDelegated(navigate, getSocket());
     ({ markQueued } = setupMatchmakingHandlers(navigate, getSocket()));
-    window.addEventListener('popstate', route);
     route();
 }}
+
 
 window.addEventListener('popstate', check);
       

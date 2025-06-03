@@ -83,7 +83,12 @@ async function register(request, response) {
         modules.set_cookie(response, 'lang', lang, 3600);
         // response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
         // response.raw.end(JSON.stringify({"Response": 'success', "Content": null}));
-        return response.code(200).header('Content-Type', 'application/json').header('Access-Control-Allow-Origin', '*').send({ "Response": 'success', "Content": null })
+        return response.code(200).header('Content-Type', 'application/json')
+        .header('Access-Control-Allow-Origin', '*')
+        .send({ 
+             Response: 'success', 
+            Content: { token, lang, user: replace_data.username }
+        });
         return true;
     }
     const check = await send.send_html('index.html', response, 200, async (data) => {

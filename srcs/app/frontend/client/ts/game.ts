@@ -47,8 +47,13 @@ export function initGameCanvas(): void {
 
 export function startGame(mode: GameMode): void {
   ws = getSocket();
+  userId        = localStorage.getItem('playerId');        // overwrite every time
+  currentRoomId = localStorage.getItem('currentGameId');
   if (!userId) {
     userId = localStorage.getItem('playerId');
+  }
+  if (!currentRoomId) {
+    currentRoomId = localStorage.getItem('currentGameId');
   }
 
   if (mode === 'pve') {
@@ -99,10 +104,7 @@ export function startGame(mode: GameMode): void {
 export function stopGame(): void {
   searchingForMatch = false;
   if (ws && ws.readyState === WebSocket.OPEN) {
-    send({
-      type: 'leaveGame',
-      payload: { roomId: currentRoomId, userId }
-    });
+    send({ type: 'leaveGame', payload: { roomId: currentRoomId, userId } });
   }
 
   if (matchFoundListener) {
@@ -113,6 +115,9 @@ export function stopGame(): void {
     off('state', stateListener);
     stateListener = null;
   }
+  currentRoomId = null;
+  userId        = null;
+  inputHandlersRegistered = false;
 }
 
 
@@ -159,7 +164,7 @@ export function drawFrame(state: GameState): void {
   );
 }
 
-export function setupInputHandlers(): void {
+export function setupInputHandlers(): () => void {
   let moveInterval: number | null = null;
 
   function getDirection(): 'up' | 'down' | null {
@@ -170,38 +175,33 @@ export function setupInputHandlers(): void {
 
   function sendMovement(active: boolean): void {
     if (!currentRoomId || !userId) return;
-    const direction = getDirection();
     send({
       type: 'movePaddle',
       payload: {
         roomId: currentRoomId,
         userId,
-        direction: active ? direction : 'stop',
+        direction: active ? getDirection() : 'stop',
         active
       }
     });
   }
 
-  window.addEventListener('keydown', (e) => {
+  const onKeyDown = (e: KeyboardEvent) => {
     if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && userId && currentRoomId) {
       if (!keysPressed[e.key]) {
         keysPressed[e.key] = true;
         sendMovement(true);
         if (moveInterval == null) {
-          moveInterval = window.setInterval(() => {
-            sendMovement(true);
-          }, 1000 / 60);
+          moveInterval = window.setInterval(() => sendMovement(true), 1000 / 60);
         }
       }
       e.preventDefault();
     }
-  });
+  };
 
-  window.addEventListener('keyup', (e) => {
+  const onKeyUp = (e: KeyboardEvent) => {
     if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && userId && currentRoomId) {
-      if (keysPressed[e.key]) {
-        keysPressed[e.key] = false;
-      }
+      keysPressed[e.key] = false;
       if (!keysPressed['ArrowUp'] && !keysPressed['ArrowDown'] && moveInterval !== null) {
         clearInterval(moveInterval);
         moveInterval = null;
@@ -209,5 +209,15 @@ export function setupInputHandlers(): void {
       }
       e.preventDefault();
     }
-  });
+  };
+
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keyup', onKeyUp);
+
+
+  return () => {
+    window.removeEventListener('keydown', onKeyDown);
+    window.removeEventListener('keyup', onKeyUp);
+    if (moveInterval !== null) clearInterval(moveInterval);
+  };
 }

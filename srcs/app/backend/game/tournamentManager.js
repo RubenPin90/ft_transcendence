@@ -422,10 +422,7 @@ export class TournamentManager {
       maxPlayers: 2,
     });
   
-    // 2.  Seat ONLY the opponent (creator is already inside)
-    // this.matchManager.joinRoom(matchId, opponentId);
-    // this.matchManager.joinRoomforTournament(matchId, opponentId);
-     // 3.  Notify the participants
+     // 2.  Notify the participants
      this.#notifyPlayers(lobbyRoom, tournamentId);
   }
   

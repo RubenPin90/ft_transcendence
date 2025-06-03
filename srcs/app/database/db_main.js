@@ -61,9 +61,9 @@ async function create_db() {
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
         );`);
 
-        // 1v1
+        // match
         await db.run(`
-        CREATE TABLE IF NOT EXISTS 1v1 (
+        CREATE TABLE IF NOT EXISTS match (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             points TEXT NOT NULL,
             player1 TEXT NOT NULL,
@@ -82,7 +82,7 @@ async function create_db() {
             match_id TEXT NOT NULL,
             winner TEXT,
             date DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (match_id) REFERENCES 1v1(match_id) ON DELETE CASCADE,
+            FOREIGN KEY (match_id) REFERENCES match(match_id) ON DELETE CASCADE,
             FOREIGN KEY (winner) REFERENCES settings(self) ON DELETE SET NULL
         );`);
 

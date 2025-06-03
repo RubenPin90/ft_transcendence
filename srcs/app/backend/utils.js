@@ -997,10 +997,6 @@ async function replace_all_templates(request, response, state) {
 		play_main +=         '</div>';
 		play_main +=       '</div>';
 
-		play_main +=       '<div id="bracket-overlay" class="bracket-overlay" hidden>';
-		play_main +=         '<button id="bracket-begin-btn" class="bracket-begin-btn" hidden>Begin round&nbsp;1</button>';
-		play_main +=       '</div>';
-
 		play_main +=       '<template id="match-card-tpl">';
 		play_main +=         '<div class="match-card">';
 		play_main +=           '<div class="p1"></div>';

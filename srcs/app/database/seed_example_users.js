@@ -1,45 +1,30 @@
-import { open } from 'sqlite';
-import sqlite3 from 'sqlite3';
+import fetch from 'node-fetch';
 
-export async function seedExampleUsers() {
-  const db = await open({
-    filename: 'db.sqlite',
-    driver: sqlite3.Database
-  });
+process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
+const URL = 'https://localhost/register';
 
+const users = [
+  { username: 'alice',   email: 'alice@example.com',  password: '1234' },
+  { username: 'bob',     email: 'bob@example.com',    password: '1234' },
+  { username: 'char',    email: 'char@example.com',   password: '1234' },
+  { username: 'david',   email: 'david@example.com',  password: '1234' },
+];
+
+async function registerUser(user) {
   try {
-    await db.exec('BEGIN'); // start transaction
+    const res = await fetch(URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(user),
+    });
 
-    const demoUsers = [
-      { role_id: 1, username: 'alice',   self: 'alice@example.com'   },
-      { role_id: 2, username: 'bob',     self: 'bob@example.com'     },
-      { role_id: 1, username: 'charlie', self: 'charlie@example.com' },
-      { role_id: 3, username: 'david',   self: 'david@example.com'   }
-    ];
-
-    for (const u of demoUsers) {
-      // Insert a minimal settings row with password = "1234"
-      await db.run(
-        `INSERT OR IGNORE INTO settings (self, password) VALUES (?, ?);`,
-        [u.self, '1234']
-      );
-
-      // Now insert into users
-      await db.run(
-        `INSERT OR IGNORE INTO users (role_id, username, self)
-         VALUES (?, ?, ?);`,
-        [u.role_id, u.username, u.self]
-      );
-    }
-
-    await db.exec('COMMIT');
-    console.log('✔ 4 demo users (with password=1234) inserted (or already present)');
-    return 0;
+    const json = await res.json();
+    console.log(`Registering ${user.username}:`, json.Response);
   } catch (err) {
-    await db.exec('ROLLBACK');
-    console.error('❌ Error seeding demo users:', err);
-    return -1;
-  } finally {
-    await db.close();
+    console.error(`Error registering ${user.username}:`, err.message);
   }
+}
+
+for (const user of users) {
+  await registerUser(user);
 }

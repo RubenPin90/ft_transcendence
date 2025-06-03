@@ -5,12 +5,12 @@ async function _db () {
   return open({ filename: 'db.sqlite', driver: sqlite3.Database });
 }
 
-/* ────────────────────────── 1v1 (matches) ────────────────────────── */
+/* ────────────────────────── match (matches) ────────────────────────── */
 
 export async function get_matches () {
   const db = await _db();
   try {
-    return await db.all('SELECT * FROM 1v1');
+    return await db.all('SELECT * FROM match');
   } finally {
     await db.close();
   }
@@ -22,7 +22,7 @@ export async function get_match_by (field, value) {
 
   const db = await _db();
   try {
-    const sql = `SELECT * FROM 1v1 WHERE ${field} = ?`;
+    const sql = `SELECT * FROM match WHERE ${field} = ?`;
     return await db.get(sql, [value]);
   } finally {
     await db.close();
@@ -37,12 +37,12 @@ export async function create_match (points, player1, player2, match_id) {
     const p2 = await db.get('SELECT 1 FROM settings WHERE self = ?', [player2]);
     if (!p1 || !p2) return -1;
 
-    const dup = await db.get('SELECT 1 FROM 1v1 WHERE match_id = ?', [match_id]);
+    const dup = await db.get('SELECT 1 FROM match WHERE match_id = ?', [match_id]);
     if (dup) return -2;
 
     /* insert */
     return await db.run(
-      `INSERT INTO 1v1 (points, player1, player2, match_id)
+      `INSERT INTO match (points, player1, player2, match_id)
        VALUES (?,?,?,?)`,
       [points, player1, player2, match_id]
     );
@@ -57,7 +57,7 @@ export async function update_match (field, value, match_id) {
 
   const db = await _db();
   try {
-    const sql = `UPDATE 1v1 SET ${field} = ? WHERE match_id = ?`;
+    const sql = `UPDATE match SET ${field} = ? WHERE match_id = ?`;
     return await db.run(sql, [value, match_id]);
   } finally {
     await db.close();
@@ -70,7 +70,7 @@ export async function update_match (field, value, match_id) {
 export async function delete_match (match_id) {
   const db = await _db();
   try {
-    return await db.run('DELETE FROM 1v1 WHERE match_id = ?', [match_id]);
+    return await db.run('DELETE FROM match WHERE match_id = ?', [match_id]);
   } finally {
     await db.close();
   }
@@ -99,7 +99,7 @@ export async function create_tourney_row (tournament_id, round, match_id) {
   const db = await _db();
   try {
     const match = await db.get(
-      'SELECT 1 FROM 1v1 WHERE match_id = ?',
+      'SELECT 1 FROM match WHERE match_id = ?',
       [match_id]
     );
     if (!match) return -1;
