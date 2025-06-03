@@ -875,30 +875,69 @@ async function play(request, response) {
     return true;
 }
 
-async function set_up_mfa_buttons(request, response){
+
+
+async function process_login(request, response) {
+    const data = request.body;
+    const check_settings = await settings_db.get_settings_value('email', data.email);
+    if (!check_settings || check_settings === undefined || check_settings < 0) {
+
+        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+        response.raw.end(JSON.stringify({"Response": 'Email not found', "Content": null}));
+        return -1;
+    }
+    const pw = await modules.check_encrypted_password(data.password, check_settings.password);
+    if (!pw || pw === undefined || pw < 0) {
+        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+        response.raw.end(JSON.stringify({"Response": 'Password incorrect', "Content": null}));
+        return -2;
+    }
+    const mfa = await mfa_db.get_mfa_value('self', check_settings.self);
+    if (!mfa || mfa === undefined || mfa < 0 || ((mfa.otc && mfa.otc.endsWith('_temp')) && (mfa.email && mfa.email.endsWith('_temp')) && (mfa.custom && mfa.custom.endsWith('_temp')) ))
+        return {'settings': check_settings, 'mfa': null};
+    return {'settings': check_settings, 'mfa': mfa};
+}
+
+
+async function set_up_mfa_buttons(request, response) {
     const [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token')) {
         return login(request, response);
     }
 
-    const parsed = await utils.process_login(request, response);
+    const encrypted_userid = values[keys.indexOf('token')];
+    const userid = modules.get_jwt(encrypted_userid).userid;
+    var set = 0;
+    var options = '';
+    var parsed = await mfa_db.get_mfa_value('self', userid);
+    if (parsed == undefined)
+        await mfa_db.create_mfa_value('', '', '', 0, userid);
+    else {
+        if (parsed.otc.length !== 0 && !parsed.otc.endsWith('_temp')) {
+            set++;
+            options += "<option>OTC</option>";
+        }
+        if (parsed.custom.length !== 0 && !parsed.custom.endsWith('_temp')) {
+            set++;
+            options += "<option>Custom</option>";
+        }
+        if (parsed.email.length !== 0 && !parsed.email.endsWith('_temp')) {
+            set++;
+            options += "<option>Email</option>";
+        }
+    }
 
-    var inner = request.body.innervalue;
     var settings_html_mfa_string = "";
-	// settings_html_mfa_string += '<div id="mfa_div" class="hidden">';
 	settings_html_mfa_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
 	settings_html_mfa_string += '<div id="mfa"></div>'
     settings_html_mfa_string += '<div id="mfa-button">'
 
-    console.log("PREFERED: ", parsed.mfa.prefered);
-    console.log("PARSED: ", parsed.mfa);
-    if (parsed.mfa.prefered){
-        //if (no or only one 2FA selected dont show this element)
+    if (set > 1){
         settings_html_mfa_string +='<div class="flex gap-2">'
         settings_html_mfa_string +='<form id="mfa_options" class="w-5/6">'
         settings_html_mfa_string +='<select name="lang" id="select_mfa" class="w-full p-4 text-center rounded-xl text-2xl border border-[#e0d35f] border-spacing-8 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]">'
         settings_html_mfa_string +='<option value="" selected disabled hidden>Choose your main 2FA</option>'
-        settings_html_mfa_string +='{{2FAOPTIONS}}'
+        settings_html_mfa_string += options;
         settings_html_mfa_string +='</select></form>'
         
         settings_html_mfa_string +='<div class="flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl cursor-pointer">'
@@ -907,46 +946,37 @@ async function set_up_mfa_buttons(request, response){
         settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />'
         settings_html_mfa_string +='</svg></button></div></div>'
     }
-
-
-
-
-
 	settings_html_mfa_string +='';
 	settings_html_mfa_string +='<div class="flex gap-2">';
 	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_otc()">';
 	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
 	settings_html_mfa_string +='<span class="button_text">Create OTC</span></button></div>';
 	settings_html_mfa_string +='';
-	// settings_html_mfa_string +='<div id="trash_otc" class="trash_disable">';
-	// settings_html_mfa_string +='<button id="trash_otc_button" onclick="remove_OTC()" class="pointer-events-none">';
-	// settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
-	// settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg></button></div></div>';
-	settings_html_mfa_string +='';
-	settings_html_mfa_string += retrieve_trash_icon_mfa("remove_OTC", enable);
-	settings_html_mfa_string +='';
+    if (options.includes("OTC"))
+	    settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_otc')", true);
+    else
+        settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_otc')", false);
+    settings_html_mfa_string +='';
 	settings_html_mfa_string +='<div class="flex gap-2">';
 	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_custom_code()">';
 	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
 	settings_html_mfa_string +='<span class="button_text">Create custom 6 digit code</span></button></div>';
 	settings_html_mfa_string +='';
-	settings_html_mfa_string +='<div id="trash_custom" class="trash_enable">';
-	settings_html_mfa_string +='<button id="trash_custom_button" onclick="remove_digit()" class="pointer-events-none">';
-	settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
-	settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg></button></div></div>';
 	settings_html_mfa_string +='';
+    if (options.includes("Custom"))
+	    settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_custom_code')", true);
+    else
+        settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_custom_code')", false);
 	settings_html_mfa_string +='';
 	settings_html_mfa_string +='<div class="flex gap-2">';
 	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_email()">';
 	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
 	settings_html_mfa_string +='<span class="button_text">Enable email authentication</span></button></div>';
 	settings_html_mfa_string +='';
-	settings_html_mfa_string +='<div id="trash_email" class="trash_disable">';
-	settings_html_mfa_string +='<button id="trash_email_button" onclick="remove_email()" class="pointer-events-none">';
-	settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
-	settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />';
-	settings_html_mfa_string +='</svg></button></div></div>';
-	settings_html_mfa_string +='';
+    if (options.includes("Email"))
+	    settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_email')", true);
+    else
+        settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_email')", false);
 	settings_html_mfa_string +='';
 	settings_html_mfa_string +='<div class="flex mt-12 gap-4 w-full">';
 	settings_html_mfa_string +='<a class="flex-1" href="/settings" data-link>';
@@ -957,10 +987,8 @@ async function set_up_mfa_buttons(request, response){
 	settings_html_mfa_string +='<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
 	settings_html_mfa_string +='<span class="font-bold text-lg">Home</span>';
 	settings_html_mfa_string +='</button></a></div></div></div></div></div>';
-	// settings_html_mfa_string +='</div>';
     return response.code(200).headers({'Content-Type': 'application/json','Access-Control-Allow-Origin': '*'}).send({"Response": "success","Content": settings_html_mfa_string});
 }
-
 export {
     login,
     register,

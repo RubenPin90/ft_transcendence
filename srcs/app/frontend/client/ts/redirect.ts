@@ -115,13 +115,11 @@ async function render_mfa() : Promise<string>{
     };
 
     const data = await response.json();
-    console.log("RESPONSE: ", data.Response);
     if (data.Response === 'success'){
         var element = document.getElementById("mfa_div");
         if (element){
             element.innerHTML = data.Content;
         }
-        console.log("ELEMENT: ", element?.innerHTML);
     }
     else if (data.Response === 'fail'){
         alert (`error with data of MFA ${data.Content}`)
