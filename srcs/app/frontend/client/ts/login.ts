@@ -1,4 +1,67 @@
-async function login() {
+var funct = '';
+
+async function submit_code(){
+    const tfa_value = document.getElementById("2fa_value") as HTMLInputElement;
+    if (!tfa_value)
+        return;
+    const innervalue = tfa_value.value;
+
+    // what: string = '';
+    // switch (what){
+    //     case 'send_email_verification':
+    //         funct = "verify_email";
+    //         break;
+    //     case 'send_2FA_verification':
+    //         funct = "verify_otc";
+    //         break;
+    //     case 'send_custom_verification':
+    //         funct = "verify_function";
+    //         break;
+    //     default:
+    //         break;
+    // }
+
+    const response = await fetch ('/mfa', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json',},
+        body: JSON.stringify({
+            "Code": innervalue,
+            "Function": funct,
+        }),
+    });
+    if (!response.ok){
+        alert("Response is not ok in get_unlocker");
+        return false;
+    }
+
+    const data = await response.json();
+
+    if (data.Response == "success"){
+        login();
+    }
+    return false;
+}
+
+
+async function get_unlocker() {
+    var login_field = document.getElementById("login-container");
+    var tfa_field = document.getElementById("2fa_field");
+    if (!login_field || !tfa_field)
+        return false;
+    login_field.classList.add("blur_md");
+    tfa_field.classList.remove("hidden");
+}
+
+function close_unlocker() {
+    var login_field = document.getElementById("login-container");
+    var tfa_field = document.getElementById("2fa_field");
+    if (!login_field || !tfa_field)
+        return;
+    login_field.classList.remove("blur_md");
+    tfa_field.classList.add("hidden");
+}
+
+async function login2(){
     const email2 = document.getElementById("email-input_LogIn") as HTMLInputElement;
     const password2 = document.getElementById("password-input_LogIn") as HTMLInputElement;
     if (!email2 && !password2) {
@@ -16,8 +79,6 @@ async function login() {
         },
         body: JSON.stringify({email, password}),
     });
-
-
     if (!response.ok){
         alert('Server error');
         return;
@@ -34,8 +95,78 @@ async function login() {
         alert(`error with login: ${err}`);
         return;
     }
+    const response2 = await fetch("/get_data", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            'get': 'get_mfa_method',
+            'email': email,
+            'password': password,
+        }),
+    });
 
-    const response2 = await fetch('/get_data', {
+    const data_mfa = await response2.json();
+    
+    if (data_mfa.Response == "send_email_verification" || data_mfa.Response == "send_2FA_verification" || data_mfa.Response == "send_custom_verification"){
+        switch (data_mfa.Response){
+        case 'send_email_verification':
+            funct = "verify_email";
+            break;
+        case 'send_2FA_verification':
+            funct = "verify_otc";
+            break;
+        case 'send_custom_verification':
+            funct = "verify_function";
+            break;
+        default:
+            break;
+    }
+        get_unlocker();
+    }else{
+        login();
+    }
+}
+
+async function login() {
+    // const email2 = document.getElementById("email-input_LogIn") as HTMLInputElement;
+    // const password2 = document.getElementById("password-input_LogIn") as HTMLInputElement;
+    // if (!email2 && !password2) {
+    //     alert("NO THIS");
+    //     return;
+    // }
+    
+    
+    // const email = email2.value;
+    // const password = password2.value;
+    // const response = await fetch('/login', {
+    //     method: 'POST',
+    //     headers: {
+    //         'Content-Type': 'application/json',
+    //     },
+    //     body: JSON.stringify({email, password}),
+    // });
+
+
+    // if (!response.ok){
+    //     alert('Server error');
+    //     return;
+    // }
+
+    // try {
+    //     const data = await response.json();
+    //     if (data.Response !== 'success'){
+    //         alert("Invalid username or password");
+    //         return;
+    //     }
+    // } catch (err) {
+    //     console.error(`error with login: ${err}`);
+    //     alert(`error with login: ${err}`);
+    //     return;
+    // }
+
+    const response = await fetch('/get_data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -44,7 +175,7 @@ async function login() {
     });
 
     try {
-        const data2 = await response2.json();
+        const data2 = await response.json();
         const content = data2.Content;
 
         const content2 = content.match(/<body class="background" id="main_body">([\s\S]*?)<\/body>/);
@@ -52,6 +183,24 @@ async function login() {
         var current_file = document.getElementById("main_body");
         if (!current_file)
             return;
+        // const response = await fetch("/get_data", {
+        //     method: 'POST',
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //     },
+        //     body: JSON.stringify({
+        //         'get': 'get_mfa_method',
+        //         'email': email,
+        //         'password': password,
+        //     }),
+        // });
+
+        // const data_mfa = await response.json();
+        // alert(data_mfa.Response);
+        
+        // if (data_mfa.Response == "send_email_verification" || data_mfa.Response == "send_2FA_verification" || data_mfa.Response == "send_custom_verification"){
+            // get_unlocker(data_mfa.Response);
+        // }
         current_file.innerHTML = content2value;
         window.history.pushState({}, '', '/');
     } catch (err) {

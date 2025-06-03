@@ -149,6 +149,7 @@ async function mfa(request, response) {
         } else if (data.Function == 'create_custom') {
             return await utils.create_custom_code(userid, response, data);
         } else if (data.Function == 'verify_function') {
+            console.log("IN HERE");
             return await utils.verify_custom_code(userid, response, data);
         } else if (data.Function == 'create_email') {
             const returned2 = await utils.create_email_code(userid, response, data);

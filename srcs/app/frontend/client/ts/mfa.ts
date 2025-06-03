@@ -1,5 +1,4 @@
 async function remove_mfa(what : string){
-    console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
     const response = await fetch ('/mfa',{
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -10,7 +9,7 @@ async function remove_mfa(what : string){
         alert("ERROR WITH REMOVE");
     }
     const data = await response.json();
-    if (data.Response === "Success"){
+    if (data.Response === "success"){
         alert(`SUCCESSFULLY REMOVED ${what}`);
         render_mfa();
     };

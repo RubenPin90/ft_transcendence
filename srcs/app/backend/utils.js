@@ -13,6 +13,7 @@ import { promises as fs, utimes } from 'fs';
 import { log, profile } from 'console';
 import * as translator from './translate.js';
 import * as views from './views.js';
+import * as utils from './utils.js';
 
 dotenv.config();
 
@@ -1161,6 +1162,37 @@ async function get_data(request, response) {
 		} else if (link.get == "site_content") {
 			const data = await replace_all_templates(request, response);
 			response.code(200).headers({ 'Content-Type': 'application/json' }).send({"Response": 'success', "Content": show_page(data, "home_div")});
+			return true;
+		} else if (link.get == 'get_mfa_method') {
+			const parsed = await utils.process_login(request, response);
+			if (!parsed || parsed === undefined)
+				return `1_${parsed}`;
+			else if (parsed < 0) {
+				if (parsed == -1)
+					response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Error', "Content": 'Wrong email'})
+				else if (parsed == -2)
+					response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Error', "Content": 'Wrong password'})
+				return true;
+			}
+			console.log(parsed.mfa.prefered);
+			if (parsed.mfa && parsed.mfa.email && !parsed.mfa.email.endsWith('_temp') && parsed.mfa.prefered === 1) {
+				var email_code = Math.floor(Math.random() * 1000000);
+				const email_code_len = 6 - (String(email_code).length);
+				for (var pos = 0; pos < email_code_len; pos++)
+					email_code = '0' + email_code;
+				await modules.send_email(parsed.settings.email, 'MFA code', `This is your 2FA code. Please do not share: ${email_code}`);
+				email_code = await modules.create_encrypted_password(String(email_code));
+				await mfa_db.update_mfa_value('email', email_code, parsed.mfa.self);
+				response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'send_email_verification', "Content": parsed.settings.self});
+				return true;
+			} else if (parsed.mfa && parsed.mfa.otc && !parsed.mfa.otc.endsWith('_temp') && parsed.mfa.prefered === 2) {
+				response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'send_2FA_verification', "Content": parsed.settings.self});
+				return true;
+			} else if (parsed.mfa && parsed.mfa.custom && !parsed.mfa.custom.endsWith('_temp') && parsed.mfa.prefered === 3) {
+				response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'send_custom_verification', "Content": parsed.settings.self});
+				return true;
+			}
+			response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({'Repsonse': 'none', 'Content': null});
 			return true;
 		}
 		response.code(404).headers({ 'Content-Type': 'application/json' }).send({"Response": 'Not found', "Content": null});
