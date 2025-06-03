@@ -260,7 +260,7 @@ async function remove_custom_code() {
     let data;
     try {
         data = await response.json();
-        if (data.Response === 'Success')
+        if (data.Response === 'success')
             window.location.href = 'http://localhost:8080/settings/mfa';
     } catch (err) {
         console.error(`Error in removing custom code: ${err}`)
@@ -280,7 +280,7 @@ async function remove_otc() {
     let data;
     try {
         data = await response.json();
-        if (data.Response === 'Success')
+        if (data.Response === 'success')
             window.location.href = 'http://localhost:8080/settings/mfa';
     } catch (err) {
         console.error(`Error in removing custom code: ${err}`)
@@ -300,7 +300,7 @@ async function remove_email() {
     let data;
     try {
         data = await response.json();
-        if (data.Response === 'Success')
+        if (data.Response === 'success')
             window.location.href = 'http://localhost:8080/settings/mfa';
     } catch (err) {
         console.error(`Error in removing custom code: ${err}`)

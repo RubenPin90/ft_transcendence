@@ -211,12 +211,12 @@ async function process_login(request, response) {
 	const data = request.body;
 	const check_settings = await settings_db.get_settings_value('email', data.email);
 	if (!check_settings || check_settings === undefined || check_settings < 0) {
-		response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Email not found', "Content": null});
+		response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Email not found', "Content": null});
 		return -1;
 	}
 	const pw = await modules.check_encrypted_password(data.password, check_settings.password);
 	if (!pw || pw === undefined || pw < 0) {
-		response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Password incorrect', "Content": null});
+		response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Password incorrect', "Content": null});
 		return -2;
 	}
 	const mfa = await mfa_db.get_mfa_value('self', check_settings.self);
@@ -350,7 +350,7 @@ async function create_otc(userid, response) {
 		const url = await qrcode.toDataURL(secret.otpauth_url);
 		response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ qrCodeUrl: url });
 	} catch (err) {
-		response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "response": 'Fehler beim Generieren des QR-Codes' });
+		response.code(500).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "response": 'Fehler beim Generieren des QR-Codes' });
 		return -4;
 	}
 	return true;
@@ -374,11 +374,11 @@ async function create_custom_code(userid, response, data) {
 		return -2;
 	const check_code = data.Code;
 	if (check_code.length != 6) {
-		response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "failed" });
+		response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "failed" });
 		return -3;
 	}
 	if (isNaN(Number(check_code))) {
-		response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "failed" });
+		response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "failed" });
 		return -4;
 	}
 	if (!check_mfa || check_mfa === undefined)
@@ -400,7 +400,7 @@ async function verify_custom_code(userid, response, data) {
 	if (custom.endsWith('_temp'))
 		custom = custom.slice(0, -5);
 	if (data.Code !== custom) {
-		response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'Wrong password', "Content": null });
+		response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'Wrong password', "Content": null });
 		return -3;
 	}
 	await mfa_db.update_mfa_value('custom', custom, userid);
@@ -418,7 +418,7 @@ async function create_email_code(userid, response, replace_data) {
 	if (!check_settings || check_settings === undefined || check_settings < 0)
 		return -2;
 	if (!check_settings.email || check_settings.email === undefined) {
-		response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "NoEmail", "Content": null });
+		response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "NoEmail", "Content": null });
 		return -3;
 	}
 	var email_code = Math.floor(Math.random() * 1000000);
@@ -427,11 +427,11 @@ async function create_email_code(userid, response, replace_data) {
 		email_code = '0' + email_code;
 	const check_code = String(email_code);
 	if (check_code.length != 6) {
-		response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "failed", "Content": null });
+		response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "failed", "Content": null });
 		return -4;
 	}
 	if (isNaN(Number(check_code))) {
-		response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "failed", "Content": null });
+		response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "failed", "Content": null });
 		return -5;
 	}
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
@@ -460,7 +460,7 @@ async function verify_email_code(userid, response, data) {
 		email_value = email_value.slice(0, -5);
 	const decrypted_email_value = await modules.check_encrypted_password(data.Code, email_value);
 	if (decrypted_email_value === false) {
-		response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "failed", "Content": null });
+		response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "failed", "Content": null });
 		return false;
 	}
 	await mfa_db.update_mfa_value('email', email_value, userid);
@@ -476,7 +476,7 @@ async function clear_settings_mfa(userid, search_value, response) {
 		return -1;
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
 	if (!check_mfa || check_mfa === undefined) {
-		response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "Failed", "Content": null});
+		response.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "Failed", "Content": null});
 		return -2;
 	}
 	await mfa_db.update_mfa_value(`${search_value}`, '', userid);
@@ -493,7 +493,7 @@ async function clear_settings_mfa(userid, search_value, response) {
 	}
 	if (!found)
 		await mfa_db.update_mfa_value('prefered', 0, userid);
-	response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "Success", "Content": null});
+	response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "success", "Content": null});
 	return true;
 }
 
