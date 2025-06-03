@@ -19,7 +19,7 @@ async function send_html(filename, response, status, func) {
 }
 
 async function send_error_page(filename, response, status, func) {
-    var data = await fs.readFile(`./error_pages/${filename}`, 'utf-8');
+    var data = await fs.readFile(`./backend/error_pages/${filename}`, 'utf-8');
     if (!data)
         return false;
     if (func && typeof func === 'function') {
