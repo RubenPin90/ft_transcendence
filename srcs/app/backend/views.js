@@ -46,27 +46,27 @@ async function register(request, response) {
         const replace_data = request.body;
         const check_settings = await settings_db.get_settings_value('email', replace_data.email);
         if (check_settings || check_settings !== undefined) {
-            response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'User already exists', "Content": null});
+            response.code(409).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'User already exists', "Content": null});
             return true;
         }
         if (replace_data.password.length > 71) {
-            response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Password too long', "Content": null});
+            response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Password too long', "Content": null});
             return true;
         }
         const hashed = await modules.create_encrypted_password(replace_data.password);
         if (!hashed || hashed === undefined || hashed < 0) {
-            response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Bcrypt error', "Content": null});
+            response.code(500).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Bcrypt error', "Content": null});
             return true;
         }
         const settings = await settings_db.create_settings_value(hashed, replace_data.pfp, 0, replace_data.email, 'en', '', '');
         if (!settings || settings === undefined || settings < 0) {
-            response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Failed creating table in settings', "Content": null});
+            response.code(500).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Failed creating table in settings', "Content": null});
             return true;
         }
         const user = await users_db.create_users_value(0, replace_data.username, settings.self);
         if (!user || user === undefined || user < 0) {
             await settings_db.delete_settings_value(settings.self);
-            response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Failed creating table in user', "Content": null});
+            response.code(500).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Failed creating table in user', "Content": null});
             return true;
         }
         const token = modules.create_jwt(settings.self, '1h');
@@ -143,7 +143,7 @@ async function mfa(request, response) {
                 response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "success", "Content": null});
             }
             else
-                response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "failed", "Content": null});
+                response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "failed", "Content": null});
             return true;
         } else if (data.Function == 'create_custom') {
             return await utils.create_custom_code(userid, response, data);
@@ -406,7 +406,7 @@ async function verify_email(request, response) {
         return false;
     const valid_password = await modules.check_encrypted_password(frontend_data.code, check_mfa.email);
     if (!valid_password || valid_password === undefined || valid_password < 0) {
-        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'failed', "Content": null});
+        response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'failed', "Content": null});
     } else {
         const token = modules.create_jwt(frontend_data.userid, '1h');
         
@@ -425,7 +425,7 @@ async function verify_2fa(request, response) {
     const replace_data = {'Function': 'verify', 'Code': frontend_data.code};
     const temp = await utils.verify_otc(request, response, replace_data, frontend_data.userid);
     if (temp === false || !temp || temp === undefined || temp < 0) {
-        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'failed', "Content": null});
+        response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'failed', "Content": null});
     } else {
         const token = modules.create_jwt(frontend_data.userid, '1h');
         
@@ -444,7 +444,7 @@ async function verify_custom(request, response) {
     const replace_data = {'Function': 'verify', 'Code': frontend_data.code};
     const temp = await utils.verify_custom_code(frontend_data.userid, response, replace_data);
     if (temp === false) {
-        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'failed', "Content": null});
+        response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'failed', "Content": null});
     } else {
         const token = modules.create_jwt(frontend_data.userid, '1h');
         
@@ -494,8 +494,8 @@ async function profile(request, response){
     inner = inner.replace('{{Friends}}', await friends_request.show_accepted_friends(userid))
     // console.log("------------------------------");
     // console.log(inner);
-
-    return response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": inner});
+    response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": inner});
+    return true;
 
     // const status = await send.send_html('index.html', response, 200, async(data) => {
     //     var [keys, values] = modules.get_cookies(request.headers.cookie);
@@ -729,7 +729,8 @@ async function add_friends(request, response){
 
     const data = request.body;
     if (!data || data === undefined){
-        return response.code(400).send({ message: 'Invalid data'});
+        response.code(400).send({ message: 'Invalid data'});
+        return true;
     }
     const tokenIndex = keys.findIndex((key) => key === 'token');
     const token = values[tokenIndex];
@@ -746,11 +747,13 @@ async function add_friends(request, response){
     const receiver_db = await users_db.get_users_value('username', receiver);
     if (!receiver_db || receiver_db === undefined){
         console.error("no user in database");
-        return response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "no user in database" });
+        response.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "no user in database" });
+        return true;
     }
     if (receiver_db.self == userid){
         console.error("cant send youself the request");
-        return response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "Sending request to self" });
+        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "Sending request to self" });
+        return true;
     }
 
     const result = await friends_request.create_friend_request_value(userid, receiver_db.self);
@@ -758,21 +761,24 @@ async function add_friends(request, response){
         console.error("create_friend_request_value caught an error");
         return null;
     }
-    return response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "success" });
+    response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "success" });
+    return true;
 }
 
 async function accept_friends(request, response){
     const [keys, values] = modules.get_cookies(request);
     const data = request.body;
     if (!data || data === undefined){
-        return response.code(400).send({ message: 'Invalid data'});
+        response.code(400).send({ message: 'Invalid data'});
+        return true;
     }
 
     let decoded;
     try {
         decoded = modules.get_jwt(values[keys.indexOf("token")]);
     } catch (err) {
-        return response.code(400).send({ message: 'Invalid decoded'});
+        response.code(400).send({ message: 'Invalid decoded'});
+        return true;
     }
 
     const receiver = data.userid;
@@ -781,21 +787,24 @@ async function accept_friends(request, response){
         console.error("error in deleting accepted friend request");
         return null;
     }
-    return response.code(200).send({ message: 'success'});
+    response.code(200).send({ message: 'success'});
+    return true;
 }
 
 async function reject_friend(request, response){
     const [keys, values] = modules.get_cookies(request);
     const data = request.body;
     if (!data || data === undefined){
-        return response.code(400).send({ message: 'Invalid data'});
+        response.code(400).send({ message: 'Invalid data'});
+        return true;
     }
 
     let decoded;
     try {
         decoded = modules.get_jwt(values[keys.indexOf("token")]);
     } catch (err) {
-        return response.code(400).send({ message: 'Invalid decoded'});
+        response.code(400).send({ message: 'Invalid decoded'});
+        return true;
     }
 
     const receiver = data.userid;
@@ -804,7 +813,8 @@ async function reject_friend(request, response){
         console.error("error in deleting accepted friend request");
         return null;
     }
-    return response.code(200).send({ message: 'success'});
+    response.code(200).send({ message: 'success'});
+    return true;
 }
 
 
@@ -812,14 +822,16 @@ async function block_friend(request, response){
     const [keys, values] = modules.get_cookies(request);
     const data = request.body;
     if (!data || data === undefined){
-        return response.code(400).send({ message: 'Invalid data'});
+        response.code(400).send({ message: 'Invalid data'});
+        return true;
     }
 
     let decoded;
     try {
         decoded = modules.get_jwt(values[keys.indexOf("token")]);
     } catch (err) {
-        return response.code(400).send({ message: 'Invalid decoded'});
+        response.code(400).send({ message: 'Invalid decoded'});
+        return true;
     }
 
     // const userid = decoded.userid;
@@ -831,7 +843,8 @@ async function block_friend(request, response){
         console.error("error in deleting accepted friend request");
         return null;
     }
-    return response.code(200).send({ message: 'success'});
+    response.code(200).send({ message: 'success'});
+    return true;
 }
 
 
