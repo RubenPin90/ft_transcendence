@@ -860,17 +860,17 @@ async function replace_all_templates(request, response, state, override) {
 	<div class="flex flex-col mt-8 gap-6">
         <a href="/settings/user/change_user" class="buttons" data-link>
             <button class="block w-full mb-4 mt-6">
-                <span class="button_text">change username</span>
+                <span class="button_text">Change username</span>
             </button>
         </a>
         <a href="/settings/user/change_login" class="buttons" data-link>
             <button class="block w-full mb-4 mt-6">
-                <span class="button_text">change login data</span>
+                <span class="button_text">Change login data</span>
             </button>
         </a>
         <a href="/settings/user/change_avatar" class="buttons" data-link>
             <button class="block w-full mb-4 mt-6">
-                <span class="button_text">change avatar</span>
+                <span class="button_text">Change avatar</span>
             </button>
         </a>
 		<a class="delete_button">
