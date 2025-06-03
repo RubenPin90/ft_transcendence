@@ -210,15 +210,12 @@ async function process_login(request, response) {
 	const data = request.body;
 	const check_settings = await settings_db.get_settings_value('email', data.email);
 	if (!check_settings || check_settings === undefined || check_settings < 0) {
-
-		response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-		response.raw.end(JSON.stringify({"Response": 'Email not found', "Content": null}));
+		response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Email not found', "Content": null});
 		return -1;
 	}
 	const pw = await modules.check_encrypted_password(data.password, check_settings.password);
 	if (!pw || pw === undefined || pw < 0) {
-		response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-		response.raw.end(JSON.stringify({"Response": 'Password incorrect', "Content": null}));
+		response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Password incorrect', "Content": null});
 		return -2;
 	}
 	const mfa = await mfa_db.get_mfa_value('self', check_settings.self);
@@ -258,11 +255,11 @@ function get_decrypted_userid(request, response) {
 		const err_string = String(err);
 		//console.log(err_string);
 		if (err_string.includes("jwt expired")) {
-			response.raw.writeHead(302, {
-				'Set-Cookie': 'token=; HttpOnly; Secure; SameSite=Strict; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
-				'Location': '/login'
-			});
-			response.raw.end();
+			// response.raw.writeHead(302, {
+			// 	'Set-Cookie': 'token=; HttpOnly; Secure; SameSite=Strict; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+			// 	'Location': '/login'
+			// });
+			// response.raw.end();
 			return -2;
 		}
 	}
@@ -476,10 +473,9 @@ async function clear_settings_mfa(userid, search_value, response) {
 	var fallback_options = ['email', 'otc', 'custom'];
 	if (fallback_options.indexOf(search_value) < 0)
 		return -1;
-	response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
 	if (!check_mfa || check_mfa === undefined) {
-		response.raw.end(JSON.stringify({"Response": "Failed"}));
+		response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "Failed", "Content": null});
 		return -2;
 	}
 	await mfa_db.update_mfa_value(`${search_value}`, '', userid);
@@ -496,7 +492,7 @@ async function clear_settings_mfa(userid, search_value, response) {
 	}
 	if (!found)
 		await mfa_db.update_mfa_value('prefered', 0, userid);
-	response.raw.end(JSON.stringify({"Response": "Success"}));
+	response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "Success", "Content": null});
 	return true;
 }
 
@@ -1076,37 +1072,36 @@ async function get_data(request, response) {
 		if (link.get == "{{userid}}") {
 			const userid_decrypted = modules.get_jwt(link.search);
 			const search_user = await users_db.get_users_value('self', userid_decrypted.userid);
-			return response.code(200).send({ "username": search_user.username });
+			response.code(200).headers({ 'Content-Type': 'application/json' }).send({ "username": search_user.username });
+			return true;
 		} else if (link.get == "cookies") {
 			const [keys, values] = modules.get_cookies(request, response);
-			if (keys.length == 0 && values.length == 0 || keys == null && values == null)
-				return response.code(200).send({'content': "empty"});
-			return response.code(200).send({'content': "full"});
+			if (keys.length == 0 && values.length == 0 || keys == null && values == null) {
+				response.code(200).headers({ 'Content-Type': 'application/json' }).send({'content': "empty"});
+				return true;
+			}
+			response.code(200).headers({ 'Content-Type': 'application/json' }).send({'content': "full"});
+			return true;
 		} else if (link.get == "username") {
 			const [keys, values] = modules.get_cookies(request, response);
-			if (keys.length == 0 && values.length == 0)
-				return response.code(200).send({'content': "empty"});
+			if (keys.length == 0 && values.length == 0) {
+				response.code(200).headers({ 'Content-Type': 'application/json' }).send({'content': "empty"});
+				return true;
+			}
 			const username = modules.get_jwt(values[keys.indexOf('token')]);
-			// console.log(username);
 			const check_user = await users_db.get_users_value('self', username.userid);
-			return response.code(200).send({'username': check_user.username});
+			response.code(200).headers({ 'Content-Type': 'application/json' }).send({'username': check_user.username});
+			return true;
 		} else if (link.get == "site_content") {
 			const data = await replace_all_templates(request, response);
-			// console.log("DATA: ", data);
-			response.raw.writeHead(200, {'Content-Type': 'application/json'});
-			response.raw.end(JSON.stringify({"Response": 'success', "Content": show_page(data, "home_div")}));
+			response.code(200).headers({ 'Content-Type': 'application/json' }).send({"Response": 'success', "Content": show_page(data, "home_div")});
 			return true;
 		}
-		response.raw.writeHead(404, {'Content-Type': 'application/json'});
-		response.raw.end(JSON.stringify({"Response": 'Not found', "Content": null}));
-		return true; //or false idk
-		// return response.code(404).send({ "error": "Not found" });
+		response.code(404).headers({ 'Content-Type': 'application/json' }).send({"Response": 'Not found', "Content": null});
+		return true;
 	} catch (err) {
       	console.error('Error:', err);
-		response.raw.writeHead(500, {'Content-Type': 'application/json'});
-		response.raw.end(JSON.stringify({"Response": 'fail', "Content": null}));
-      	// return response.code(500).send({ "response": 'fail' });
-		return true; //or false idk
+		return false; //or false idk
     }
 }
 

@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 
-function send(response, content, data, code) {
-    response.code(code).headers({ 'Content-Type': content }).send(data);
+function send(response, data, code) {
+    response.code(code).headers({ 'Content-Type': 'text/html', 'Access-Control-Allow-Origin': '*' }).send(data);
 }
 
 async function send_html(filename, response, status, func) {
@@ -14,7 +14,7 @@ async function send_html(filename, response, status, func) {
             return false;
         data = temp;
     }
-    send(response, 'text/html', data, status);
+    send(response, data, status);
     return true;
 }
 
@@ -28,7 +28,7 @@ async function send_error_page(filename, response, status, func) {
             return false;
         data = temp;
     }
-    send(response, 'text/html', data, status);
+    send(response, data, status);
     return true;
 }
 
