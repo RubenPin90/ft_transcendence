@@ -87,6 +87,7 @@ async function register(request, response) {
 
 async function home(request, response) {
     var [keys, values] = modules.get_cookies(request);
+    await utils.check_for_invalid_token(request, response, keys, values);
     if (request.url === '/' && !keys?.includes('token'))
         return await login(request, response);
     const code = request.query.code;
@@ -525,7 +526,7 @@ async function profile(request, response){
     // return true;
 }
 
-async function logout(request, response) {
+async function logout(request, response, override) {
     const [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token')) {
         return;
@@ -539,7 +540,13 @@ async function logout(request, response) {
             maxAge: 0
         });
     }
-    response.code(200).send({ message: 'Logged out successfully' });
+    if (override == undefined)
+        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Logged out successfully' });
+    await send.send_html('index.html', response, 200, async (data) => {
+        data = await utils.replace_all_templates(request, response, 1);
+        data = utils.show_page(data, "login_div");
+        return data;
+    });
 }
 
 
@@ -553,7 +560,7 @@ async function user_settings(request, response) {
     const token = values[tokenIndex];
     let decoded;
     try {
-        decoded = await modules.get_jwt(token);
+        decoded = modules.get_jwt(token);
     } catch (err) {
         return // Here was a redirect(response, '/login', 302);
     }
