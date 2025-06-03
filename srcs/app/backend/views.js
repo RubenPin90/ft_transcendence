@@ -95,6 +95,7 @@ async function register(request, response) {
 }
 
 async function home(request, response) {
+    console.log(await utils.check_for_invalid_token(request, response));
     var [keys, values] = modules.get_cookies(request);
     if (request.url === '/' && !keys?.includes('token'))
         return await login(request, response);

@@ -1037,11 +1037,9 @@ async function get_data(request, response) {
 }
 
 
-// async function temp(request, response){
-// 	const body = request.body;
-
-
-// }
+async function check_for_invalid_token(request, response){
+	console.log(request.body);
+}
 
 
 
@@ -1068,5 +1066,6 @@ export {
 	replace_all_templates,
 	show_page,
 	get_data,
-	generate_random_state
+	generate_random_state,
+	check_for_invalid_token
 }
