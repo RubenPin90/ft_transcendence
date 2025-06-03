@@ -256,7 +256,7 @@ function get_decrypted_userid(request, response) {
 		var self_decoded = modules.get_jwt(values[keys.indexOf('token')]);
 	} catch (err) {
 		const err_string = String(err);
-		console.log(err_string);
+		//console.log(err_string);
 		if (err_string.includes("jwt expired")) {
 			response.raw.writeHead(302, {
 				'Set-Cookie': 'token=; HttpOnly; Secure; SameSite=Strict; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
@@ -492,7 +492,7 @@ async function clear_settings_mfa(userid, search_value, response) {
 	for (const option of fallback_options) {
 		if (search_value == option)
 			continue;
-		console.log(check_mfa[option]);
+		//console.log(check_mfa[option]);
 		if (!check_mfa[option].endsWith('_temp') && check_mfa[option].length !== 0) {
 			await mfa_db.update_mfa_value('prefered', fallback_options.indexOf(option) + 1, userid);
 			found = true;
@@ -581,7 +581,7 @@ function split_DOM_elemets(row) {
     return {indent, open_tag, text, closing_tag};
 }
 
-async function replace_all_templates(request, response, state) {
+async function replace_all_templates(request, response, state, override) {
 	const github_login = github_input_handler();
 	const google_login = google_input_handler();
 
@@ -607,6 +607,10 @@ async function replace_all_templates(request, response, state) {
 	settings_html_default_string += '<a class="buttons" href="/settings/user" data-link>';
 	settings_html_default_string += '<button class="block w-full mb-6 mt-6">';
 	settings_html_default_string += '<span class="button_text">User</span>';
+	settings_html_default_string += '</button></a>';
+	settings_html_default_string += '<a class="buttons" href="/settings/language" data-link>';
+	settings_html_default_string += '<button class="block w-full mb-6 mt-6">';
+	settings_html_default_string += '<span class="button_text">Change language</span>';
 	settings_html_default_string += '</button></a></div>';
 	settings_html_default_string += '<div class="flex mt-12 gap-4 w-full">';
 	settings_html_default_string += '<a class="flex-1" href="/" data-link>';
@@ -673,11 +677,13 @@ async function replace_all_templates(request, response, state) {
 	settings_html_user_select_language_string += '<div id="lang_div" class="hidden">';
 	settings_html_user_select_language_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
 
-	settings_html_user_select_language_string += '<button onclick="change_language()">Change language</button>';
-	settings_html_user_select_language_string += `
-	<form id="language">
-		<select name="lang" id="lang">
-			<option value="" selected disabled hidden>Choose your main language</option>
+
+
+	settings_html_user_select_language_string += '<div id="mfa-button" class="flex flex-col items-center w-full mx-auto">'
+	settings_html_user_select_language_string += '<label for="language" class="justify-center font-bold text-2xl pb-5 text-yellow-100">Choose your main language</label>'
+	settings_html_user_select_language_string += '<form id="language" class="w-full mx-auto">'
+	settings_html_user_select_language_string += '<select name="lang" id="lang" class="w-full p-4 text-center rounded-lg text-lg font-[Roboto] border border-[#e0d35f] border-spacing-8 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]">'
+	settings_html_user_select_language_string += `<option value="" selected disabled hidden>Choose your main language</option>
 			<option value="af">Afrikaans</option>
 			<option value="az">Azərbaycanca</option>
 			<option value="id">Bahasa Indonesia</option>
@@ -779,22 +785,15 @@ async function replace_all_templates(request, response, state) {
 			<option value="ja">日本語</option>
 			<option value="zh-cn">简体中文</option>
 			<option value="zh-tw">繁體中文</option>
-			<option value="ko">한국어</option>
-		</select>
-		<button type="submit">Submit</button>
-	</form>`
-	settings_html_user_select_language_string += '<div class="flex mt-12 w-1/2">';
-	settings_html_user_select_language_string += '<a href="/settings" class="flex-1" data-link>';
-	settings_html_user_select_language_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full"><span class="font-bold text-lg">Back</span></button></a>';
-	settings_html_user_select_language_string += `<a href="/" class="flex-1" data-link>
-            <button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
-                <span class="font-bold text-lg">Home</span>
-            </button>
-        </a>`;
-	settings_html_user_select_language_string += '';
-	settings_html_user_select_language_string += '';
-	settings_html_user_select_language_string += ' \
-	</div></div></div></div>';
+			<option value="ko">한국어</option>`
+	settings_html_user_select_language_string += '</select></form></div>'
+	settings_html_user_select_language_string += '<div class="flex mt-4 gap-4 w-full">'
+	settings_html_user_select_language_string += '<a class="flex-1">'
+	settings_html_user_select_language_string += '<button onclick="change_language()" type="submit" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">'
+	settings_html_user_select_language_string += '<span class="font-bold text-lg">Submit</span></button></a>'
+	settings_html_user_select_language_string += '<a href="/" data-link class="flex-1">'
+	settings_html_user_select_language_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">'
+	settings_html_user_select_language_string += '<span class="font-bold text-lg">Home</span></button></a></div></div></div></div>'
 	const settings_html_user_select_language_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_select_language_string);
 
 	var settings_html_user_profile_settings_string = "";
@@ -818,6 +817,11 @@ async function replace_all_templates(request, response, state) {
                 <span class="button_text">change avatar</span>
             </button>
         </a>
+		<a class="delete_button">
+			<button class="block w-full mb-4 mt-6" onclick="delete_account()">
+				<span class="button_text">Delete account</span>
+			</button>
+		</a>
     </div>
     <div class="flex mt-12 gap-4 w-full">
 		<a href="/settings" class="flex-1" data-link>
@@ -867,7 +871,7 @@ async function replace_all_templates(request, response, state) {
                 <path d="M11.241 9.817c-.36.275-.801.425-1.255.427-.428 0-.845-.138-1.187-.395L0 2.6V14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2.5l-8.759 7.317Z"/>
             </svg>
         </div>
-        <input type="text" id="email" placeholder="example@gmail.com" required class="input_field" />
+        <input type="text" id="email_change" placeholder="example@gmail.com" required class="input_field" />
     </div>
     <label for="password-input" class="label_text">Password</label>
     <div id="password_field" class="relative input_total">
@@ -883,7 +887,7 @@ async function replace_all_templates(request, response, state) {
                 <path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 0 0-2.63 4.31c-.12.362-.12.752 0 1.114 1.489 4.467 5.704 7.69 10.675 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 0 1 6.75 12Z" />
                 </svg>
         </button>
-        <input type="password" id="password-input" placeholder="Password" required class="input_field" />
+        <input type="password" id="password_input_change" placeholder="Password" required class="input_field" />
     </div>
     <label for="password-input2" class="label_text">Repeat Password</label>
     <div id="repeat_field" class="relative input_total">
@@ -899,7 +903,7 @@ async function replace_all_templates(request, response, state) {
                 <path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 0 0-2.63 4.31c-.12.362-.12.752 0 1.114 1.489 4.467 5.704 7.69 10.675 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 0 1 6.75 12Z" />
             </svg>
         </button>
-        <input type="password" id="password-input2" placeholder="Repeat password" required class="input_field" />
+        <input type="password" id="password_input2_change" placeholder="Repeat password" required class="input_field" />
     </div>
     <div class="flex mt-12 gap-4 w-full">
         <a class="flex-1">
@@ -937,9 +941,81 @@ async function replace_all_templates(request, response, state) {
 	`;
 	const settings_html_user_profile_avatar_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_avatar_string);
 
-	// const game_raw = await fs.readFile("./backend/templates/game.html", 'utf8');
+	// const play_raw = await fs.readFile("./backend/templates/game.html", 'utf8');
 
-	const menu_raw = await fs.readFile("./backend/templates/menu.html", 'utf8');
+	const play_raw = await fs.readFile("./backend/templates/play.html", 'utf8');
+
+	// play.ts (or wherever you build the template HTML)
+
+	let play_main = "";
+		play_main +=   '<div class="min-h-screen flex items-center justify-center px-4 py-10">';
+		play_main +=     '<div id="login-container" class="field">';
+		play_main +=       '<div id="main-menu">';
+		play_main +=         '<h1>Welcome, <span id="username">{{uname}}</span>!</h1>';
+		play_main +=         '<button id="sp-vs-pve-btn">PVE</button>';
+		play_main +=         '<button id="one-vs-one-btn">1v1 Matchmaking</button>';
+		play_main +=         '<button id="tournament-btn">Tournament</button>';
+		play_main +=       '</div>';
+
+		play_main +=       '<div id="game-container" hidden>';
+		play_main +=         '<h2 id="game-mode-title"></h2>';
+		play_main +=         '<canvas id="game" width="800" height="600"></canvas>';
+		play_main +=       '</div>';
+
+		play_main +=       '<div id="matchmaking-page" hidden class="matchmaking">';
+		play_main +=         '<h2>Searching for an opponent…</h2>';
+		play_main +=         '<div id="matchmaking-spinner" class="spinner"></div>';
+		play_main +=       '</div>';
+
+		play_main +=       '<div id="tournament-page" hidden>';
+		play_main +=         '<h2 style="text-align:center;margin-bottom:2.5rem">Tournaments</h2>';
+		play_main +=         '<div class="tournament-layout">';
+		play_main +=           '<div style="display:flex;gap:1rem;margin-bottom:2rem">';
+		play_main +=             '<input id="t-code-input" class="full-btn" placeholder="Enter a Tournament code here" style="flex:1;height:100px">';
+		play_main +=             '<button id="t-code-btn" class="full-btn" style="width:180px;height:100px">Join<br>by&nbsp;code</button>';
+		play_main +=           '</div>';
+		play_main +=           '<div style="margin-bottom:2rem;text-align:center">';
+		play_main +=             '<button id="t-create-btn" class="full-btn" style="width:240px;height:60px;font-size:1.2rem">Create&nbsp;Tournament</button>';
+		play_main +=           '</div>';
+		play_main +=           '<div class="t-right" id="tournament-list"></div>';
+		play_main +=         '</div>';
+		play_main +=       '</div>';
+
+		play_main +=       '<div id="t-lobby-page" hidden>';
+		play_main +=         '<h2 id="t-lobby-status" style="text-align:center;margin-bottom:1.5rem">Waiting for players…</h2>';
+		play_main +=         '<div id="t-lobby-table" class="TLobby-table"></div>';
+		play_main +=         '<div class="code-box">';
+		play_main +=           '<input id="t-share-code" readonly>';
+		play_main +=           '<button id="t-copy-code-btn" title="Copy code to clipboard"></button>';
+		play_main +=         '</div>';
+		play_main +=         '<div id="host-controls">';
+		play_main +=           '<button id="t-start-btn" class="full-btn" style="width:320px;height:80px;font-size:1.5rem">START</button>';
+		play_main +=         '</div>';
+		play_main +=         '<div id="player-controls">';
+		play_main +=           '<button id="t-ready-btn" class="full-btn" style="width:320px;height:80px;font-size:1.5rem">READY</button>';
+		play_main +=           '<span id="t-my-ready-dot" class="green-dot"></span>';
+		play_main +=         '</div>';
+		play_main +=         '<div style="display:flex;justify-content:space-between">';
+		play_main +=           '<button id="t-leave-btn" class="square-btn">Leave</button>';
+		play_main +=           '<button id="t-custom-btn" class="square-btn">Customization</button>';
+		play_main +=         '</div>';
+		play_main +=       '</div>';
+
+		play_main +=       '<div id="bracket-overlay" class="bracket-overlay" hidden>';
+		play_main +=         '<button id="bracket-begin-btn" class="bracket-begin-btn" hidden>Begin round&nbsp;1</button>';
+		play_main +=       '</div>';
+
+		play_main +=       '<template id="match-card-tpl">';
+		play_main +=         '<div class="match-card">';
+		play_main +=           '<div class="p1"></div>';
+		play_main +=           '<div class="vs">vs</div>';
+		play_main +=           '<div class="p2"></div>';
+		play_main +=         '</div>';
+		play_main +=       '</template>';
+
+		play_main +=     '</div>'; // login-container
+		play_main +=   '</div>';   // flex container
+
 
 	const index_html_raw = await fs.readFile("./backend/templates/index.html", 'utf8')
 
@@ -959,16 +1035,19 @@ async function replace_all_templates(request, response, state) {
 	index_html += settings_html_user_profile_credential_raw;
 	index_html += settings_html_user_profile_avatar_raw;
 	index_html += friends_html_raw;
-	index_html += menu_raw;
+	index_html += play_main;
 	// index_html += game_raw;
 	const [keys, values] = modules.get_cookies(request);
 	// const user_encrypt = modules.get_jwt(values[0]);
 	// const lang_encrypt = modules.get_jwt(values[1]);
-	if (keys?.includes('lang')) {
+	if (keys?.includes('lang') && (override == undefined || !override)) {
 		const lang_encoded = values[keys.indexOf('lang')];
 		const lang_decrypted = modules.get_jwt(lang_encoded);
 		if (lang_decrypted.userid != "en")
 			index_html = await translator.cycle_translations(index_html, lang_decrypted.userid);
+	} else if (override != undefined) {
+		if (override != "en")
+			index_html = await translator.cycle_translations(index_html, override);
 	}
 	const token = values[keys.indexOf('token')];
 	if (!token)

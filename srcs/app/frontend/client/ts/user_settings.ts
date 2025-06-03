@@ -55,6 +55,23 @@ function toggle_eye(num : number){
     }
 }
 
+async function delete_account() {
+    const response = await fetch("/delete_account", {
+        method: 'POST',
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({"action": "delete"}),
+    });
+
+    var data;
+    try {
+        data = await response.json();
+        if (data.Response == "success")
+            Log_out();
+    } catch (err) {
+        console.log(err);
+    }
+}
+
 // function return_main_settings() : string {
 //     return `
 //     <div class="flex flex-col mt-8 gap-6">
@@ -210,6 +227,14 @@ async function change_user(){
         }else{
             alert("Error: " + result.message);
         }
+        var name_field = document.getElementById("welcome-user-field");
+        var value = name_field?.innerHTML;
+        var splited = value?.split('<br>');
+        if (!splited || !name_field)
+            return;
+        name_field.innerHTML = `${splited[0]}<br>${usernameValue}`;
+        console.log(name_field.innerHTML);
+
     }
     catch (err){
         console.error("error with update: " + err);
@@ -220,13 +245,21 @@ async function change_user(){
 //TODO parse email
 //TODO compare password and repeat password
 async function change_logindata(){
-    const emailField = document.getElementById('email') as HTMLInputElement;
-    const passField = document.getElementById('password-input') as HTMLInputElement;
-    const repField = document.getElementById('password-input2') as HTMLInputElement;
+    const emailField = document.getElementById('email_change') as HTMLInputElement;
+    const passField = document.getElementById('password_input_change') as HTMLInputElement;
+    const repField = document.getElementById('password_input2_change') as HTMLInputElement;
     
     const emailValue = emailField.value;
     const passValue = passField.value;
     const repValue = repField.value;
+
+    console.log("EMAIL::::", emailValue);
+    console.log("PASS:::::", passValue);
+    console.log("REPE:::::", repValue);
+
+
+    if (emailValue == '')
+        console.log("EMAILVALUE IS EMPTY");
 
     
     const value_struct = {
@@ -239,7 +272,8 @@ async function change_logindata(){
         alert("password is not equal to repeat password"); //todo add css visual
         return;
     }
-    if (parse_email(emailValue) === false){
+    if (emailValue && parse_email(emailValue) === false){
+        alert("EMAIL WRONG");
         return;
     }
     
@@ -271,8 +305,8 @@ async function change_avatar(){
     read.onload = async () => {
         const base64 = read.result as string;
         const value_struct = {
-            email: null,
-            password: null,
+            email: '',
+            password: '',
             avatar: base64
         }
         
@@ -285,7 +319,7 @@ async function change_avatar(){
             body: JSON.stringify(value_struct)
         });
         if (response.ok){
-            console.log("success");
+            //console.log("success");
         }else{
             alert("error updating avatar");
         }

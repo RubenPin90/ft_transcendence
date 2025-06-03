@@ -25,7 +25,7 @@ export function setupButtonsDelegated(
           navigate('/matchmaking');
           break;
 
-        case 'Tournament-btn':
+        case 'tournament-btn':
           navigate('/tournament');
           break;
 
@@ -83,8 +83,8 @@ export function setupButtonsDelegated(
         case 't-start-btn':
           if (TLobby) {
             TLobbySocket.send(JSON.stringify({
-              type: 'startTournament',
-              payload: { id: TLobby.id }
+              type: 'generateBracket',
+              payload: { tournamentId: TLobby.id }
             }));
           }
           break;
@@ -101,7 +101,7 @@ export function setupButtonsDelegated(
   if (tournamentPage) {
     tournamentPage.addEventListener('click', (event) => {
       const target = event.target as HTMLElement;
-      console.log('Tournament page button clicked:', target.id);
+      //console.log('Tournament page button clicked:', target.id);
 
       switch (target.id) {
         case 't-create-btn':
