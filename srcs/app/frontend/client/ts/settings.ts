@@ -23,9 +23,8 @@ async function create_otc() {
         const qrcodeButtonDiv = document.getElementById('mfa-button');
         if (qrcodeDiv && qrcodeButtonDiv) {
             qrcodeDiv.innerHTML = `<img src=${data.qrCodeUrl}></p>`;
-            qrcodeButtonDiv.innerHTML = '<input id="Code" name="Code" placeholder="Code"></label> <button onclick="verify_code()">Verify</button> <button onclick="window.location.reload()">Back</button>';
+            qrcodeButtonDiv.innerHTML = '<input id="Code" name="Code" placeholder="Code"></label> <button onclick="verify_code()">Verify</button> <a><button onclick="render_mfa()">Back</button></a>';
         }
-
     } catch (error) {
         // console.error('Fehler bei create_otc:', error.message);
         throw error;
@@ -60,7 +59,7 @@ async function verify_code() {
         if (data.Response !== "success")
             alert("Error: 2FA code invalid");
         else
-            window.location.reload;
+            render_mfa();
         //     clear window and replace with nice UI Box. Client success
     } catch (jsonError) {
         throw new Error('Fehler beim Parsen der JSON-Antwort');
@@ -103,8 +102,7 @@ async function verify_custom_code() {
         const data = await response.json();
         
         if (data.Response === "success") {
-            alert("Code successfully registered!");
-            window.location.reload;
+            render_mfa();
             return;
         } else {
             alert("Incorrect code. Please retry!");
@@ -137,7 +135,7 @@ async function create_custom_code() {
         qrcodeButtonDiv.innerHTML = `
             <input id="Code" name="Code" placeholder="Code"><br>
             <button id="nextButton">Next</button>
-            <button onclick="window.location.reload()">Back</button>
+            <button onclick="render_mfa()">Back</button>
         `;
 
         const nextButton = document.getElementById('nextButton') as HTMLButtonElement;
@@ -202,8 +200,7 @@ async function verifyEmail() {
 
         const data = await response.json();
         if (data.Response === "success") {
-            alert("Email successfully verified!");
-            window.location.reload;
+            render_mfa();
         } else {
             alert("Verification failed. Wrong password");
         }
@@ -239,6 +236,7 @@ async function create_email() {
                 <input type="text" id="email-code" placeholder="Code"></input>
                 <br>
                 <button onclick="verifyEmail()">Verify</button>
+                <button onclick="render_mfa()">Back</button>
             `;
         }
     } catch (jsonError) {

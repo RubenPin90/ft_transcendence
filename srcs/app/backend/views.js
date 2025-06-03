@@ -12,6 +12,7 @@ import { response } from 'express';
 import { promises as fs, utimes } from 'fs';
 import { encrypt_google } from './utils.js';
 import http from 'http';
+import { parse } from 'path';
 
 async function login(request, response) {
     var [keys, values] = modules.get_cookies(request);
@@ -589,13 +590,6 @@ async function update_settings(request, response) {
 
     const { email, password, avatar } = data;
 
-    console.log("----------------------");
-    console.log(email);
-    console.log(password);
-    console.log(avatar);
-    console.log("----------------------");
-
-
     const tokenIndex = keys.findIndex((key) => key === 'token');
     const token = values[tokenIndex];
     let decoded;
@@ -656,7 +650,6 @@ async function update_user(request, response) {
     }
 
     const userid = decoded.userid;
-    console.log("DATA: ", data);
     try {
         const result = await users_db.update_users_value('username', data, userid);
         if (result) {
@@ -711,15 +704,12 @@ async function friends(request, response){
     // });
 
 
-
-
     // const status = await send.send_html('friends.html', response, 200);
     // if (!status || status === undefined){
     //     return `Error rendering user settings page: ${status}`;
     // }
     return true;
 }
-
 
 async function add_friends(request, response){
     const [keys, values] = modules.get_cookies(request);
@@ -817,7 +807,6 @@ async function reject_friend(request, response){
     return true;
 }
 
-
 async function block_friend(request, response){
     const [keys, values] = modules.get_cookies(request);
     const data = request.body;
@@ -846,7 +835,6 @@ async function block_friend(request, response){
     response.code(200).send({ message: 'success'});
     return true;
 }
-
 
 async function delete_account(request, response) {
     const data = request.body;
@@ -896,6 +884,120 @@ async function play(request, response) {
     return true;
 }
 
+
+
+async function process_login(request, response) {
+    const data = request.body;
+    const check_settings = await settings_db.get_settings_value('email', data.email);
+    if (!check_settings || check_settings === undefined || check_settings < 0) {
+
+        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+        response.raw.end(JSON.stringify({"Response": 'Email not found', "Content": null}));
+        return -1;
+    }
+    const pw = await modules.check_encrypted_password(data.password, check_settings.password);
+    if (!pw || pw === undefined || pw < 0) {
+        response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
+        response.raw.end(JSON.stringify({"Response": 'Password incorrect', "Content": null}));
+        return -2;
+    }
+    const mfa = await mfa_db.get_mfa_value('self', check_settings.self);
+    if (!mfa || mfa === undefined || mfa < 0 || ((mfa.otc && mfa.otc.endsWith('_temp')) && (mfa.email && mfa.email.endsWith('_temp')) && (mfa.custom && mfa.custom.endsWith('_temp')) ))
+        return {'settings': check_settings, 'mfa': null};
+    return {'settings': check_settings, 'mfa': mfa};
+}
+
+
+async function set_up_mfa_buttons(request, response) {
+    const [keys, values] = modules.get_cookies(request);
+    if (!keys?.includes('token')) {
+        return login(request, response);
+    }
+
+    const encrypted_userid = values[keys.indexOf('token')];
+    const userid = modules.get_jwt(encrypted_userid).userid;
+    var set = 0;
+    var options = '';
+    var parsed = await mfa_db.get_mfa_value('self', userid);
+    if (parsed == undefined)
+        await mfa_db.create_mfa_value('', '', '', 0, userid);
+    else {
+        if (parsed.otc.length !== 0 && !parsed.otc.endsWith('_temp')) {
+            set++;
+            options += "<option>OTC</option>";
+        }
+        if (parsed.custom.length !== 0 && !parsed.custom.endsWith('_temp')) {
+            set++;
+            options += "<option>Custom</option>";
+        }
+        if (parsed.email.length !== 0 && !parsed.email.endsWith('_temp')) {
+            set++;
+            options += "<option>Email</option>";
+        }
+    }
+
+    var settings_html_mfa_string = "";
+	settings_html_mfa_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
+	settings_html_mfa_string += '<div id="mfa"></div>'
+    settings_html_mfa_string += '<div id="mfa-button">'
+
+    if (set > 1){
+        settings_html_mfa_string +='<div class="flex gap-2">'
+        settings_html_mfa_string +='<form id="mfa_options" class="w-5/6">'
+        settings_html_mfa_string +='<select name="lang" id="select_mfa" class="w-full p-4 text-center rounded-xl text-2xl border border-[#e0d35f] border-spacing-8 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]">'
+        settings_html_mfa_string +='<option value="" selected disabled hidden>Choose your main 2FA</option>'
+        settings_html_mfa_string += options;
+        settings_html_mfa_string +='</select></form>'
+        
+        settings_html_mfa_string +='<div class="flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl cursor-pointer">'
+        settings_html_mfa_string +='<button onclick="change_preffered_mfa()">'
+        settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">'
+        settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />'
+        settings_html_mfa_string +='</svg></button></div></div>'
+    }
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex gap-2">';
+	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_otc()">';
+	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
+	settings_html_mfa_string +='<span class="button_text">Create OTC</span></button></div>';
+	settings_html_mfa_string +='';
+    if (options.includes("OTC"))
+	    settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_otc')", true);
+    else
+        settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_otc')", false);
+    settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex gap-2">';
+	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_custom_code()">';
+	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
+	settings_html_mfa_string +='<span class="button_text">Create custom 6 digit code</span></button></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='';
+    if (options.includes("Custom"))
+	    settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_custom_code')", true);
+    else
+        settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_custom_code')", false);
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex gap-2">';
+	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_email()">';
+	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
+	settings_html_mfa_string +='<span class="button_text">Enable email authentication</span></button></div>';
+	settings_html_mfa_string +='';
+    if (options.includes("Email"))
+	    settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_email')", true);
+    else
+        settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_email')", false);
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex mt-12 gap-4 w-full">';
+	settings_html_mfa_string +='<a class="flex-1" href="/settings" data-link>';
+	settings_html_mfa_string +='<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	settings_html_mfa_string +='<span class="font-bold text-lg">Back</span>';
+	settings_html_mfa_string +='</button></a>';
+	settings_html_mfa_string +='<a href="/" class="flex-1" data-link>';
+	settings_html_mfa_string +='<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	settings_html_mfa_string +='<span class="font-bold text-lg">Home</span>';
+	settings_html_mfa_string +='</button></a></div></div></div></div></div>';
+    return response.code(200).headers({'Content-Type': 'application/json','Access-Control-Allow-Origin': '*'}).send({"Response": "success","Content": settings_html_mfa_string});
+}
 export {
     login,
     register,
@@ -917,5 +1019,6 @@ export {
     reject_friend,
     block_friend,
     delete_account,
-    play
+    play,
+    set_up_mfa_buttons
 }

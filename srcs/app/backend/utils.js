@@ -616,30 +616,94 @@ async function replace_all_templates(request, response, state, override) {
 	const settings_html_default = settings_html_raw.replace("{{mfa-button}}", settings_html_default_string);
 
 	var settings_html_mfa_string = "";
+
 	settings_html_mfa_string += '<div id="mfa_div" class="hidden">';
 	settings_html_mfa_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
 
-	settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_otc()">';
-	settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
-	settings_html_mfa_string += '<span class="button_text">Create OTC</span>';
-	settings_html_mfa_string += '</button></div>';
-	settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_custom_code()">';
-	settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
-	settings_html_mfa_string += '<span class="button_text">Create custom 6 diggit code</span>';
-	settings_html_mfa_string += '</button></div>';
-	settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_email()">';
-	settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
-	settings_html_mfa_string += '<span class="button_text">Enable email authentication</span>';
-	settings_html_mfa_string += '</button></div>';
-	settings_html_mfa_string += '<div class="flex mt-12 gap-4 w-full">';
-	settings_html_mfa_string += '<a class="flex-1" href="/settings" data-link>';
-	settings_html_mfa_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-	settings_html_mfa_string += '<span class="font-bold text-lg">Back</span>';
-	settings_html_mfa_string += '</button></a>';
-	settings_html_mfa_string += '<a href="/" class="flex-1" data-link>';
-	settings_html_mfa_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-	settings_html_mfa_string += '<span class="font-bold text-lg">Home</span>';
-	settings_html_mfa_string += '</button></a></div></div></div></div></div>';
+	settings_html_mfa_string += '<div id="mfa"></div>'
+    settings_html_mfa_string += '<div id="mfa-button">'
+
+    settings_html_mfa_string +='<div class="flex gap-2">'
+    settings_html_mfa_string +='<form id="mfa_options" class="w-5/6">'
+    settings_html_mfa_string +='<select name="lang" id="select_mfa" class="w-full p-4 text-center rounded-xl text-2xl border border-[#e0d35f] border-spacing-8 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]">'
+    settings_html_mfa_string +='<option value="" selected disabled hidden>Choose your main 2FA</option>'
+    settings_html_mfa_string +='{{2FAOPTIONS}}'
+    settings_html_mfa_string +='</select></form>'
+    settings_html_mfa_string +='<div class="flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl cursor-pointer">'
+    settings_html_mfa_string +='<button onclick="change_preffered_mfa()">'
+    settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">'
+    settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />'
+    settings_html_mfa_string +='</svg></button></div></div>'
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex gap-2">';
+	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_otc()">';
+	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
+	settings_html_mfa_string +='<span class="button_text">Create OTC</span></button></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div id="trash_otc" class="trash_disable">';
+	settings_html_mfa_string +='<button id="trash_otc_button" class="pointer-events-none">';
+	settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
+	settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg></button></div></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex gap-2">';
+	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_custom_code()">';
+	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
+	settings_html_mfa_string +='<span class="button_text">Create custom 6 digit code</span></button></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div id="trash_custom" class="trash_enable">';
+	settings_html_mfa_string +='<button id="trash_custom_button" class="pointer-events-none">';
+	settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
+	settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg></button></div></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex gap-2">';
+	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_email()">';
+	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
+	settings_html_mfa_string +='<span class="button_text">Enable email authentication</span></button></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div id="trash_email" class="trash_disable">';
+	settings_html_mfa_string +='<button id="trash_email_button" class="pointer-events-none">';
+	settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
+	settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />';
+	settings_html_mfa_string +='</svg></button></div></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex mt-12 gap-4 w-full">';
+	settings_html_mfa_string +='<a class="flex-1" href="/settings" data-link>';
+	settings_html_mfa_string +='<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	settings_html_mfa_string +='<span class="font-bold text-lg">Back</span>';
+	settings_html_mfa_string +='</button></a>';
+	settings_html_mfa_string +='<a href="/" class="flex-1" data-link>';
+	settings_html_mfa_string +='<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	settings_html_mfa_string +='<span class="font-bold text-lg">Home</span>';
+	settings_html_mfa_string +='</button></a></div></div></div></div></div></div>';
+
+
+	// settings_html_mfa_string += '<div id="mfa_div" class="hidden">';
+	// settings_html_mfa_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
+	// settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_otc()">';
+	// settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
+	// settings_html_mfa_string += '<span class="button_text">Create OTC</span>';
+	// settings_html_mfa_string += '</button></div>';
+	// settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_custom_code()">';
+	// settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
+	// settings_html_mfa_string += '<span class="button_text">Create custom 6 diggit code</span>';
+	// settings_html_mfa_string += '</button></div>';
+	// settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_email()">';
+	// settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
+	// settings_html_mfa_string += '<span class="button_text">Enable email authentication</span>';
+	// settings_html_mfa_string += '</button></div>';
+	// settings_html_mfa_string += '<div class="flex mt-12 gap-4 w-full">';
+	// settings_html_mfa_string += '<a class="flex-1" href="/settings" data-link>';
+	// settings_html_mfa_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	// settings_html_mfa_string += '<span class="font-bold text-lg">Back</span>';
+	// settings_html_mfa_string += '</button></a>';
+	// settings_html_mfa_string += '<a href="/" class="flex-1" data-link>';
+	// settings_html_mfa_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	// settings_html_mfa_string += '<span class="font-bold text-lg">Home</span>';
+	// settings_html_mfa_string += '</button></a></div></div></div></div></div>';
 	const settings_html_mfa = settings_html_raw.replace("{{mfa-button}}", settings_html_mfa_string);
 
 	var settings_html_user_string = "";
@@ -1028,6 +1092,7 @@ async function replace_all_templates(request, response, state, override) {
 	index_html += settings_html_user_profile_avatar_raw;
 	index_html += friends_html_raw;
 	index_html += play_main;
+  
 	// index_html += game_raw;
 	const [keys, values] = modules.get_cookies(request);
 	// const user_encrypt = modules.get_jwt(values[0]);
@@ -1106,6 +1171,21 @@ async function get_data(request, response) {
     }
 }
 
+function retrieve_trash_icon_mfa(method, enable) {
+	var trash_icon = '';
+	if (enable == true) {
+		trash_icon +=`<div id="trash_custom" class="trash_enable">`;
+		trash_icon +=`<button onclick="${method}" id="trash_custom_button">`;
+		trash_icon +=`<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">`;
+		trash_icon +=`<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg></button></div></div>`;
+	} else {
+		trash_icon +=`<div id="trash_otc" class="trash_disable">`;
+		trash_icon +=`<button id="trash_otc_button" class="pointer-events-none">`;
+		trash_icon +=`<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">`;
+		trash_icon +=`<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg></button></div></div>`;
+	}
+	return trash_icon;
+}
 
 async function check_for_invalid_token(request, response, keys, values) {
 	if (keys.length == 0)
@@ -1127,8 +1207,6 @@ async function check_for_invalid_token(request, response, keys, values) {
 	}
 	return false;
 }
-
-
 
 
 export {
@@ -1154,5 +1232,6 @@ export {
 	show_page,
 	get_data,
 	generate_random_state,
+	retrieve_trash_icon_mfa,
 	check_for_invalid_token
 }

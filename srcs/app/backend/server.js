@@ -39,7 +39,7 @@ await fastify.register(urlsPlugin);
 // Start the server
 await fastify.listen({ port: PORT, host: '0.0.0.0' });
 const server = fastify.server;
-console.log(`Server running at http://localhost:${PORT}`);
+// console.log(`Server running at http://localhost:${PORT}`);
 
 // Setup WebSocket server
 const wss = new WebSocketServer({ noServer: true });

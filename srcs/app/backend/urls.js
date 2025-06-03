@@ -82,6 +82,26 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.post('/field_login', (req, reply) => views.field_login(req, reply));
   fastify.post('/field_signup', (req, reply) => views.field_signup(req, reply));
   fastify.post('/delete_account', (req, reply) => views.delete_account(req, reply));
+  fastify.post('/mfa_setup', (req, reply) => views.set_up_mfa_buttons(req, reply));
+  fastify.post('/mfa', (req, reply) => views.mfa(req, reply));
+
+  fastify.post('/home', async (request, reply) => {
+    try {
+      const link = request.body;
+      // check if google or github
+      // if google {
+        const response = await utils.encrypt_google(link);
+        const decoded_user = modules.get_jwt(response.token);
+        const user_data = await user_db.get_users_value('self', decoded_user.userid);
+        var new_response = {"response": response.response, "token": response.token, "lang": response.lang, "name": user_data.username}
+        return reply.code(200).send(new_response);
+    // } else {
+    // }
+    } catch (err) {
+      console.error('Error:', err);
+      return reply.code(500).send({ "response": 'fail' });
+    }
+  });
   fastify.post("/get_data", async (request, reply) => utils.get_data(request, reply));
 
   // --- 404 fallback ---
