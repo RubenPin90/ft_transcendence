@@ -4,5 +4,5 @@ secrets.key
 db.sqlite
 .vscode
 secrets
-secrets.key
+secrets.yml
 monitoring

@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 
 function send(response, content, data, code) {
-    response.raw.writeHead(code, { 'Content-Type': content});
+    response.raw.writeHead(code, { 'Content-Type': content });
     response.raw.end(data);
 }
 
