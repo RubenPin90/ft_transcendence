@@ -1,10 +1,9 @@
 import { check } from './play.js';
 
-const available_divs = ['change_avatar_div','user_prof_div', 'userpass_div', 'useravatar_div', 'username_div' ,'lang_prof_div' ,'settings_main_div', 'mfa_div','user_settings_div', 'register_div', 'profile_div', 'menu_div', 'login_div', 'home_div', 'game_div', 'friends_div', 'change_user_div', 'change_login_div']
+const available_divs = ['change_avatar_div','user_prof_div', 'userpass_div', 'useravatar_div', 'username_div' ,'lang_prof_div' ,'settings_main_div', 'mfa_div','user_settings_div', 'register_div', 'lang_div', 'profile_div', 'menu_div', 'login_div', 'home_div', 'game_div', 'friends_div', 'change_user_div', 'change_login_div']
 
 async function show_profile_page() : Promise<string>{
-    console.log("in here");
-    var innervalue = document.getElementById("personal_info")?.innerHTML;
+    var innervalue = document.getElementById("profile_div")?.innerHTML;
 
 
     const response = await fetch ('/profile', {
@@ -12,23 +11,84 @@ async function show_profile_page() : Promise<string>{
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(innervalue),
+        body: JSON.stringify({innervalue}),
     });
 
     if (!response.ok){
         alert("error with profile response");
-        return '';
+        return 'home_div';
     }
 
     const data = await response.json();
-    if (data.Response === 'success')
-        innervalue = data.Content;
+    console.log(data.Response);
+    if (data.Response === 'success'){
+        var element = document.getElementById("profile_div");
+        if (element){
+            element.innerHTML = data.Content;
+        }
+    }
     else if (data.Response === 'fail'){
         alert(`error with data of profile ${data.Content}`);
         return 'home_div';
     }
+    else if (data.Response === 'Logged out successfully'){
+        // const html_response = await fetch("/get_data", {
+        //     method: 'GET',
+        //     headers: {
+        //         'Content-Type': 'application/json'
+        //     }, body: JSON.stringify({
+        //         "get": "login_html",
+        //     }),
+        // });
+        // const html = await html_response.text();
+        // const page_replace = document.getElementById("main_body");
+        // if (!page_replace) {
+        //     return 'home_div';
+        // }
+        // const temp_div = document.createElement("div");
+        // temp_div.innerHTML = html;
+        // const mainBody = temp_div.querySelector('#main_body');
+        // if (!mainBody) {
+        //     return 'home_div';
+        // }
+        // const main_body = mainBody?.innerHTML;
+        // page_replace.innerHTML = main_body;
+        history.pushState({}, '', '/login');
+        // toggle_divs('login_div');
+        return 'login_div';
+    }
     return 'profile_div';
 }
+
+async function show_friends_page() : Promise<string>{
+    var innervalue = document.getElementById("friends_field")?.innerHTML;
+
+    const response = await fetch ('/friends', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({innervalue}),
+    });
+    if (!response.ok){
+        alert("error with friends response");
+        return 'home_div';
+    };
+
+    const data = await response.json();
+    if (data.Response === 'success'){
+        var element = document.getElementById("friends_field");
+        if (element){
+            element.innerHTML = data.Content;
+        }
+    }
+    else if (data.Response === 'fail'){
+        alert (`error with data of friends ${data.Content}`)
+        return 'home_div';
+    }
+    return 'friends_div';
+}
+
 
 export function toggle_divs(render : string){
     available_divs.forEach(divs => {
@@ -65,6 +125,36 @@ async function check_cookie_fe(): Promise<boolean> {
     if (data.content == "full")
         return true;
     return false;
+}
+
+async function render_mfa() : Promise<string>{
+    // console.log("HERE");
+    var innervalue = document.getElementById("mfa_div")?.innerHTML;
+
+    const response = await fetch ('/mfa_setup', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({innervalue}),
+    });
+    if (!response.ok){
+        alert("error with MFA response");
+        return 'home_div';
+    };
+
+    const data = await response.json();
+    if (data.Response === 'success'){
+        var element = document.getElementById("mfa_div");
+        if (element){
+            element.innerHTML = data.Content;
+        }
+    }
+    else if (data.Response === 'fail'){
+        alert (`error with data of MFA ${data.Content}`)
+        return 'home_div';
+    }
+    return 'mfa_div';
 }
 
 //TODO add more routes
@@ -110,18 +200,24 @@ export async function where_am_i(path : string) : Promise<string> {
                 return 'login_div';
             }
             return 'settings_main_div';
-        case '/settings/user': 
+        case '/settings/user':
         if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
             return 'user_prof_div';
+        case '/settings/language': 
+        if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            return 'lang_div';
         case '/settings/mfa': 
         if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
-            return 'mfa_div';
+            return await render_mfa();
         case '/settings/user/change_user': 
         if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');
@@ -145,7 +241,7 @@ export async function where_am_i(path : string) : Promise<string> {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
-            return 'friends_div';
+            return await show_friends_page();
         default: return 'home_div';
     }
 }

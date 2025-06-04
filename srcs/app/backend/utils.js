@@ -10,8 +10,9 @@ import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
 import * as friends_request from '../database/db_friend_request.js'
 import { promises as fs, utimes } from 'fs';
-import { profile } from 'console';
+import { log, profile } from 'console';
 import * as translator from './translate.js';
+import * as views from './views.js';
 
 dotenv.config();
 
@@ -210,42 +211,18 @@ async function process_login(request, response) {
 	const data = request.body;
 	const check_settings = await settings_db.get_settings_value('email', data.email);
 	if (!check_settings || check_settings === undefined || check_settings < 0) {
-
-		response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-		response.raw.end(JSON.stringify({"Response": 'Email not found', "Content": null}));
+		response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Email not found', "Content": null});
 		return -1;
 	}
 	const pw = await modules.check_encrypted_password(data.password, check_settings.password);
 	if (!pw || pw === undefined || pw < 0) {
-		response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
-		response.raw.end(JSON.stringify({"Response": 'Password incorrect', "Content": null}));
+		response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Password incorrect', "Content": null});
 		return -2;
 	}
 	const mfa = await mfa_db.get_mfa_value('self', check_settings.self);
 	if (!mfa || mfa === undefined || mfa < 0 || ((mfa.otc && mfa.otc.endsWith('_temp')) && (mfa.email && mfa.email.endsWith('_temp')) && (mfa.custom && mfa.custom.endsWith('_temp')) ))
 		return {'settings': check_settings, 'mfa': null};
 	return {'settings': check_settings, 'mfa': mfa};
-}
-
-async function get_frontend_content(request) {
-	let body = '';
-    
-    return new Promise((resolve) => {
-        request.on('data', chunk => {
-            body += chunk.toString();
-        });
-        
-        request.on('end', async () => {
-            try {
-                const data = JSON.parse(body);
-                resolve(data);
-				return;
-            } catch (error) {
-                resolve(null);
-				return;
-            }
-        });
-    });
 }
 
 function get_decrypted_userid(request, response) {
@@ -258,11 +235,11 @@ function get_decrypted_userid(request, response) {
 		const err_string = String(err);
 		//console.log(err_string);
 		if (err_string.includes("jwt expired")) {
-			response.raw.writeHead(302, {
-				'Set-Cookie': 'token=; HttpOnly; Secure; SameSite=Strict; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
-				'Location': '/login'
-			});
-			response.raw.end();
+			// response.raw.writeHead(302, {
+			// 	'Set-Cookie': 'token=; HttpOnly; Secure; SameSite=Strict; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+			// 	'Location': '/login'
+			// });
+			// response.raw.end();
 			return -2;
 		}
 	}
@@ -348,12 +325,11 @@ async function create_otc(userid, response) {
 	const secret = otc_secret(base32_secret);
 	if (!secret || secret === undefined || secret < 0)
 		return -3;
-	response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
 	try {
 		const url = await qrcode.toDataURL(secret.otpauth_url);
-		response.raw.end(JSON.stringify({ qrCodeUrl: url }));
+		response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ qrCodeUrl: url });
 	} catch (err) {
-		response.raw.end('Fehler beim Generieren des QR-Codes');
+		response.code(500).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "response": 'Fehler beim Generieren des QR-Codes' });
 		return -4;
 	}
 	return true;
@@ -376,26 +352,24 @@ async function create_custom_code(userid, response, data) {
 	if (check_mfa < 0)
 		return -2;
 	const check_code = data.Code;
-	response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
 	if (check_code.length != 6) {
-		response.raw.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
+		response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "failed" });
 		return -3;
 	}
 	if (isNaN(Number(check_code))) {
-		response.raw.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
+		response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "failed" });
 		return -4;
 	}
 	if (!check_mfa || check_mfa === undefined)
 		await mfa_db.create_mfa_value('', '', `${check_code}_temp`, 0, userid);
 	else
-		await mfa_db.update_mfa_value('custom', `${check_code}_temp`, userid);
-	response.raw.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Success"}));
+	await mfa_db.update_mfa_value('custom', `${check_code}_temp`, userid);
+	response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "success" });
 	return true;
 }
 
 async function verify_custom_code(userid, response, data) {
 	const check_custom_error_code = custom_code_error_checker(userid, response);
-	response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
 	if (!check_custom_error_code || check_custom_error_code === undefined || check_custom_error_code < 0)
 		return -1;
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
@@ -405,13 +379,13 @@ async function verify_custom_code(userid, response, data) {
 	if (custom.endsWith('_temp'))
 		custom = custom.slice(0, -5);
 	if (data.Code !== custom) {
-		response.raw.end(JSON.stringify({"Response": 'Wrong password', "Content": null}));
+		response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'Wrong password', "Content": null });
 		return -3;
 	}
 	await mfa_db.update_mfa_value('custom', custom, userid);
 	if (check_mfa.prefered === 0)
 		await mfa_db.update_mfa_value('prefered', 3, userid);
-	response.raw.end(JSON.stringify({"Response": 'success', "Content": null}));
+	response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": null });
 	return true;
 }
 
@@ -422,9 +396,8 @@ async function create_email_code(userid, response, replace_data) {
 	const check_settings = await settings_db.get_settings_value('self', userid);
 	if (!check_settings || check_settings === undefined || check_settings < 0)
 		return -2;
-	response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
 	if (!check_settings.email || check_settings.email === undefined) {
-		response.raw.end(JSON.stringify({"Response": "NoEmail"}));
+		response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "NoEmail", "Content": null });
 		return -3;
 	}
 	var email_code = Math.floor(Math.random() * 1000000);
@@ -433,11 +406,11 @@ async function create_email_code(userid, response, replace_data) {
 		email_code = '0' + email_code;
 	const check_code = String(email_code);
 	if (check_code.length != 6) {
-		response.raw.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
+		response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "failed", "Content": null });
 		return -4;
 	}
 	if (isNaN(Number(check_code))) {
-		response.raw.end(JSON.stringify({"Response": 'send_custom_verification', "Response": "Failed"}));
+		response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "failed", "Content": null });
 		return -5;
 	}
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
@@ -445,8 +418,8 @@ async function create_email_code(userid, response, replace_data) {
 	if (!check_mfa || check_mfa === undefined)
 		await mfa_db.create_mfa_value(`${encrypted_code}_temp`, '', '', 0, userid);
 	else
-		await mfa_db.update_mfa_value('email', `${encrypted_code}_temp`, userid);
-	response.raw.end(JSON.stringify({"Response": 'success'}));
+	await mfa_db.update_mfa_value('email', `${encrypted_code}_temp`, userid);
+	response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "success", "Content": null });
 	const check_email = await modules.send_email(check_settings.email, 'MFA code', `This is your 2FA code. Please do not share: ${check_code}`);
 	if (!check_email || check_email === undefined || check_email == false) {
 		await mfa_db.update_mfa_value('email', '', userid);
@@ -465,15 +438,14 @@ async function verify_email_code(userid, response, data) {
 	if (email_value.endsWith('_temp'))
 		email_value = email_value.slice(0, -5);
 	const decrypted_email_value = await modules.check_encrypted_password(data.Code, email_value);
-	response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
 	if (decrypted_email_value === false) {
-		response.raw.end(JSON.stringify({"Response": "Failed"}));
+		response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "failed", "Content": null });
 		return false;
 	}
 	await mfa_db.update_mfa_value('email', email_value, userid);
 	if (check_mfa.prefered === 0)
 		await mfa_db.update_mfa_value('prefered', 1, userid);
-	response.raw.end(JSON.stringify({"Response": "success"}));
+	response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "success", "Content": null });
 	return true;
 }
 
@@ -481,10 +453,9 @@ async function clear_settings_mfa(userid, search_value, response) {
 	var fallback_options = ['email', 'otc', 'custom'];
 	if (fallback_options.indexOf(search_value) < 0)
 		return -1;
-	response.raw.writeHead(200, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'});
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
 	if (!check_mfa || check_mfa === undefined) {
-		response.raw.end(JSON.stringify({"Response": "Failed"}));
+		response.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "Failed", "Content": null});
 		return -2;
 	}
 	await mfa_db.update_mfa_value(`${search_value}`, '', userid);
@@ -501,7 +472,7 @@ async function clear_settings_mfa(userid, search_value, response) {
 	}
 	if (!found)
 		await mfa_db.update_mfa_value('prefered', 0, userid);
-	response.raw.end(JSON.stringify({"Response": "Success"}));
+	response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "success", "Content": null});
 	return true;
 }
 
@@ -581,7 +552,7 @@ function split_DOM_elemets(row) {
     return {indent, open_tag, text, closing_tag};
 }
 
-async function replace_all_templates(request, response, state) {
+async function replace_all_templates(request, response, state, override) {
 	const github_login = github_input_handler();
 	const google_login = google_input_handler();
 
@@ -607,6 +578,10 @@ async function replace_all_templates(request, response, state) {
 	settings_html_default_string += '<a class="buttons" href="/settings/user" data-link>';
 	settings_html_default_string += '<button class="block w-full mb-6 mt-6">';
 	settings_html_default_string += '<span class="button_text">User</span>';
+	settings_html_default_string += '</button></a>';
+	settings_html_default_string += '<a class="buttons" href="/settings/language" data-link>';
+	settings_html_default_string += '<button class="block w-full mb-6 mt-6">';
+	settings_html_default_string += '<span class="button_text">Change language</span>';
 	settings_html_default_string += '</button></a></div>';
 	settings_html_default_string += '<div class="flex mt-12 gap-4 w-full">';
 	settings_html_default_string += '<a class="flex-1" href="/" data-link>';
@@ -620,30 +595,94 @@ async function replace_all_templates(request, response, state) {
 	const settings_html_default = settings_html_raw.replace("{{mfa-button}}", settings_html_default_string);
 
 	var settings_html_mfa_string = "";
+
 	settings_html_mfa_string += '<div id="mfa_div" class="hidden">';
 	settings_html_mfa_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
 
-	settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_otc()">';
-	settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
-	settings_html_mfa_string += '<span class="button_text">Create OTC</span>';
-	settings_html_mfa_string += '</button></div>';
-	settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_custom_code()">';
-	settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
-	settings_html_mfa_string += '<span class="button_text">Create custom 6 diggit code</span>';
-	settings_html_mfa_string += '</button></div>';
-	settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_email()">';
-	settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
-	settings_html_mfa_string += '<span class="button_text">Enable email authentication</span>';
-	settings_html_mfa_string += '</button></div>';
-	settings_html_mfa_string += '<div class="flex mt-12 gap-4 w-full">';
-	settings_html_mfa_string += '<a class="flex-1" href="/settings" data-link>';
-	settings_html_mfa_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-	settings_html_mfa_string += '<span class="font-bold text-lg">Back</span>';
-	settings_html_mfa_string += '</button></a>';
-	settings_html_mfa_string += '<a href="/" class="flex-1" data-link>';
-	settings_html_mfa_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-	settings_html_mfa_string += '<span class="font-bold text-lg">Home</span>';
-	settings_html_mfa_string += '</button></a></div></div></div></div></div>';
+	settings_html_mfa_string += '<div id="mfa"></div>'
+    settings_html_mfa_string += '<div id="mfa-button">'
+
+    settings_html_mfa_string +='<div class="flex gap-2">'
+    settings_html_mfa_string +='<form id="mfa_options" class="w-5/6">'
+    settings_html_mfa_string +='<select name="lang" id="select_mfa" class="w-full p-4 text-center rounded-xl text-2xl border border-[#e0d35f] border-spacing-8 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]">'
+    settings_html_mfa_string +='<option value="" selected disabled hidden>Choose your main 2FA</option>'
+    settings_html_mfa_string +='{{2FAOPTIONS}}'
+    settings_html_mfa_string +='</select></form>'
+    settings_html_mfa_string +='<div class="flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl cursor-pointer">'
+    settings_html_mfa_string +='<button onclick="change_preferred_mfa()">'
+    settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">'
+    settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />'
+    settings_html_mfa_string +='</svg></button></div></div>'
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex gap-2">';
+	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_otc()">';
+	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
+	settings_html_mfa_string +='<span class="button_text">Create OTC</span></button></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div id="trash_otc" class="trash_disable">';
+	settings_html_mfa_string +='<button id="trash_otc_button" class="pointer-events-none">';
+	settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
+	settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg></button></div></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex gap-2">';
+	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_custom_code()">';
+	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
+	settings_html_mfa_string +='<span class="button_text">Create custom 6 digit code</span></button></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div id="trash_custom" class="trash_enable">';
+	settings_html_mfa_string +='<button id="trash_custom_button" class="pointer-events-none">';
+	settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
+	settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg></button></div></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex gap-2">';
+	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_email()">';
+	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
+	settings_html_mfa_string +='<span class="button_text">Enable email authentication</span></button></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div id="trash_email" class="trash_disable">';
+	settings_html_mfa_string +='<button id="trash_email_button" class="pointer-events-none">';
+	settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
+	settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />';
+	settings_html_mfa_string +='</svg></button></div></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex mt-12 gap-4 w-full">';
+	settings_html_mfa_string +='<a class="flex-1" href="/settings" data-link>';
+	settings_html_mfa_string +='<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	settings_html_mfa_string +='<span class="font-bold text-lg">Back</span>';
+	settings_html_mfa_string +='</button></a>';
+	settings_html_mfa_string +='<a href="/" class="flex-1" data-link>';
+	settings_html_mfa_string +='<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	settings_html_mfa_string +='<span class="font-bold text-lg">Home</span>';
+	settings_html_mfa_string +='</button></a></div></div></div></div></div></div>';
+
+
+	// settings_html_mfa_string += '<div id="mfa_div" class="hidden">';
+	// settings_html_mfa_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
+	// settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_otc()">';
+	// settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
+	// settings_html_mfa_string += '<span class="button_text">Create OTC</span>';
+	// settings_html_mfa_string += '</button></div>';
+	// settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_custom_code()">';
+	// settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
+	// settings_html_mfa_string += '<span class="button_text">Create custom 6 diggit code</span>';
+	// settings_html_mfa_string += '</button></div>';
+	// settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_email()">';
+	// settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
+	// settings_html_mfa_string += '<span class="button_text">Enable email authentication</span>';
+	// settings_html_mfa_string += '</button></div>';
+	// settings_html_mfa_string += '<div class="flex mt-12 gap-4 w-full">';
+	// settings_html_mfa_string += '<a class="flex-1" href="/settings" data-link>';
+	// settings_html_mfa_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	// settings_html_mfa_string += '<span class="font-bold text-lg">Back</span>';
+	// settings_html_mfa_string += '</button></a>';
+	// settings_html_mfa_string += '<a href="/" class="flex-1" data-link>';
+	// settings_html_mfa_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	// settings_html_mfa_string += '<span class="font-bold text-lg">Home</span>';
+	// settings_html_mfa_string += '</button></a></div></div></div></div></div>';
 	const settings_html_mfa = settings_html_raw.replace("{{mfa-button}}", settings_html_mfa_string);
 
 	var settings_html_user_string = "";
@@ -673,11 +712,13 @@ async function replace_all_templates(request, response, state) {
 	settings_html_user_select_language_string += '<div id="lang_div" class="hidden">';
 	settings_html_user_select_language_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
 
-	settings_html_user_select_language_string += '<button onclick="change_language()">Change language</button>';
-	settings_html_user_select_language_string += `
-	<form id="language">
-		<select name="lang" id="lang">
-			<option value="" selected disabled hidden>Choose your main language</option>
+
+
+	settings_html_user_select_language_string += '<div id="mfa-button" class="flex flex-col items-center w-full mx-auto">'
+	settings_html_user_select_language_string += '<label for="language" class="justify-center font-bold text-2xl pb-5 text-yellow-100">Choose your main language</label>'
+	settings_html_user_select_language_string += '<form id="language" class="w-full mx-auto">'
+	settings_html_user_select_language_string += '<select name="lang" id="lang" class="w-full p-4 text-center rounded-lg text-lg font-[Roboto] border border-[#e0d35f] border-spacing-8 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]">'
+	settings_html_user_select_language_string += `<option value="" selected disabled hidden>Choose your main language</option>
 			<option value="af">Afrikaans</option>
 			<option value="az">Azərbaycanca</option>
 			<option value="id">Bahasa Indonesia</option>
@@ -779,22 +820,15 @@ async function replace_all_templates(request, response, state) {
 			<option value="ja">日本語</option>
 			<option value="zh-cn">简体中文</option>
 			<option value="zh-tw">繁體中文</option>
-			<option value="ko">한국어</option>
-		</select>
-		<button type="submit">Submit</button>
-	</form>`
-	settings_html_user_select_language_string += '<div class="flex mt-12 w-1/2">';
-	settings_html_user_select_language_string += '<a href="/settings" class="flex-1" data-link>';
-	settings_html_user_select_language_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full"><span class="font-bold text-lg">Back</span></button></a>';
-	settings_html_user_select_language_string += `<a href="/" class="flex-1" data-link>
-            <button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
-                <span class="font-bold text-lg">Home</span>
-            </button>
-        </a>`;
-	settings_html_user_select_language_string += '';
-	settings_html_user_select_language_string += '';
-	settings_html_user_select_language_string += ' \
-	</div></div></div></div>';
+			<option value="ko">한국어</option>`
+	settings_html_user_select_language_string += '</select></form></div>'
+	settings_html_user_select_language_string += '<div class="flex mt-4 gap-4 w-full">'
+	settings_html_user_select_language_string += '<a class="flex-1">'
+	settings_html_user_select_language_string += '<button onclick="change_language()" type="submit" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">'
+	settings_html_user_select_language_string += '<span class="font-bold text-lg">Submit</span></button></a>'
+	settings_html_user_select_language_string += '<a href="/" data-link class="flex-1">'
+	settings_html_user_select_language_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">'
+	settings_html_user_select_language_string += '<span class="font-bold text-lg">Home</span></button></a></div></div></div></div>'
 	const settings_html_user_select_language_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_select_language_string);
 
 	var settings_html_user_profile_settings_string = "";
@@ -805,19 +839,24 @@ async function replace_all_templates(request, response, state) {
 	<div class="flex flex-col mt-8 gap-6">
         <a href="/settings/user/change_user" class="buttons" data-link>
             <button class="block w-full mb-4 mt-6">
-                <span class="button_text">change username</span>
+                <span class="button_text">Change username</span>
             </button>
         </a>
         <a href="/settings/user/change_login" class="buttons" data-link>
             <button class="block w-full mb-4 mt-6">
-                <span class="button_text">change login data</span>
+                <span class="button_text">Change login data</span>
             </button>
         </a>
         <a href="/settings/user/change_avatar" class="buttons" data-link>
             <button class="block w-full mb-4 mt-6">
-                <span class="button_text">change avatar</span>
+                <span class="button_text">Change avatar</span>
             </button>
         </a>
+		<a class="delete_button">
+			<button class="block w-full mb-4 mt-6" onclick="delete_account()">
+				<span class="button_text">Delete account</span>
+			</button>
+		</a>
     </div>
     <div class="flex mt-12 gap-4 w-full">
 		<a href="/settings" class="flex-1" data-link>
@@ -867,7 +906,7 @@ async function replace_all_templates(request, response, state) {
                 <path d="M11.241 9.817c-.36.275-.801.425-1.255.427-.428 0-.845-.138-1.187-.395L0 2.6V14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2.5l-8.759 7.317Z"/>
             </svg>
         </div>
-        <input type="text" id="email" placeholder="example@gmail.com" required class="input_field" />
+        <input type="text" id="email_change" placeholder="example@gmail.com" required class="input_field" />
     </div>
     <label for="password-input" class="label_text">Password</label>
     <div id="password_field" class="relative input_total">
@@ -883,7 +922,7 @@ async function replace_all_templates(request, response, state) {
                 <path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 0 0-2.63 4.31c-.12.362-.12.752 0 1.114 1.489 4.467 5.704 7.69 10.675 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 0 1 6.75 12Z" />
                 </svg>
         </button>
-        <input type="password" id="password-input" placeholder="Password" required class="input_field" />
+        <input type="password" id="password_input_change" placeholder="Password" required class="input_field" />
     </div>
     <label for="password-input2" class="label_text">Repeat Password</label>
     <div id="repeat_field" class="relative input_total">
@@ -899,7 +938,7 @@ async function replace_all_templates(request, response, state) {
                 <path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 0 0-2.63 4.31c-.12.362-.12.752 0 1.114 1.489 4.467 5.704 7.69 10.675 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 0 1 6.75 12Z" />
             </svg>
         </button>
-        <input type="password" id="password-input2" placeholder="Repeat password" required class="input_field" />
+        <input type="password" id="password_input2_change" placeholder="Repeat password" required class="input_field" />
     </div>
     <div class="flex mt-12 gap-4 w-full">
         <a class="flex-1">
@@ -1032,17 +1071,17 @@ async function replace_all_templates(request, response, state) {
 	index_html += settings_html_user_profile_credential_raw;
 	index_html += settings_html_user_profile_avatar_raw;
 	index_html += friends_html_raw;
-	index_html += play_main_string;
-	// index_html += menu_raw;
-	// index_html += game_raw;
+	index_html += play_main;
+  
 	const [keys, values] = modules.get_cookies(request);
-	// const user_encrypt = modules.get_jwt(values[0]);
-	// const lang_encrypt = modules.get_jwt(values[1]);
-	if (keys?.includes('lang')) {
+	if (keys?.includes('lang') && (override == undefined || !override)) {
 		const lang_encoded = values[keys.indexOf('lang')];
 		const lang_decrypted = modules.get_jwt(lang_encoded);
 		if (lang_decrypted.userid != "en")
 			index_html = await translator.cycle_translations(index_html, lang_decrypted.userid);
+	} else if (override != undefined) {
+		if (override != "en")
+			index_html = await translator.cycle_translations(index_html, override);
 	}
 	const token = values[keys.indexOf('token')];
 	if (!token)
@@ -1076,48 +1115,102 @@ async function get_data(request, response) {
 		if (link.get == "{{userid}}") {
 			const userid_decrypted = modules.get_jwt(link.search);
 			const search_user = await users_db.get_users_value('self', userid_decrypted.userid);
-			return response.code(200).send({ "username": search_user.username });
+			response.code(200).headers({ 'Content-Type': 'application/json' }).send({ "username": search_user.username });
+			return true;
 		} else if (link.get == "cookies") {
 			const [keys, values] = modules.get_cookies(request, response);
-			if (keys.length == 0 && values.length == 0 || keys == null && values == null)
-				return response.code(200).send({'content': "empty"});
-			return response.code(200).send({'content': "full"});
+			if (keys.length == 0 && values.length == 0 || keys == null && values == null) {
+				response.code(200).headers({ 'Content-Type': 'application/json' }).send({'content': "empty"});
+				return true;
+			}
+			response.code(200).headers({ 'Content-Type': 'application/json' }).send({'content': "full"});
+			return true;
 		} else if (link.get == "username") {
 			const [keys, values] = modules.get_cookies(request, response);
-			if (keys.length == 0 && values.length == 0)
-				return response.code(200).send({'content': "empty"});
+			if (keys.length == 0 && values.length == 0) {
+				response.code(200).headers({ 'Content-Type': 'application/json' }).send({'content': "empty"});
+				return true;
+			}
 			const username = modules.get_jwt(values[keys.indexOf('token')]);
-			// console.log(username);
 			const check_user = await users_db.get_users_value('self', username.userid);
-			return response.code(200).send({'username': check_user.username});
+			response.code(200).headers({ 'Content-Type': 'application/json' }).send({'username': check_user.username});
+			return true;
 		} else if (link.get == "site_content") {
 			const data = await replace_all_templates(request, response);
-			// console.log("DATA: ", data);
-			response.raw.writeHead(200, {'Content-Type': 'application/json'});
-			response.raw.end(JSON.stringify({"Response": 'success', "Content": show_page(data, "home_div")}));
+			response.code(200).headers({ 'Content-Type': 'application/json' }).send({"Response": 'success', "Content": show_page(data, "home_div")});
 			return true;
+		} else if (link.get == "login_html") {
+			var file = await replace_all_templates(request, response, 1);
+			file = show_page(file, "login_div");
+			response.code(200).headers({ 'Content-Type': 'text/html' }).send(file);
 		}
-		response.raw.writeHead(404, {'Content-Type': 'application/json'});
-		response.raw.end(JSON.stringify({"Response": 'Not found', "Content": null}));
-		return true; //or false idk
-		// return response.code(404).send({ "error": "Not found" });
+		response.code(404).headers({ 'Content-Type': 'application/json' }).send({"Response": 'Not found', "Content": null});
+		return true;
 	} catch (err) {
       	console.error('Error:', err);
-		response.raw.writeHead(500, {'Content-Type': 'application/json'});
-		response.raw.end(JSON.stringify({"Response": 'fail', "Content": null}));
-      	// return response.code(500).send({ "response": 'fail' });
-		return true; //or false idk
+		return false; //or false idk
     }
 }
 
+function retrieve_trash_icon_mfa(method, enable) {
+	var trash_icon = '';
+	if (enable == true) {
+		trash_icon +=`<div id="trash_custom" class="trash_enable">`;
+		trash_icon +=`<button onclick="${method}" id="trash_custom_button">`;
+		trash_icon +=`<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">`;
+		trash_icon +=`<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg></button></div></div>`;
+	} else {
+		trash_icon +=`<div id="trash_otc" class="trash_disable">`;
+		trash_icon +=`<button id="trash_otc_button" class="pointer-events-none">`;
+		trash_icon +=`<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">`;
+		trash_icon +=`<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg></button></div></div>`;
+	}
+	return trash_icon;
+}
 
-// async function temp(request, response){
-// 	const body = request.body;
+async function check_for_invalid_token(request, response, keys, values) {
+	if (keys.length == 0)
+		return false;
+	const token_decrypted = modules.get_jwt(values[keys.indexOf('token')]);
+	if (token_decrypted < 0) {
+		await views.logout(request, response, true);
+		return true;
+	}
+	const token = token_decrypted.userid;
+	if (!token || token == undefined || token < 0) {
+		await views.logout(request, response, true);
+		return true;
+	}
+	const check_settings = await settings_db.get_settings_value('self', token);
+	if (check_settings == undefined) {
+		await views.logout(request, response, true);
+		return true;
+	}
+	return false;
+}
 
-
-// }
-
-
+async function check_for_invalid_token_request(request, response, keys, values) {
+	if (keys.length == 0)
+		return false;
+	const token_decrypted = modules.get_jwt(values[keys.indexOf('token')]);
+	const lang_decrypted = modules.get_jwt(values[keys.indexOf('lang')]);
+	if (token_decrypted < 0 || lang_decrypted < 0) {
+		await views.logout(request, response, true, true);
+		return true;
+	}
+	const token = token_decrypted.userid;
+	const lang = lang_decrypted.userid;
+	if (!token || token == undefined || token < 0 || !lang || lang == undefined || lang < 0) {
+		await views.logout(request, response, true, true);
+		return true;
+	}
+	const check_settings = await settings_db.get_settings_value('self', token);
+	if (check_settings == undefined) {
+		await views.logout(request, response, true, true);
+		return true;
+	}
+	return false;
+}
 
 
 export {
@@ -1126,7 +1219,6 @@ export {
 	encrypt_google,
 	encrypt_github,
 	process_login,
-	get_frontend_content,
 	otc_secret,
 	get_decrypted_userid,
 	get_otc_secret,
@@ -1142,5 +1234,8 @@ export {
 	replace_all_templates,
 	show_page,
 	get_data,
-	generate_random_state
+	generate_random_state,
+	retrieve_trash_icon_mfa,
+	check_for_invalid_token,
+	check_for_invalid_token_request
 }
