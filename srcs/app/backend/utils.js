@@ -226,27 +226,6 @@ async function process_login(request, response) {
 	return {'settings': check_settings, 'mfa': mfa};
 }
 
-async function get_frontend_content(request) {
-	let body = '';
-    
-    return new Promise((resolve) => {
-        request.on('data', chunk => {
-            body += chunk.toString();
-        });
-        
-        request.on('end', async () => {
-            try {
-                const data = JSON.parse(body);
-                resolve(data);
-				return;
-            } catch (error) {
-                resolve(null);
-				return;
-            }
-        });
-    });
-}
-
 function get_decrypted_userid(request, response) {
 	const [keys, values] = modules.get_cookies(request);
 	if (keys === null && values === null)
@@ -631,6 +610,7 @@ async function replace_all_templates(request, response, state, override) {
     settings_html_mfa_string +='{{2FAOPTIONS}}'
     settings_html_mfa_string +='</select></form>'
     settings_html_mfa_string +='<div class="flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl cursor-pointer">'
+    settings_html_mfa_string +='<button onclick="change_preferred_mfa()">'
     settings_html_mfa_string +='<button onclick="change_preferred_mfa()">'
     settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">'
     settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />'
@@ -1094,10 +1074,7 @@ async function replace_all_templates(request, response, state, override) {
 	index_html += friends_html_raw;
 	index_html += play_main;
   
-	// index_html += game_raw;
 	const [keys, values] = modules.get_cookies(request);
-	// const user_encrypt = modules.get_jwt(values[0]);
-	// const lang_encrypt = modules.get_jwt(values[1]);
 	if (keys?.includes('lang') && (override == undefined || !override)) {
 		const lang_encoded = values[keys.indexOf('lang')];
 		const lang_decrypted = modules.get_jwt(lang_encoded);
@@ -1207,6 +1184,10 @@ async function get_data(request, response) {
 			}
 			response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({'Response': 'success', 'Content': null});
 			return true;
+		} else if (link.get == "login_html") {
+			var file = await replace_all_templates(request, response, 1);
+			file = show_page(file, "login_div");
+			response.code(200).headers({ 'Content-Type': 'text/html' }).send(file);
 		}
 		response.code(404).headers({ 'Content-Type': 'application/json' }).send({"Response": 'Not found', "Content": null});
 		return true;
@@ -1253,6 +1234,29 @@ async function check_for_invalid_token(request, response, keys, values) {
 	return false;
 }
 
+async function check_for_invalid_token_request(request, response, keys, values) {
+	if (keys.length == 0)
+		return false;
+	const token_decrypted = modules.get_jwt(values[keys.indexOf('token')]);
+	const lang_decrypted = modules.get_jwt(values[keys.indexOf('lang')]);
+	if (token_decrypted < 0 || lang_decrypted < 0) {
+		await views.logout(request, response, true, true);
+		return true;
+	}
+	const token = token_decrypted.userid;
+	const lang = lang_decrypted.userid;
+	if (!token || token == undefined || token < 0 || !lang || lang == undefined || lang < 0) {
+		await views.logout(request, response, true, true);
+		return true;
+	}
+	const check_settings = await settings_db.get_settings_value('self', token);
+	if (check_settings == undefined) {
+		await views.logout(request, response, true, true);
+		return true;
+	}
+	return false;
+}
+
 
 export {
 	google_input_handler,
@@ -1260,7 +1264,6 @@ export {
 	encrypt_google,
 	encrypt_github,
 	process_login,
-	get_frontend_content,
 	otc_secret,
 	get_decrypted_userid,
 	get_otc_secret,
@@ -1278,5 +1281,6 @@ export {
 	get_data,
 	generate_random_state,
 	retrieve_trash_icon_mfa,
-	check_for_invalid_token
+	check_for_invalid_token,
+	check_for_invalid_token_request
 }
