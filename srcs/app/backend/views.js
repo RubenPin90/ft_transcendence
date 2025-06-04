@@ -373,7 +373,7 @@ async function logout(request, response, override, content) {
 
 
 async function user_settings(request, response) {
-    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    const [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token')) {
         return // Here was a redirect(response, '/login', 302);
     }
@@ -508,7 +508,7 @@ async function friends(request, response){
     return response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": inner});
 
     // const status = await send.send_html('index.html', response, 200, async(data) => {
-    //     var [keys, values] = modules.get_cookies(request.headers.cookie);
+    //     var [keys, values] = modules.get_cookies(request);
     //     const lang_check = keys?.find((key) => key === 'lang');
     //     if (!lang_check || lang_check === undefined || lang_check == false)
     //         return false;
@@ -676,23 +676,26 @@ async function delete_account(request, response) {
 
 async function play(request, response) {
     console.log("play page requested");
-    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    const [keys, values] = modules.get_cookies(request);
+    await utils.check_for_invalid_token(request, response, keys, values); 
     if (!keys?.includes('token')) {
-        return send.redirect(response, '/login', 302);
+        return await login(request, response);
     }
 
     const tokenIndex = keys.findIndex((key) => key === 'token');
     const token = values[tokenIndex];
     let decoded;
     try {
-        decoded = await modules.get_jwt(token);
+        decoded = modules.get_jwt(token);
     } catch (err) {
-        return send.redirect(response, '/login', 302);
+        response.code(400).headers(response, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded' });
+        return true;
     }
 
     const user = await users_db.get_users_value('self', decoded.userid);
     if (!user || user === undefined){
-        return send.send_error_page('404.html', response, 404);
+        response.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'fail', "Content": "No user or user undefined" });
+        return true;
     }
 
     const status = await send.send_html('index.html', response, 200, async(data) => {

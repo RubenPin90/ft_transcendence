@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@fastify/cookie": "^7.4.0"
+  }
+}

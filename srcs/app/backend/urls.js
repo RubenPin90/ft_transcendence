@@ -79,14 +79,9 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.post('/block_friend', (req, reply) => views.block_friend(req, reply));
   // Block done
 
-  fastify.post('/field_login', (req, reply) => views.field_login(req, reply));
-  fastify.post('/field_signup', (req, reply) => views.field_signup(req, reply));
   fastify.get('/play', (req, reply) => views.play(req, reply));
 
   
-
-  fastify.post('/field_login', (req, reply) => views.field_login(req, reply)); // ?
-  fastify.post('/field_signup', (req, reply) => views.field_signup(req, reply)); // ?
   fastify.post('/delete_account', (req, reply) => views.delete_account(req, reply));
   fastify.post('/mfa_setup', (req, reply) => views.set_up_mfa_buttons(req, reply));
   fastify.post('/mfa', (req, reply) => views.mfa(req, reply));

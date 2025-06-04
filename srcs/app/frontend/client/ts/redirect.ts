@@ -105,7 +105,7 @@ export function toggle_divs(render : string){
     }
 }
 
-async function check_cookie_fe(): Promise<boolean> {
+export async function check_cookie_fe(): Promise<boolean> {
     const cookie_response = await fetch("/get_data", {
         method: "POST",
         headers: {
@@ -127,7 +127,7 @@ async function check_cookie_fe(): Promise<boolean> {
     return false;
 }
 
-async function render_mfa() : Promise<string>{
+export async function render_mfa() : Promise<string>{
     // console.log("HERE");
     var innervalue = document.getElementById("mfa_div")?.innerHTML;
 
