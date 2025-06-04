@@ -1238,6 +1238,29 @@ async function check_for_invalid_token(request, response, keys, values) {
 	return false;
 }
 
+async function check_expired_token(request, reply){
+	var [keys, values] = modules.get_cookies(request);
+	if (keys.length == 0)
+		return false;
+	const token_decrypted = modules.get_jwt(values[keys.indexOf('token')]);
+	const lang_decrypted = modules.get_jwt(values[keys.indexOf('lang')]);
+	if (token_decrypted < 0 || lang_decrypted < 0) {
+		await views.logout(request, response, true);
+		return true;
+	}
+	const token = token_decrypted.userid;
+	const lang = lang_decrypted.userid;
+	if (!token || token == undefined || token < 0 || !lang || lang == undefined || lang < 0) {
+		await views.logout(request, response, true);
+		return true;
+	}
+	const check_settings = await settings_db.get_settings_value('self', token);
+	if (check_settings == undefined) {
+		await views.logout(request, response, true);
+		return true;
+	}
+	return false;
+}
 
 export {
 	google_input_handler,
@@ -1262,5 +1285,6 @@ export {
 	get_data,
 	generate_random_state,
 	retrieve_trash_icon_mfa,
-	check_for_invalid_token
+	check_for_invalid_token,
+	check_expired_token
 }

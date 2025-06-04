@@ -57,6 +57,25 @@ async function show_profile_page() : Promise<string>{
     return 'profile_div';
 }
 
+async function check_cookies_expire() : Promise<boolean>{
+    const response = await fetch('/check_expire', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+    })
+    if (!response.ok){
+        alert("Error in check_cookies_expire in redirect");
+    }
+    const data = await response.json();
+    if (data.Response == 'fail'){
+        alert("your cookies expired");
+        return true;
+    }
+    return false;
+}
+
 async function show_friends_page() : Promise<string>{
     var innervalue = document.getElementById("friends_field")?.innerHTML;
 
@@ -161,6 +180,10 @@ async function where_am_i(path : string) : Promise<string> {
         case '/profile': 
             if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/');
+                return 'login_div';
+            }
+            if (await check_cookies_expire() == true){
+                alert("expired cookies");
                 return 'login_div';
             }
             return await show_profile_page();
