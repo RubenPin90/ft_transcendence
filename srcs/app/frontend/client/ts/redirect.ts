@@ -158,11 +158,10 @@ async function render_mfa() : Promise<string>{
 //TODO change window.location.href since it force refreshes the webpage
 async function where_am_i(path : string) : Promise<string> {
     switch (path) {
-        case '/home': return 'home_div';
         case '/profile': 
             if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/');
-                return 'home_div';
+                return 'login_div';
             }
             return await show_profile_page();
         // add more routes here

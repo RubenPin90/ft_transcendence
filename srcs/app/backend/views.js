@@ -286,7 +286,7 @@ async function verify_custom(request, response) {
 
 async function profile(request, response) {
     var [keys, values] = modules.get_cookies(request);
-    await utils.check_for_invalid_token_request(request, response, keys, values);
+    await utils.check_for_invalid_token(request, response, keys, values);
     if (!keys?.includes('token')) {
         // const status = await send.send_html('index.html', response, 200, async(data) => {
         //     data = await utils.replace_all_templates(request, response);
@@ -340,7 +340,7 @@ async function profile(request, response) {
     return true;
 }
 
-async function logout(request, response, override, content) {
+async function logout(request, response, override) {
     const [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token')) {
         return;
@@ -356,12 +356,6 @@ async function logout(request, response, override, content) {
     }
     if (override == undefined) {
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Logged out successfully' });
-        return true;
-    }
-    if (content != undefined) {
-        var data = await utils.replace_all_templates(request, response, 1);
-        data = utils.show_page(data, "login_div");
-        response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Logged out successfully' });
         return true;
     }
     

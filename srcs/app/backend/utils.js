@@ -985,6 +985,8 @@ async function replace_all_templates(request, response, state, override) {
 	// play.ts (or wherever you build the template HTML)
 
 	let play_main = "";
+
+		play_main +=   '<div id="play_div" class="hidden"">';
 		play_main +=   '<div class="min-h-screen flex items-center justify-center px-4 py-10">';
 		play_main +=     '<div id="login-container" class="field">';
 		play_main +=       '<div id="main-menu">';
@@ -1052,6 +1054,7 @@ async function replace_all_templates(request, response, state, override) {
 
 		play_main +=     '</div>'; // login-container
 		play_main +=   '</div>';   // flex container
+		play_main += '</div>';   // flex container
 
 
 	const index_html_raw = await fs.readFile("./backend/templates/index.html", 'utf8')
@@ -1216,41 +1219,20 @@ async function check_for_invalid_token(request, response, keys, values) {
 	if (keys.length == 0)
 		return false;
 	const token_decrypted = modules.get_jwt(values[keys.indexOf('token')]);
-	if (token_decrypted < 0) {
-		await views.logout(request, response, true);
-		return true;
-	}
-	const token = token_decrypted.userid;
-	if (!token || token == undefined || token < 0) {
-		await views.logout(request, response, true);
-		return true;
-	}
-	const check_settings = await settings_db.get_settings_value('self', token);
-	if (check_settings == undefined) {
-		await views.logout(request, response, true);
-		return true;
-	}
-	return false;
-}
-
-async function check_for_invalid_token_request(request, response, keys, values) {
-	if (keys.length == 0)
-		return false;
-	const token_decrypted = modules.get_jwt(values[keys.indexOf('token')]);
 	const lang_decrypted = modules.get_jwt(values[keys.indexOf('lang')]);
 	if (token_decrypted < 0 || lang_decrypted < 0) {
-		await views.logout(request, response, true, true);
+		await views.logout(request, response, true);
 		return true;
 	}
 	const token = token_decrypted.userid;
 	const lang = lang_decrypted.userid;
 	if (!token || token == undefined || token < 0 || !lang || lang == undefined || lang < 0) {
-		await views.logout(request, response, true, true);
+		await views.logout(request, response, true);
 		return true;
 	}
 	const check_settings = await settings_db.get_settings_value('self', token);
 	if (check_settings == undefined) {
-		await views.logout(request, response, true, true);
+		await views.logout(request, response, true);
 		return true;
 	}
 	return false;
@@ -1280,6 +1262,5 @@ export {
 	get_data,
 	generate_random_state,
 	retrieve_trash_icon_mfa,
-	check_for_invalid_token,
-	check_for_invalid_token_request
+	check_for_invalid_token
 }
