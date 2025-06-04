@@ -68,6 +68,7 @@ async function create_db() {
             points TEXT NOT NULL,
             player1 TEXT NOT NULL,
             player2 TEXT NOT NULL,
+            winner    TEXT,
             date DATETIME DEFAULT CURRENT_TIMESTAMP,
             match_id TEXT UNIQUE NOT NULL,
             FOREIGN KEY (player1) REFERENCES settings(self) ON DELETE CASCADE,
@@ -76,7 +77,8 @@ async function create_db() {
 
         // tournaments
         await db.run(`
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        CREATE TABLE IF NOT EXISTS tournaments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             tournament_id TEXT NOT NULL,
             round INTEGER NOT NULL,
             match_id TEXT NOT NULL,

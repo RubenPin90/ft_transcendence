@@ -173,31 +173,11 @@
         row.appendChild(readyLbl);
       }
 
-      /* kick button (host only, not yourself) */
-      if (amHost && isFilled && p!.id !== myId) {
-        const kick = document.createElement('button');
-        kick.className   = 'kick-btn';
-        kick.dataset.id  = p!.id;
-        kick.textContent = 'Kick';
-        row.appendChild(kick);
-      }
-
       frag.appendChild(row);
     }
 
     table.appendChild(frag);
 
-    /* ---------- kick-button handlers (host only) --------------------- */
-    if (amHost) {
-      table.querySelectorAll<HTMLButtonElement>('.kick-btn').forEach(btn => {
-        btn.onclick = () => {
-          const pid = btn.dataset.id;
-          if (!pid) return;
-          if (!confirm('Kick this player from the lobby?')) return;
-          send(sock, { type: 'kickPlayer', payload: { playerId: pid } });
-        };
-      });
-    }
 
     /* ---------- share code ------------------------------------------- */
     (document.getElementById('t-share-code') as HTMLInputElement).value =

@@ -31,8 +31,33 @@ export class TournamentManager {
     // Now the event really comes from this instance
     this.matchManager.on('matchFinished', ({ roomId, winnerId }) => {
       console.log('matchFinished event received:', { roomId, winnerId });
+    
       const lobby = this.rooms[roomId];
       if (!lobby) return;
+    
+      // ───────────────────────────────────────────────
+      // Identify the loser(s) of this best-of-one match
+      // ───────────────────────────────────────────────
+      const losers = lobby.players
+        .filter(p => getPlayerId(p) !== winnerId)
+        .map(p => getPlayerId(p));
+    
+      // Tell every loser that their tournament run is over
+      losers.forEach(uid => {
+        this.#sendToUser(uid, {
+          type   : 'eliminated',
+          payload: {
+            tournamentId : lobby.tournamentId,
+            matchId      : roomId,
+            winnerId,
+            reason       : 'lostMatch'
+          }
+        });
+        const t = this.tournaments[lobby.tournamentId];
+        if (t) t.eliminated.add(uid);
+      });
+
+    
       this.reportMatchResult(
         lobby.tournamentId,
         roomId,
@@ -41,6 +66,11 @@ export class TournamentManager {
     });
   }
 
+  #activeIds(tournament) {
+    return tournament.players
+      .map(getPlayerId)
+      .filter(id => !tournament.eliminated.has(id));
+  }
   // -------------------------------------------------------------------------
   // Convenience wrappers around the registry
   // -------------------------------------------------------------------------
@@ -103,6 +133,7 @@ export class TournamentManager {
       pendingRound : null,
       openMatches  : null,
       roundWinners : null,
+      eliminated   : new Set(),
     };
 
     this.tournaments[id] = tourney;
@@ -234,7 +265,13 @@ export class TournamentManager {
     // ─────────────────────────────────────────────────────────────
     if (roundIdx + 1 >= tourney.rounds.length) {
       tourney.winner = winnerId;
-      this.#broadcastAll('tournamentFinished', { tournamentId, winnerId });
+      this.#broadcastToUsers(
+        this.#activeIds(tourney),
+        {
+          type: 'tournamentFinished',
+          payload: { tournamentId, winnerId }
+        }
+      );
       return;
     }
   
@@ -263,7 +300,7 @@ export class TournamentManager {
     // 3-bis. Broadcast updated bracket to all tournament players
     // ─────────────────────────────────────────────────────────────
     this.#broadcastToUsers(
-      tourney.players.map(getPlayerId),
+      this.#activeIds(tourney),
       {
         type: 'tournamentBracketMsg',
         payload: { tournamentId, rounds: tourney.rounds },
@@ -375,7 +412,7 @@ export class TournamentManager {
     tourney.status = 'bracket';
   
     this.#broadcastToUsers(
-      tourney.players.map(getPlayerId),
+      this.#activeIds(tourney),
       {
         type   : 'tournamentBracketMsg',
         payload: { tournamentId, rounds: tourney.rounds }
@@ -388,7 +425,6 @@ export class TournamentManager {
     if (!t || !t.rounds?.[roundIdx]) return;
     if (!t || t.status === 'running') return;
     t.status = 'running';
-  
     t.rounds[roundIdx].forEach(({ matchId, players }) => {
       const [p1, p2] = players;
       this.createMatchRoom(tournamentId, matchId, p1, p2 ?? null);
@@ -413,9 +449,8 @@ export class TournamentManager {
     // ------------------------------------------------------------------
     // 1.  Build the room and pre-seat the creator
     // ------------------------------------------------------------------
-    const creatorId  = getPlayerId(player1);   // <-- NEW
-    const opponentId = getPlayerId(player2);   // <-- NEW
-  
+    const creatorId  = getPlayerId(player1);
+    const opponentId = getPlayerId(player2);
     this.matchManager.createRoom({
       roomId    : matchId,
       creatorId : creatorId,
@@ -452,9 +487,7 @@ export class TournamentManager {
     console.log(`Room created: ${room.matchId} with players ${room.players[0].id} vs ${room.players[1].id}`);
   }
 
-  // -------------------------------------------------------------------------
-  // Ready toggles, kicks, leaves
-  // -------------------------------------------------------------------------
+
   toggleReady(userId, tournamentId) {
     const tournament = this.tournaments[tournamentId];
     if (!tournament) return console.error(`toggleReady: tournament ${tournamentId} not found`);
@@ -463,17 +496,6 @@ export class TournamentManager {
     if (!player) return console.error(`toggleReady: user ${userId} not in tournament ${tournamentId}`);
 
     player.ready = !player.ready;
-    this.broadcastTLobby(tournament);
-    this.broadcastTournamentUpdate();
-  }
-
-  kickPlayer(tournamentId, userId) {
-    const tournament = this.tournaments[tournamentId];
-    if (!tournament) return console.error(`Tournament ${tournamentId} not found`);
-
-    tournament.players = removeUser(tournament.players, userId);
-    if (tournament.host === userId) tournament.host = tournament.players[0] ? getPlayerId(tournament.players[0]) : null;
-
     this.broadcastTLobby(tournament);
     this.broadcastTournamentUpdate();
   }

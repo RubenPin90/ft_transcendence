@@ -2,7 +2,7 @@ import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 
 async function _db () {
-  return open({ filename: 'db.sqlite', driver: sqlite3.Database });
+  return open({ filename: './database/db.sqlite', driver: sqlite3.Database });
 }
 
 /* ────────────────────────── match (matches) ────────────────────────── */
@@ -17,7 +17,7 @@ export async function get_matches () {
 }
 
 export async function get_match_by (field, value) {
-  const cols = ['id', 'match_id', 'player1', 'player2'];
+  const cols = ['points', 'player1', 'player2', 'winner'];
   if (!cols.includes(field)) return null;
 
   const db = await _db();
@@ -138,6 +138,32 @@ export async function delete_tourney (tournament_id) {
       'DELETE FROM tournament WHERE tournament_id = ?',
       [tournament_id]
     );
+  } finally {
+    await db.close();
+  }
+}
+
+export async function show_matches() {
+  const db = await _db();
+  try {
+    return await db.all(`
+      SELECT *
+        FROM match
+      ORDER BY match_id`);
+  } finally {
+    await db.close();
+  }
+}
+
+
+export async function show_tournaments() {
+  const db = await _db();
+  try {
+    return await db.all(`
+      SELECT *
+        FROM tournament AS t
+        JOIN match AS m ON t.match_id = m.match_id
+      ORDER BY t.tournament_id, t.round`);
   } finally {
     await db.close();
   }

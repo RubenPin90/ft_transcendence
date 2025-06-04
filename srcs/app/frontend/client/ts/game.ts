@@ -47,7 +47,8 @@ export function initGameCanvas(): void {
 
 export function startGame(mode: GameMode): void {
   ws = getSocket();
-  userId        = localStorage.getItem('playerId');        // overwrite every time
+  console.log('[startGame] called, ws readyState:', ws?.readyState, 'mode:', mode);
+  userId        = localStorage.getItem('playerId');
   currentRoomId = localStorage.getItem('currentGameId');
   if (!userId) {
     userId = localStorage.getItem('playerId');

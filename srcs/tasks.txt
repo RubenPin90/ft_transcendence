@@ -8,5 +8,6 @@ check nach merge, dass PVE und 1v1 wenigstens functionieren
 
 after 1 round second should start and after second round should be tounramentFinished logic implemented
 
-kick button in tournament should be removed
+kick button in tournament should be removed - done
 
+after 1 round the url should chang to round 2

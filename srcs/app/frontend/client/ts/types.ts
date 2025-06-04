@@ -52,3 +52,13 @@ export interface TournamentBracketPayload {
   tournamentId: string;
   rounds: MatchStub[][] | MatchStub[];
 }
+
+export interface EliminatedMsg {
+  type: 'eliminated';
+  payload: {
+    tournamentId: string;
+    matchId: string;
+    winnerId: string;
+    reason: 'lostMatch'; // you can use a string literal or `string` if you have more reasons later
+  };
+}

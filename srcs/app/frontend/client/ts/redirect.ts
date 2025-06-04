@@ -30,7 +30,7 @@ async function show_profile_page() : Promise<string>{
     return 'profile_div';
 }
 
-function toggle_divs(render : string){
+export function toggle_divs(render : string){
     available_divs.forEach(divs => {
         const element = document.getElementById(divs);
         if (element){
@@ -69,7 +69,7 @@ async function check_cookie_fe(): Promise<boolean> {
 
 //TODO add more routes
 //TODO change window.location.href since it force refreshes the webpage
-async function where_am_i(path : string) : Promise<string> {
+export async function where_am_i(path : string) : Promise<string> {
     switch (path) {
         case '/home': return 'home_div';
         case '/play':

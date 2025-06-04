@@ -4,17 +4,20 @@ import type { GameState } from './game.js';
 import type { TLobbyState, TourneySummary } from './types.js';
 
 export type ServerMessage =
-  | { type: 'error';              payload: { message: string } }
-  | { type: 'welcome';            payload: { userId: string } }
-  | { type: 'matchFound';         payload: { gameId: string; mode: string; userId: string } }
-  | { type: 'state';              state: GameState }
-  | { type: 'tournamentList';     payload: TourneySummary[] }
-  | { type: 'joinedTLobby';       payload: { playerId: string; TLobby?: TLobbyState } }
-  | { type: 'tournamentCreated';  payload: TLobbyState }
-  | { type: 'tournamentUpdated';  payload: TLobbyState }
-  | { type: 'tLobbyState';        payload: TLobbyState }
-  | { type: 'matchAssigned';      payload: { tournamentId: string; matchId: string; players: { id: string; name: string }[] } }
-  | { type: 'TournamentBracket'; payload: { tournamentId: string; rounds: { matchId: string; players: { id: string; name: string }[] }[] } }
+  | { type: 'error';                payload: { message: string } }
+  | { type: 'welcome';              payload: { userId: string } }
+  | { type: 'matchFound';           payload: { gameId: string; mode: string; userId: string } }
+  | { type: 'state';                state:   GameState }
+  | { type: 'tournamentList';       payload: TourneySummary[] }
+  | { type: 'joinedTLobby';         payload: { playerId: string; TLobby?: TLobbyState } }
+  | { type: 'tournamentCreated';    payload: TLobbyState }
+  | { type: 'tournamentUpdated';    payload: TLobbyState }
+  | { type: 'tLobbyState';          payload: TLobbyState }
+  | { type: 'matchAssigned';        payload: { tournamentId: string; matchId: string; players: { id: string; name: string }[] } }
+  | { type: 'TournamentBracket';    payload: { tournamentId: string; rounds: { matchId: string; players: { id: string; name: string }[] }[] } }
+  | { type: 'eliminated';           payload: { tournamentId: string; matchId: string; winnerId: string; reason: 'lostMatch' } }
+  | { type: 'tournamentFinished';   payload: { tournamentId: string; winnerId: string } }
+  | { type: "roundStarted", payload: { tournamentId: string, roundNumber: number } }
   | { type: 'tournamentBracketMsg'; payload: { tournamentId: string; rounds: { matchId: string; players: { id: string; name: string }[] }[] } };
 
 

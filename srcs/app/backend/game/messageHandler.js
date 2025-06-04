@@ -1,6 +1,5 @@
 import WebSocket from 'ws';
-import { createGameAI }          from './matchMaking.js';
-import { joinQueue1v1 }          from './matchMaking.js';
+import { createGameAI, joinQueue1v1 }          from './matchMaking.js';
 
 const getPlayerId = p => (typeof p === 'string' ? p : p.id);
 
@@ -18,7 +17,7 @@ export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager)
     return;
   }
   // if (data.type != 'movePaddle')
-  console.log('Received message:', data);
+  // console.log('Received message:', data);
   switch (data.type) {
 
     case 'createTournament': {

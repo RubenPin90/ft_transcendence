@@ -27,11 +27,10 @@ import { setMyId, setCurrentTLobby, getCurrentTLobby } from './state.js';
 import { hideAllPages } from './helpers.js';
 import { setupMatchmakingHandlers } from './matchmaking.js';
 import { on, send, getSocket } from './socket.js';
-
+import { where_am_i, toggle_divs } from './redirect.js';
 // ────────────────────────────────────────────────────────────
 //  1.  guarantee we have a socket right away and recover userId
 // ────────────────────────────────────────────────────────────
-// const socket = getSocket();
 
 let currentRoomId: string | null = null;
 let userId: string | null = null;
@@ -76,13 +75,14 @@ on<'matchAssigned'>('matchAssigned', (msg) => {
   const me     = players.find(p => p.id === myId);
   const rival  = players.find(p => p.id !== myId);
   if (!me || !rival) return;
-
+  
+  console.log('[matchAssigned] navigating to game:', matchId, players);
   localStorage.setItem('currentGameId', matchId);
   currentRoomId = matchId;
 
   setTimeout(() => {
     send({ type: 'joinMatchRoom', payload: { tournamentId, matchId } });
-    navigate('/game/1v1');
+    showGameContainerAndStart();
   }, 3000);
 });
 
@@ -96,9 +96,11 @@ on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
     ? rounds as MatchStub[][]
     : [rounds as MatchStub[]];
 
+  if (!Array.isArray(rounds[0])) {
+    location.href = '/tournament/round2';
+  }
   renderBracketOverlay(normalized);
 
-  // if (!amHost()) return;
 
   await new Promise(r => setTimeout(r, 700));
 
@@ -140,12 +142,65 @@ on('tournamentList', (msg) => {
   }
 });
 
+on<'tournamentFinished'>('tournamentFinished', (msg) => {
+  const { winnerId } = msg.payload;
+
+  // stop any running game loop
+  stopGame();
+  teardownInput?.();               // remove key listeners
+  teardownInput = null;
+
+  // hide the bracket overlay and other pages
+  hideAllPages();
+
+  // optional: clear local tournament state if you store it
+  setCurrentTLobby(null);
+  localStorage.removeItem('currentGameId');
+
+  // notify the user
+  const myId = localStorage.getItem('playerId') ??
+               (getSocket() as any).userId;
+
+  if (myId === winnerId) {
+    alert('🎉 Congratulations! You won the tournament! 🎉');
+  } else {
+    alert('Tournament finished.');
+  }
+
+  // return to main menu
+  toggle_divs('home_div');
+  window.location.href = '/'
+});
+
+
 on('tLobbyState', (msg) => {
   const lobby = msg.payload as TLobbyState;
   const current = getCurrentTLobby();
   if (current && current.id !== lobby.id) return;
   setCurrentTLobby(lobby);
   renderTLobby(lobby, getSocket());
+});
+
+on<'eliminated'>('eliminated', (msg) => {
+  const { reason } = msg.payload; 
+
+  // Optional: visual feedback before leaving
+  alert('You have been eliminated from the tournament 🏳️');
+
+  // Prevent stale state inside the SPA
+  localStorage.removeItem('currentGameId');
+  setCurrentTLobby(null as any);        // clear t-lobby state if you track it
+  teardownInput?.();
+  teardownInput = null;
+  toggle_divs('home_div');
+  window.location.href = '/'
+
+});
+
+on<'roundStarted'>('roundStarted', msg => {
+  const { roundNumber } = msg.payload;
+  console.log(`[play.ts] Round ${roundNumber} started.`);
+  navigate(`/tournament/round${roundNumber}`);
 });
 
 // ────────────────────────────────────────────────────────────
@@ -229,14 +284,38 @@ const navigate = (path: string) => {
 
 
 
+const ROUND_RE = /^\/tournament\/round(\d+)$/;
+
 function route() {
   const path = window.location.pathname;
-  if (teardownInput) {
-    teardownInput();
-    teardownInput = null;
-  }
+  console.log('[route] current path:', path);
 
-  hideAllPages();
+  teardownInput?.();             // stop old key listeners
+  teardownInput = null;
+
+  hideAllPages();                // hides all “pages” incl. #game-container
+
+  /* ───────────── Round page ───────────── */
+  if (ROUND_RE.test(path)) {
+    const [, roundStr] = path.match(ROUND_RE)!;
+    const roundNo = Number(roundStr);
+
+    // show the bracket overlay (already rendered elsewhere)
+    const overlay = document.getElementById('bracket-overlay');
+    if (overlay) overlay.style.display = 'block';
+
+    // headline “Round N”
+    let hdr = document.getElementById('round-header') as HTMLElement | null;
+    if (!hdr) {
+      hdr = document.createElement('h2');
+      hdr.id = 'round-header';
+      overlay?.prepend(hdr);
+    }
+    hdr.textContent = `Round ${roundNo}`;
+
+    return;
+  }
+  /* ────────────────────────────────────── */
 
   if (path === '/tournament') {
     document.getElementById('tournament-page')!.style.display = 'block';
@@ -260,8 +339,7 @@ function route() {
 
     initGameCanvas();
     if (['pve', '1v1'].includes(mode)) startGame(mode as GameMode);
-    
-    // set up fresh input listeners every time we enter a game
+
     teardownInput = setupInputHandlers();        // new listeners for this room
     return;
   }
@@ -271,9 +349,8 @@ function route() {
     return;
   }
 
-  // Profile or Settings
-  const mapping: Record<string,string> = {
-    '/profile':  'profile-page',
+  const mapping: Record<string, string> = {
+    '/profile' : 'profile-page',
     '/settings': 'settings-page'
   };
   const pageId = mapping[path];
@@ -282,12 +359,22 @@ function route() {
     return;
   }
 
-  // FALLBACK: show “main-menu” **only if it actually exists**.
   const mainMenuEl = document.getElementById('main-menu');
   if (mainMenuEl) {
     mainMenuEl.style.display = 'block';
   }
 }
+
+function showGameContainerAndStart(): void {
+  const cont = document.getElementById('game-container');
+  if (!cont) return;
+
+  cont.style.display = 'block';
+  initGameCanvas();                // from game.js
+  startGame('1v1');                // from game.js
+  teardownInput = setupInputHandlers();
+}
+
 
 setOnGameEnd((winnerId) => {
   teardownInput?.();           // stop arrow-key listeners

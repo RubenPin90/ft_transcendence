@@ -4,8 +4,8 @@ process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
 const URL = 'https://localhost/register';
 
 const users = [
-  { username: 'alice',   email: 'alice@example.com',  password: '1234' },
-  { username: 'bob',     email: 'bob@example.com',    password: '1234' },
+  { username: 'alice',   email: 'a@a.a',  password: '1234' },
+  { username: 'bob',     email: 's@s.s',    password: '1234' },
   { username: 'char',    email: 'char@example.com',   password: '1234' },
   { username: 'david',   email: 'david@example.com',  password: '1234' },
 ];
