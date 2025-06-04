@@ -4,4 +4,3 @@ secrets.key
 db.sqlite
 .vscode
 secrets
-monitoring
