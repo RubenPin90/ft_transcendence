@@ -13,6 +13,7 @@ import { promises as fs, utimes } from 'fs';
 import { log, profile } from 'console';
 import * as translator from './translate.js';
 import * as views from './views.js';
+import * as utils from './utils.js';
 
 dotenv.config();
 
@@ -225,27 +226,6 @@ async function process_login(request, response) {
 	return {'settings': check_settings, 'mfa': mfa};
 }
 
-async function get_frontend_content(request) {
-	let body = '';
-    
-    return new Promise((resolve) => {
-        request.on('data', chunk => {
-            body += chunk.toString();
-        });
-        
-        request.on('end', async () => {
-            try {
-                const data = JSON.parse(body);
-                resolve(data);
-				return;
-            } catch (error) {
-                resolve(null);
-				return;
-            }
-        });
-    });
-}
-
 function get_decrypted_userid(request, response) {
 	const [keys, values] = modules.get_cookies(request);
 	if (keys === null && values === null)
@@ -400,7 +380,7 @@ async function verify_custom_code(userid, response, data) {
 	if (custom.endsWith('_temp'))
 		custom = custom.slice(0, -5);
 	if (data.Code !== custom) {
-		response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'Wrong password', "Content": null });
+		response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'Incorrect code', "Content": null });
 		return -3;
 	}
 	await mfa_db.update_mfa_value('custom', custom, userid);
@@ -630,7 +610,8 @@ async function replace_all_templates(request, response, state, override) {
     settings_html_mfa_string +='{{2FAOPTIONS}}'
     settings_html_mfa_string +='</select></form>'
     settings_html_mfa_string +='<div class="flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl cursor-pointer">'
-    settings_html_mfa_string +='<button onclick="change_preffered_mfa()">'
+    settings_html_mfa_string +='<button onclick="change_preferred_mfa()">'
+    settings_html_mfa_string +='<button onclick="change_preferred_mfa()">'
     settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">'
     settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />'
     settings_html_mfa_string +='</svg></button></div></div>'
@@ -1004,6 +985,8 @@ async function replace_all_templates(request, response, state, override) {
 	// play.ts (or wherever you build the template HTML)
 
 	let play_main = "";
+
+		play_main +=   '<div id="play_div" class="hidden"">';
 		play_main +=   '<div class="min-h-screen flex items-center justify-center px-4 py-10">';
 		play_main +=     '<div id="login-container" class="field">';
 		play_main +=       '<div id="main-menu">';
@@ -1071,6 +1054,7 @@ async function replace_all_templates(request, response, state, override) {
 
 		play_main +=     '</div>'; // login-container
 		play_main +=   '</div>';   // flex container
+		play_main += '</div>';   // flex container
 
 
 	const index_html_raw = await fs.readFile("./backend/templates/index.html", 'utf8')
@@ -1093,10 +1077,7 @@ async function replace_all_templates(request, response, state, override) {
 	index_html += friends_html_raw;
 	index_html += play_main;
   
-	// index_html += game_raw;
 	const [keys, values] = modules.get_cookies(request);
-	// const user_encrypt = modules.get_jwt(values[0]);
-	// const lang_encrypt = modules.get_jwt(values[1]);
 	if (keys?.includes('lang') && (override == undefined || !override)) {
 		const lang_encoded = values[keys.indexOf('lang')];
 		const lang_decrypted = modules.get_jwt(lang_encoded);
@@ -1162,6 +1143,53 @@ async function get_data(request, response) {
 			const data = await replace_all_templates(request, response);
 			response.code(200).headers({ 'Content-Type': 'application/json' }).send({"Response": 'success', "Content": show_page(data, "home_div")});
 			return true;
+		} else if (link.get == 'get_mfa_method') {
+			const parsed = await utils.process_login(request, response);
+			if (!parsed || parsed === undefined)
+				return `1_${parsed}`;
+			else if (parsed < 0) {
+				if (parsed == -1)
+					response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Error', "Content": 'Wrong email'})
+				else if (parsed == -2)
+					response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Error', "Content": 'Wrong password'})
+				return true;
+			}
+			if (parsed.mfa && parsed.mfa.email && !parsed.mfa.email.endsWith('_temp') && parsed.mfa.prefered === 1) {
+				var email_code = Math.floor(Math.random() * 1000000);
+				const email_code_len = 6 - (String(email_code).length);
+				for (var pos = 0; pos < email_code_len; pos++)
+					email_code = '0' + email_code;
+				await modules.send_email(parsed.settings.email, 'MFA code', `This is your 2FA code. Please do not share: ${email_code}`);
+				email_code = await modules.create_encrypted_password(String(email_code));
+				await mfa_db.update_mfa_value('email', email_code, parsed.mfa.self);
+				response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'send_email_verification', "Content": parsed.settings.self});
+				return true;
+			} else if (parsed.mfa && parsed.mfa.otc && !parsed.mfa.otc.endsWith('_temp') && parsed.mfa.prefered === 2) {
+				response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'send_2FA_verification', "Content": parsed.settings.self});
+				return true;
+			} else if (parsed.mfa && parsed.mfa.custom && !parsed.mfa.custom.endsWith('_temp') && parsed.mfa.prefered === 3) {
+				response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'send_custom_verification', "Content": parsed.settings.self});
+				return true;
+			}
+			response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({'Response': 'none', 'Content': null});
+			return true;
+		} else if (link.get == 'check_user'){
+			const check_user = await settings_db.get_settings_value('email', link.email);
+			if (!check_user || check_user == undefined) {
+				response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({'Response': 'wrong email', 'Content': null});
+				return true;
+			}
+			const pw = modules.check_encrypted_password(link.password, check_user.password);
+			if (!pw || pw === undefined || pw < 0) {
+				response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({'Response': 'wrong password', 'Content': null});
+				return true;
+			}
+			response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({'Response': 'success', 'Content': null});
+			return true;
+		} else if (link.get == "login_html") {
+			var file = await replace_all_templates(request, response, 1);
+			file = show_page(file, "login_div");
+			response.code(200).headers({ 'Content-Type': 'text/html' }).send(file);
 		}
 		response.code(404).headers({ 'Content-Type': 'application/json' }).send({"Response": 'Not found', "Content": null});
 		return true;
@@ -1191,12 +1219,14 @@ async function check_for_invalid_token(request, response, keys, values) {
 	if (keys.length == 0)
 		return false;
 	const token_decrypted = modules.get_jwt(values[keys.indexOf('token')]);
-	if (token_decrypted < 0) {
+	const lang_decrypted = modules.get_jwt(values[keys.indexOf('lang')]);
+	if (token_decrypted < 0 || lang_decrypted < 0) {
 		await views.logout(request, response, true);
 		return true;
 	}
 	const token = token_decrypted.userid;
-	if (!token || token == undefined || token < 0) {
+	const lang = lang_decrypted.userid;
+	if (!token || token == undefined || token < 0 || !lang || lang == undefined || lang < 0) {
 		await views.logout(request, response, true);
 		return true;
 	}
@@ -1215,7 +1245,6 @@ export {
 	encrypt_google,
 	encrypt_github,
 	process_login,
-	get_frontend_content,
 	otc_secret,
 	get_decrypted_userid,
 	get_otc_secret,

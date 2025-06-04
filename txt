@@ -1,4 +1,5 @@
-TODO
-parse register
-look into views.js
-
+home
+login
+register
+settings
+verify_email

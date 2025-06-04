@@ -28,6 +28,32 @@ async function show_profile_page() : Promise<string>{
         alert(`error with data of profile ${data.Content}`);
         return 'home_div';
     }
+    else if (data.Response === 'Logged out successfully'){
+        // const html_response = await fetch("/get_data", {
+        //     method: 'GET',
+        //     headers: {
+        //         'Content-Type': 'application/json'
+        //     }, body: JSON.stringify({
+        //         "get": "login_html",
+        //     }),
+        // });
+        // const html = await html_response.text();
+        // const page_replace = document.getElementById("main_body");
+        // if (!page_replace) {
+        //     return 'home_div';
+        // }
+        // const temp_div = document.createElement("div");
+        // temp_div.innerHTML = html;
+        // const mainBody = temp_div.querySelector('#main_body');
+        // if (!mainBody) {
+        //     return 'home_div';
+        // }
+        // const main_body = mainBody?.innerHTML;
+        // page_replace.innerHTML = main_body;
+        history.pushState({}, '', '/login');
+        // toggle_divs('login_div');
+        return 'login_div';
+    }
     return 'profile_div';
 }
 
@@ -132,11 +158,10 @@ async function render_mfa() : Promise<string>{
 //TODO change window.location.href since it force refreshes the webpage
 async function where_am_i(path : string) : Promise<string> {
     switch (path) {
-        case '/home': return 'home_div';
         case '/profile': 
             if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/');
-                return 'home_div';
+                return 'login_div';
             }
             return await show_profile_page();
         // add more routes here
@@ -164,7 +189,7 @@ async function where_am_i(path : string) : Promise<string> {
                 return 'login_div';
             }
             return 'settings_main_div';
-        case '/settings/user': 
+        case '/settings/user':
         if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');
                 return 'login_div';
@@ -228,8 +253,8 @@ document.body.addEventListener('click', (event) => {
     const href = button.getAttribute('href');
     if (href !== window.location.pathname){
         history.pushState({route: href}, '', href);
-        handleRouteChange();
     }
+    handleRouteChange();
 });
 
 
