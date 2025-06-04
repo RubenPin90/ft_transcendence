@@ -1,6 +1,8 @@
 node_modules
 .env
 secrets.key
+secrets.yml
+data
 db.sqlite
 .vscode
 secrets

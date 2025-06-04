@@ -39,7 +39,7 @@ services:
     networks:
       - trancendence-network
     # develop:
-    #   watch:
+    #   watch:  
 
   prometheus:
     image: prom/prometheus:v2.53.4
