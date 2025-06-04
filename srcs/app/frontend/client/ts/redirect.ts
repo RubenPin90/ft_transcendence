@@ -164,7 +164,7 @@ async function where_am_i(path : string) : Promise<string> {
                 return 'login_div';
             }
             return 'settings_main_div';
-        case '/settings/user': 
+        case '/settings/user':
         if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');
                 return 'login_div';

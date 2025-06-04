@@ -77,7 +77,7 @@ async function delete_account() {
 //     <div class="flex flex-col mt-8 gap-6">
 //         <a href="/settings/user/change_user" class="buttons" data-link>
 //             <button class="block w-full mb-4 mt-6">
-//                 <span class="button_text">change username</span>
+//                 <span class="button_text">Change Username</span>
 //             </button>
 //         </a>
 //         <a href="/settings/user/change_login" class="buttons" data-link>
