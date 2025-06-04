@@ -1,6 +1,7 @@
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
-import * as modules from '../backend/mimes.js';
+import * as modules from '../backend/modules.js';
+import { promises as fs } from 'fs';
 
 const max_loop_size = 1000000000;
 
@@ -11,10 +12,10 @@ async function get_settings_value(search_value, value) {
         return -1;
 
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
-    
+
     try {
         var row = await db.get(`
         SELECT * FROM settings
@@ -31,7 +32,7 @@ async function get_settings_value(search_value, value) {
 // Tested: all working
 async function get_settings() {
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -49,15 +50,14 @@ async function get_settings() {
 // Not tested: But working propperly so far
 async function create_settings_value(password, pfp, mfa, email, lang, google, github) {
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
-    
     
     try {
         let check_github;
         let check_google;
-        if (google !== 0) {
+        if (google != '') {
             check_google = await db.get(
                 `SELECT * FROM settings
                 WHERE google = ?
@@ -66,7 +66,7 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
             if (check_google)
                 return -1;
         }
-        if (github !== 0) {
+        if (github != '') {
             check_github = await db.get(
                 `SELECT * FROM settings
                 WHERE github = ?
@@ -76,13 +76,14 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
                 return -2;
         }
         var self;
-        if (google !== 0)
+        if (google != '')
             self = google;
-        else if (github !== 0)
+        else if (github != '')
             self = github;
         else {
+            var check;
             var random_self = Math.floor(Math.random() * 1000000000);
-            // console.log(random_self);
+            // //console.log(random_self);
             var it = 0
             while (it < 2000000000) {
                 check = await db.get(`
@@ -97,7 +98,7 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
                 console.error(`Error in create_settings_value: ${err}`);
                 return null;
             }
-            console.log(`Random: ${random_self}`);
+            //console.log(`Random: ${random_self}`);
             self = random_self;
         }
         var check_email = await db.get(
@@ -112,10 +113,10 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
                 await update_settings_value('github', github, user_id);
             }
             if (id.google == '0') {
-                console.log(await update_settings_value('google', google, user_id));
+                //console.log(await update_settings_value('google', google, user_id));
             }
             const ret = await get_settings_value('email', email);
-            // console.log("Here");
+            // //console.log("Here");
             self = ret.self;
             return {"return": row, "self": ret.self};
         }
@@ -123,7 +124,7 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
 			`INSERT INTO settings (password, pfp, mfa, email, lang, google, github, self) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 			[password, pfp, mfa, email, lang, google, github, self]
 		);
-		// console.log(`New user created with ID: ${row.lastID}`);
+		// //console.log(`New user created with ID: ${row.lastID}`);
         return {"return": row, "self": self};
     } catch (err) {
         console.error(`Error in create_settings_value: ${err}`);
@@ -139,7 +140,7 @@ async function update_settings_value(search_value, value, self) {
     if (!valid_values.includes(search_value))
         return null;
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
@@ -168,21 +169,21 @@ async function update_settings_value(search_value, value, self) {
 
 async function delete_settings_value(self) {
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
     try {
         const check = await db.get(`
         SELECT * FROM settings
-        WHERE self = '${self}'`);
+        WHERE self = ?`, [self]);
         if (!check)
             return null;
         var row = await db.run(`
         DELETE FROM settings
-        WHERE mfa.self = '${self}'`);
+        WHERE settings.self = '${self}'`);
     } catch (err) {
-        console.error(`Error in delete_mfa_value: ${err}`);
+        console.error(`Error in delete_settings_value: ${err}`);
         return null;
     } finally {
         await db.close();

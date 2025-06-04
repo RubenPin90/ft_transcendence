@@ -42,13 +42,13 @@ async function verify_code() {
         alert("Error. Input cant be empty");
         return;
     }
-    console.log(code.value);
+    //console.log(code.value);
     const response = await fetch('/settings/mfa', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({"Function": "verify", "Code": code.value}),
+        body: JSON.stringify({"Function": "verify_otc", "Code": code.value}),
     });
     if (!response.ok) {
         throw new Error(`HTTP Fehler! Status: ${response.status}`);
@@ -57,19 +57,19 @@ async function verify_code() {
     let data;
     try {
         data = await response.json();
-        if (data.Response !== "Success")
+        if (data.Response !== "success")
             alert("Error: 2FA code invalid");
         else
-            window.location.href = 'http://localhost:8080/settings/mfa';
+            window.location.reload;
         //     clear window and replace with nice UI Box. Client success
     } catch (jsonError) {
         throw new Error('Fehler beim Parsen der JSON-Antwort');
     }
-    console.log(data);
+    //console.log(data);
 }
 
 // async function verify_custom_code() {
-//     console.log('hi');
+//     //console.log('hi');
 //     const qrcodeButtonDiv = document.getElementById('mfa-button');
 //     if (qrcodeButtonDiv) {
 //         qrcodeButtonDiv.innerHTML = '<input id="Code" name="Code" placeholder="Code"><br>\
@@ -86,7 +86,7 @@ async function verify_custom_code() {
         return;
 
     const codeValue = inputField.value;
-    console.log("Sende Code zur Verifizierung:", codeValue);
+    //console.log("Sende Code zur Verifizierung:", codeValue);
 
     try {
         const response = await fetch('/settings/mfa', {
@@ -102,9 +102,9 @@ async function verify_custom_code() {
 
         const data = await response.json();
         
-        if (data.Response === "Success") {
+        if (data.Response === "success") {
             alert("Code successfully registered!");
-            window.location.href = 'http://localhost:8080/settings/mfa';
+            window.location.reload;
             return;
         } else {
             alert("Incorrect code. Please retry!");
@@ -121,13 +121,16 @@ async function verify_custom_code() {
 
 // THIS IS COPIED FROM CHATGPT. CREATE OWN FRONTEND UI
 async function create_custom_code() {
-    console.log("create_custom_code gestartet");
+    //console.log("create_custom_code gestartet");
     
     const qrcodeDiv = document.getElementById('mfa');
     const qrcodeButtonDiv = document.getElementById('mfa-button') as HTMLDivElement;
 
     if (!qrcodeDiv)
+    {
+        alert("NO DIV ELEMENT");
         return;
+    }
 
     qrcodeDiv.innerHTML = '<h1 class="text-4xl font-bold text-center bg mb-8">Create your 2FA custom<br>6 diggit code</h1>';
     if (!document.getElementById('Code')) {
@@ -145,7 +148,7 @@ async function create_custom_code() {
             if (!inputField) return;
 
             const codeValue = inputField.value;
-            console.log("Sende Code:", codeValue);
+            //console.log("Sende Code:", codeValue);
 
             try {
                 const response = await fetch('/settings/mfa', {
@@ -184,7 +187,7 @@ async function verifyEmail() {
         return;
     }
     const code = code2.value;
-    console.log("Verification code:", code);
+    //console.log("Verification code:", code);
     
     try {
         const response = await fetch("/settings/mfa", {
@@ -198,9 +201,9 @@ async function verifyEmail() {
         }
 
         const data = await response.json();
-        if (data.Response === "Success") {
+        if (data.Response === "success") {
             alert("Email successfully verified!");
-            window.location.href = 'http://localhost:8080/settings/mfa';
+            window.location.reload;
         } else {
             alert("Verification failed. Wrong password");
         }
@@ -225,7 +228,7 @@ async function create_email() {
         data = await response.json();
         if (data.Response === "NoEmail")
             alert("no email set"); // Here an alert that there is email set. then start a promt to let user input a mail
-        else if (data.Response === "Success") {
+        else if (data.Response === "success") {
             const emailDiv = document.getElementById('mfa');
             const emailInputDiv = document.getElementById('mfa-button');
             if (!emailDiv || !emailInputDiv){
@@ -241,7 +244,7 @@ async function create_email() {
     } catch (jsonError) {
         console.error(`Fehler beim Parsen der JSON-Antwort`);
     }
-    // console.log(data);
+    // //console.log(data);
 }
 
 async function remove_custom_code() {
@@ -304,32 +307,32 @@ async function remove_email() {
     }
 }
 
-async function change_language() {
-    const response = await fetch("/settings/user", {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({'Function': 'change_language'})
-    });
+// async function change_language() {
+//     const response = await fetch("/settings/user", {
+//         method: 'POST',
+//         headers: {'Content-Type': 'application/json'},
+//         body: JSON.stringify({'Function': 'change_language'})
+//     });
 
-    if (!response.ok)
-        throw new Error(`HTTP Fehler! Status: ${response.status}`);
+//     if (!response.ok)
+//         throw new Error(`HTTP Fehler! Status: ${response.status}`);
 
-    let data;
-    try {
+//     let data;
+//     try {
         
-    } catch (err) {
-        console.error(`Error in change language: ${err}`)
-    }
-}
+//     } catch (err) {
+//         console.error(`Error in change language: ${err}`)
+//     }
+// }
 
-async function logout() {
-    delete_cookie("token");
-    location.reload();
-}
+// async function logout() {
+//     delete_cookie("token");
+//     location.reload();
+// }
 
-async function delete_cookie(name : string) {
-    document.cookie = name  + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-}
+// async function delete_cookie(name : string) {
+//     document.cookie = name  + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+// }
 
 
 

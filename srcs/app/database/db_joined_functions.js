@@ -8,7 +8,7 @@ async function get_settings_mfa_value(search_value, value) {
         return null;
 
     const db = await open({
-        filename: 'db.sqlite',
+        filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 

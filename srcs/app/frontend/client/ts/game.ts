@@ -1,4 +1,5 @@
 import { on, off, send, getSocket } from './socket.js';
+import type { ServerMessage } from './socket.js';
 export type GameMode = 'pve' | '1v1' | 'Tournament';
 
 interface PlayerState {
@@ -18,16 +19,21 @@ export interface GameState {
 let ctx: CanvasRenderingContext2D | null = null;
 let userId: string | null = null;
 let currentRoomId: string | null = null;
-let ws: WebSocket | null = null;  // Declare ws globally
+let ws: WebSocket | null = null;
 let inputHandlersRegistered = false;
-
-let onGameEndCallback: ((winnerId: string) => void) | null = null;
 
 const keysPressed: Record<string, boolean> = {};
 
+let gameEndCb: ((winnerId: string) => void) | null = null;
+
+let matchFoundListener: ((msg: Extract<ServerMessage, { type: 'matchFound' }>) => void) | null = null;
+let stateListener:      ((msg: Extract<ServerMessage, { type: 'state' }>)      => void) | null = null;
+
+
 export function setOnGameEnd(cb: (winnerId: string) => void): void {
-  onGameEndCallback = cb;
+  gameEndCb = cb;
 }
+
 
 export function initGameCanvas(): void {
   const canvas = document.getElementById('game') as HTMLCanvasElement | null;
@@ -35,9 +41,9 @@ export function initGameCanvas(): void {
   ctx = canvas.getContext('2d');
 }
 
+
 export function startGame(mode: GameMode): void {
   ws = getSocket();
-
   if (!currentRoomId) {
     currentRoomId = localStorage.getItem('currentGameId');
   }
@@ -46,38 +52,37 @@ export function startGame(mode: GameMode): void {
   }
 
   if (mode === 'pve') {
-    const sendJoinQueue = () => ws!.send(JSON.stringify({
-      type: 'joinQueue',
-      payload: { mode }
-    }));
-    if (ws.readyState === WebSocket.OPEN) sendJoinQueue();
-    else ws.addEventListener('open', sendJoinQueue, { once: true });
+    const sendJoinQueue = () =>
+      send({ type: 'joinQueue', payload: { mode } });
+    if (ws.readyState === WebSocket.OPEN) {
+      sendJoinQueue();
+    } else {
+      ws.addEventListener('open', sendJoinQueue, { once: true });
+    }
   }
 
-  const handleMessage = (ev: MessageEvent) => {
-    const msg = JSON.parse(ev.data) as
-      | { type: 'matchFound'; payload: { gameId: string; mode: string; userId: string } }
-      | { type: 'state'; state: GameState };
-
-    if (msg.type === 'matchFound') {
+  if (!matchFoundListener) {
+    matchFoundListener = (msg) => {
       currentRoomId = msg.payload.gameId;
-      userId = msg.payload.userId;
+      userId        = msg.payload.userId;
       console.log(`Match ready: room=${currentRoomId}, user=${userId}`);
-    } else if (msg.type === 'state') {
+    };
+    on('matchFound', matchFoundListener);
+  }
+
+  if (!stateListener) {
+    stateListener = (msg) => {
       drawFrame(msg.state);
       if (msg.state.status === 'finished') {
-        console.log('Game finished! Winner =', msg.state.winner);
         stopGame();
-        onGameEndCallback?.(msg.state.winner!);
+        if (msg.state.winner != null && gameEndCb) {
+          gameEndCb(msg.state.winner);
+        }
       }
-    }
-    else {
-      console.error('Unknown message type:', msg);
-      return;
-    }
-  };
+    };
+    on('state', stateListener);
+  }
 
-  ws.addEventListener('message', handleMessage);
   if (!inputHandlersRegistered) {
     setupInputHandlers();
     inputHandlersRegistered = true;
@@ -86,16 +91,33 @@ export function startGame(mode: GameMode): void {
 
 export function stopGame(): void {
   if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({
+    send({
       type: 'leaveGame',
       payload: { roomId: currentRoomId, userId }
-    }));
-    ws.close();
+    });
   }
-  ws = null;
+
+  if (matchFoundListener) {
+    off('matchFound', matchFoundListener);
+    matchFoundListener = null;
+  }
+  if (stateListener) {
+    off('state', stateListener);
+    stateListener = null;
+  }
 }
 
-function drawFrame(state: GameState): void {
+
+export function drawFrame(state: GameState): void {
+  if (
+    state == null ||
+    typeof state !== 'object' ||
+    !Array.isArray(state.players) ||
+    state.players.length !== 2
+  ) {
+    return;
+  }
+
   if (!ctx) return;
   const canvas = ctx.canvas;
   const toX = (u: number) => u * canvas.width;
@@ -129,7 +151,7 @@ function drawFrame(state: GameState): void {
   );
 }
 
-function setupInputHandlers(): void {
+export function setupInputHandlers(): void {
   let moveInterval: number | null = null;
 
   function getDirection(): 'up' | 'down' | null {
@@ -141,7 +163,7 @@ function setupInputHandlers(): void {
   function sendMovement(active: boolean): void {
     if (!currentRoomId || !userId) return;
     const direction = getDirection();
-    ws?.send(JSON.stringify({
+    send({
       type: 'movePaddle',
       payload: {
         roomId: currentRoomId,
@@ -149,7 +171,7 @@ function setupInputHandlers(): void {
         direction: active ? direction : 'stop',
         active
       }
-    }));
+    });
   }
 
   window.addEventListener('keydown', (e) => {
@@ -172,8 +194,7 @@ function setupInputHandlers(): void {
       if (keysPressed[e.key]) {
         keysPressed[e.key] = false;
       }
-
-      if (!keysPressed['ArrowUp'] && !keysPressed['ArrowDown'] && moveInterval != null) {
+      if (!keysPressed['ArrowUp'] && !keysPressed['ArrowDown'] && moveInterval !== null) {
         clearInterval(moveInterval);
         moveInterval = null;
         sendMovement(false);
