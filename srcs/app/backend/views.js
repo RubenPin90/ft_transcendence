@@ -187,6 +187,7 @@ async function user(request, response) {
     const data = request.body;
     if (request.method == 'POST') {
         if (data.Function == "change_language") {
+            const [keys, values] = modules.get_cookies(request);
             const new_lang = data.Lang;
             const old_lang = modules.get_jwt(values[keys.indexOf('lang')]);
             const new_lang_decrypted = modules.create_jwt(new_lang, '1h');
@@ -219,13 +220,10 @@ async function settings(request, response) {
     if (!keys?.includes('token'))
         return await login(request, response);
     const request_url = request.url.slice(9); // /settings/route -> /route
-    if (request_url.startsWith("/mfa?"))
-        return await settings_set_prefered_mfa(request, response);
     if (request_url == "/mfa")
         return await mfa(request, response);
-    if (request_url.startsWith("/user?"))
-        return await settings_prefered_language(request, response);
-    if (request_url.startsWith("/user"))
+    console.log(request_url);
+    if (request_url == "/user")
         return await user(request, response);
 
     const status = await send.send_html('settings.html', response, 200, async (data) => {
@@ -236,68 +234,6 @@ async function settings(request, response) {
     if (!status || status === undefined || status < 0)
         return `1_${status}`
     return true;
-}
-
-async function settings_set_prefered_mfa(request, response) {
-    if (request.url.length < 11)
-        return // Here was a redirect(response, '/settings/mfa', 302);
-    const location = request.url.slice(10);
-    if (!location.indexOf('='))
-        return // Here was a redirect(response, '/settings/mfa', 302);
-    const pos = location.indexOf('=') + 1;
-    if (location.length === pos)
-        return // Here was a redirect(response, '/settings/mfa', 302);
-    const method = location.slice(pos);
-    const {keys, values} = utils.get_cookie('token', request);
-    if ((!keys && !values) || (keys === undefined && values === undefined))
-        return // Here was a redirect(response, '/settings/mfa', 302);
-    const decrypted_user =  modules.get_jwt(values[0]);
-    const userid = decrypted_user.userid;
-    const check_mfa = await mfa_db.get_mfa_value('self', userid);
-    if (!check_mfa || check_mfa === undefined)
-        return // Here was a redirect(response, '/settings/mfa', 302);
-    if (method === 'email') {
-        await mfa_db.update_mfa_value('prefered', 1, userid);
-    } else if (method === 'otc') {
-        await mfa_db.update_mfa_value('prefered', 2, userid);
-    } else if (method === 'custom') {
-        await mfa_db.update_mfa_value('prefered', 3, userid);
-    }
-    return // Here was a redirect(response, '/settings/mfa', 302);    
-}
-
-async function settings_prefered_language(request, response) {
-    if (request.url.length < 11)
-        return // Here was a redirect(response, '/settings/user', 302);
-    const location = request.url.slice(10);
-    if (!location.indexOf('='))
-        return // Here was a redirect(response, '/settings/user', 302);
-    const pos = location.indexOf('=') + 1;
-    if (location.length === pos)
-        return // Here was a redirect(response, '/settings/user', 302);
-    const method = location.slice(pos);
-    var [keys, values] = modules.get_cookies(request.headers.cookie);
-    const user_check = keys?.find((key) => key === 'token');
-    if (!user_check || user_check === undefined || user_check == false)
-        return false;
-    const userIndex = keys.indexOf('token');
-    var user = values[userIndex];
-    user = modules.get_jwt(user);
-    const lang_check = keys?.find((key) => key === 'lang');
-    if (!lang_check || lang_check === undefined || lang_check == false)
-        return false;
-    const langIndex = keys.indexOf('lang');
-    var lang = values[langIndex];
-    lang = modules.get_jwt(lang);
-    if (lang.userid == method)
-        return // Here was a redirect(response, '/settings/user', 302);
-    const lang_jwt = modules.create_jwt(method, '1h');
-    if (!lang_jwt || lang_jwt == undefined || lang_jwt < 0)
-        return // Here was a redirect(response, '/settings/user', 302);
-    modules.delete_cookie(response, 'lang');
-    modules.set_cookie(response, 'lang', lang_jwt);
-    const wow = await settings_db.update_settings_value('lang', method, user.userid);
-    return // Here was a redirect(response, '/settings/user', 302);
 }
 
 async function verify_email(request, response) {
@@ -815,7 +751,7 @@ async function set_up_mfa_buttons(request, response) {
         settings_html_mfa_string +='</select></form>'
         
         settings_html_mfa_string +='<div class="flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl cursor-pointer">'
-        settings_html_mfa_string +='<button onclick="change_preffered_mfa()">'
+        settings_html_mfa_string +='<button onclick="change_preferred_mfa()">'
         settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">'
         settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />'
         settings_html_mfa_string +='</svg></button></div></div>'
@@ -872,7 +808,6 @@ export {
     verify_email,
     verify_2fa,
     verify_custom,
-    settings_set_prefered_mfa,
     profile,
     logout,
     user_settings,

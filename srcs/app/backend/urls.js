@@ -58,11 +58,11 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.get('/settings', (req, reply) => views.settings(req, reply));
   fastify.post('/settings', (req, reply) => views.settings(req, reply));
   fastify.get('/settings/*', (req, reply) => views.settings(req, reply));
-  fastify.post('/settings/*', (req, reply) => views.settings(req, reply)); // Here
+  fastify.post('/settings/*', (req, reply) => views.settings(req, reply));
   fastify.post('/verify_email', (req, reply) => views.verify_email(req, reply));
   fastify.post('/verify_2fa', (req, reply) => views.verify_2fa(req, reply));
   fastify.post('/verify_custom', (req, reply) => views.verify_custom(req, reply));
-  // Block done except for "// Here"
+  // Block done
 
   fastify.get('/profile', (req, reply) => views.profile(req, reply)); // Done
   fastify.post('/profile', (req, reply) => views.profile(req, reply)); // Not working properly when having no token
