@@ -100,11 +100,13 @@ async function home(request, response) {
         modules.set_cookie(response, 'lang', google_return.lang, 3600);
         response.redirect("https://localhost/");
     } else if (request.url !== '/') {
+        console.log("-------------------------")
         const github_return = await utils.encrypt_github(request, response);
         if (github_return < 0)
             return `2_${github_return}`;
         modules.set_cookie(response, 'token', github_return.token, 3600);
         modules.set_cookie(response, 'lang', github_return.lang, 3600);
+        console.log("-------------------------")
         response.redirect("https://localhost/");
     }
     const check = await send.send_html('index.html', response, 200, async (data) => {
@@ -299,11 +301,7 @@ async function settings_prefered_language(request, response) {
 }
 
 async function verify_email(request, response) {
-    if (request.method !== 'POST')
-        return await send.send_error_page('404.html', response, 404);
-    const frontend_data = await utils.get_frontend_content(request);
-    if (!frontend_data || frontend_data === undefined || frontend_data < 0)
-        return false;
+    const frontend_data = request.body;
     const check_mfa = await mfa_db.get_mfa_value('self', frontend_data.userid);
     if (!check_mfa || check_mfa === undefined || check_mfa.email.length === 0 || check_mfa.email.endsWith('_temp'))
         return false;
@@ -320,11 +318,7 @@ async function verify_email(request, response) {
 }
 
 async function verify_2fa(request, response) {
-    if (request.method !== 'POST')
-        return await send.send_error_page('404.html', response, 404);
-    const frontend_data = await utils.get_frontend_content(request);
-    if (!frontend_data || frontend_data === undefined || frontend_data < 0)
-        return false;
+    const frontend_data = request.body;
     const replace_data = {'Function': 'verify', 'Code': frontend_data.code};
     const temp = await utils.verify_otc(request, response, replace_data, frontend_data.userid);
     if (temp === false || !temp || temp === undefined || temp < 0) {
@@ -339,11 +333,7 @@ async function verify_2fa(request, response) {
 }
 
 async function verify_custom(request, response) {
-    if (request.method !== 'POST')
-        return await send.send_error_page('404.html', response, 404);
-    const frontend_data = await utils.get_frontend_content(request);
-    if (!frontend_data)
-        return false;
+    const frontend_data = request.body;
     const replace_data = {'Function': 'verify', 'Code': frontend_data.code};
     const temp = await utils.verify_custom_code(frontend_data.userid, response, replace_data);
     if (temp === false) {
@@ -357,9 +347,9 @@ async function verify_custom(request, response) {
     return true;
 }
 
-async function profile(request, response){
+async function profile(request, response) {
     var [keys, values] = modules.get_cookies(request);
-    await utils.check_for_invalid_token(request, response, keys, values);
+    await utils.check_for_invalid_token_request(request, response, keys, values);
     if (!keys?.includes('token')) {
         // const status = await send.send_html('index.html', response, 200, async(data) => {
         //     data = await utils.replace_all_templates(request, response);
@@ -367,6 +357,7 @@ async function profile(request, response){
         //     return data.replace('{{profile}}', data);
         // });
         // return true;
+        console.log(modules.get_cookies(request));
         return await login(request, response);
     }
 
@@ -377,20 +368,18 @@ async function profile(request, response){
             decoded = modules.get_jwt(token);
         } catch (err){
             console.error(`Error in profile views.js: ${err}`);
-            return // Here was a redirect(response, '/login', 302);
+            response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
+            return true;
         }
         const user = await users_db.get_users_value('self', decoded.userid);
         if (!user || user === undefined){
             response.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'fail', "Content": "No user or user undefined"});
             return true;
         }
-        
         const settings = await settings_db.get_settings_value('self', decoded.userid);
         if (!settings || settings === undefined){
             return response.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'fail', "Content": "no settings or settings undefined"});
-            // return send.send_error_page('404.html', response, 404);
         }
-        
         const userid = decoded.userid;
         var inner = request.body.innervalue;
         
@@ -408,14 +397,13 @@ async function profile(request, response){
         data = utils.show_page(data, "profile_div");
         return data.replace('{{mfa-button}}', data);
     });
-
-    // if (!status || status === undefined || status < 0){
-    //     return `Error rendering profile page: ${status}`;
-    // }
+    if (!status || status === undefined || status < 0){
+        return `Error rendering profile page: ${status}`;
+    }
     return true;
 }
 
-async function logout(request, response, override) {
+async function logout(request, response, override, content) {
     const [keys, values] = modules.get_cookies(request);
     if (!keys?.includes('token')) {
         return;
@@ -429,8 +417,17 @@ async function logout(request, response, override) {
             maxAge: 0
         });
     }
-    if (override == undefined)
+    if (override == undefined) {
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Logged out successfully' });
+        return true;
+    }
+    if (content != undefined) {
+        var data = await utils.replace_all_templates(request, response, 1);
+        data = utils.show_page(data, "login_div");
+        response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Logged out successfully' });
+        return true;
+    }
+    
     await send.send_html('index.html', response, 200, async (data) => {
         data = await utils.replace_all_templates(request, response, 1);
         data = utils.show_page(data, "login_div");
@@ -607,7 +604,7 @@ async function add_friends(request, response){
 
     const data = request.body;
     if (!data || data === undefined){
-        response.code(400).send({ message: 'Invalid data'});
+        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid data'});
         return true;
     }
     const tokenIndex = keys.findIndex((key) => key === 'token');
@@ -616,11 +613,11 @@ async function add_friends(request, response){
     try {
         decoded = modules.get_jwt(token);
     } catch (err) {
-        return // Here was a redirect(response, '/login', 302);
+        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
+        return true;
     }
 
     const userid = decoded.userid;
-
     const receiver = data.input_value;
     const receiver_db = await users_db.get_users_value('username', receiver);
     if (!receiver_db || receiver_db === undefined){
@@ -647,7 +644,7 @@ async function accept_friends(request, response){
     const [keys, values] = modules.get_cookies(request);
     const data = request.body;
     if (!data || data === undefined){
-        response.code(400).send({ message: 'Invalid data'});
+        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid data'});
         return true;
     }
 
@@ -655,7 +652,7 @@ async function accept_friends(request, response){
     try {
         decoded = modules.get_jwt(values[keys.indexOf("token")]);
     } catch (err) {
-        response.code(400).send({ message: 'Invalid decoded'});
+        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
         return true;
     }
 
@@ -665,7 +662,7 @@ async function accept_friends(request, response){
         console.error("error in deleting accepted friend request");
         return null;
     }
-    response.code(200).send({ message: 'success'});
+    response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'success'});
     return true;
 }
 
@@ -681,7 +678,7 @@ async function reject_friend(request, response){
     try {
         decoded = modules.get_jwt(values[keys.indexOf("token")]);
     } catch (err) {
-        response.code(400).send({ message: 'Invalid decoded'});
+        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
         return true;
     }
 
@@ -691,7 +688,7 @@ async function reject_friend(request, response){
         console.error("error in deleting accepted friend request");
         return null;
     }
-    response.code(200).send({ message: 'success'});
+    response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin':  '*'}).send({ message: 'success'});
     return true;
 }
 
@@ -707,7 +704,7 @@ async function block_friend(request, response){
     try {
         decoded = modules.get_jwt(values[keys.indexOf("token")]);
     } catch (err) {
-        response.code(400).send({ message: 'Invalid decoded'});
+        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
         return true;
     }
 
@@ -720,7 +717,7 @@ async function block_friend(request, response){
         console.error("error in deleting accepted friend request");
         return null;
     }
-    response.code(200).send({ message: 'success'});
+    response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'success'});
     return true;
 }
 
@@ -731,7 +728,10 @@ async function delete_account(request, response) {
     var decrypted;
     try {
         decrypted = modules.get_jwt(token);
-    } catch (err) {}
+    } catch (err) {
+        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
+        return true;
+    }
     const decrypted_user = decrypted.userid;
     await settings_db.delete_settings_value(decrypted_user);
     response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'success'});

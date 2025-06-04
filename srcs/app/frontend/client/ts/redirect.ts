@@ -18,6 +18,7 @@ async function show_profile_page() : Promise<string>{
     }
 
     const data = await response.json();
+    console.log(data.Response);
     if (data.Response === 'success'){
         var element = document.getElementById("profile_div");
         if (element){
@@ -27,6 +28,32 @@ async function show_profile_page() : Promise<string>{
     else if (data.Response === 'fail'){
         alert(`error with data of profile ${data.Content}`);
         return 'home_div';
+    }
+    else if (data.Response === 'Logged out successfully'){
+        // const html_response = await fetch("/get_data", {
+        //     method: 'GET',
+        //     headers: {
+        //         'Content-Type': 'application/json'
+        //     }, body: JSON.stringify({
+        //         "get": "login_html",
+        //     }),
+        // });
+        // const html = await html_response.text();
+        // const page_replace = document.getElementById("main_body");
+        // if (!page_replace) {
+        //     return 'home_div';
+        // }
+        // const temp_div = document.createElement("div");
+        // temp_div.innerHTML = html;
+        // const mainBody = temp_div.querySelector('#main_body');
+        // if (!mainBody) {
+        //     return 'home_div';
+        // }
+        // const main_body = mainBody?.innerHTML;
+        // page_replace.innerHTML = main_body;
+        history.pushState({}, '', '/login');
+        // toggle_divs('login_div');
+        return 'login_div';
     }
     return 'profile_div';
 }

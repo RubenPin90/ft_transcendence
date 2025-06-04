@@ -225,27 +225,6 @@ async function process_login(request, response) {
 	return {'settings': check_settings, 'mfa': mfa};
 }
 
-async function get_frontend_content(request) {
-	let body = '';
-    
-    return new Promise((resolve) => {
-        request.on('data', chunk => {
-            body += chunk.toString();
-        });
-        
-        request.on('end', async () => {
-            try {
-                const data = JSON.parse(body);
-                resolve(data);
-				return;
-            } catch (error) {
-                resolve(null);
-				return;
-            }
-        });
-    });
-}
-
 function get_decrypted_userid(request, response) {
 	const [keys, values] = modules.get_cookies(request);
 	if (keys === null && values === null)
@@ -1162,6 +1141,10 @@ async function get_data(request, response) {
 			const data = await replace_all_templates(request, response);
 			response.code(200).headers({ 'Content-Type': 'application/json' }).send({"Response": 'success', "Content": show_page(data, "home_div")});
 			return true;
+		} else if (link.get == "login_html") {
+			var file = await replace_all_templates(request, response, 1);
+			file = show_page(file, "login_div");
+			response.code(200).headers({ 'Content-Type': 'text/html' }).send(file);
 		}
 		response.code(404).headers({ 'Content-Type': 'application/json' }).send({"Response": 'Not found', "Content": null});
 		return true;
@@ -1208,6 +1191,27 @@ async function check_for_invalid_token(request, response, keys, values) {
 	return false;
 }
 
+async function check_for_invalid_token_request(request, response, keys, values) {
+	if (keys.length == 0)
+		return false;
+	const token_decrypted = modules.get_jwt(values[keys.indexOf('token')]);
+	if (token_decrypted < 0) {
+		await views.logout(request, response, true, true);
+		return true;
+	}
+	const token = token_decrypted.userid;
+	if (!token || token == undefined || token < 0) {
+		await views.logout(request, response, true, true);
+		return true;
+	}
+	const check_settings = await settings_db.get_settings_value('self', token);
+	if (check_settings == undefined) {
+		await views.logout(request, response, true, true);
+		return true;
+	}
+	return false;
+}
+
 
 export {
 	google_input_handler,
@@ -1215,7 +1219,6 @@ export {
 	encrypt_google,
 	encrypt_github,
 	process_login,
-	get_frontend_content,
 	otc_secret,
 	get_decrypted_userid,
 	get_otc_secret,
@@ -1233,5 +1236,6 @@ export {
 	get_data,
 	generate_random_state,
 	retrieve_trash_icon_mfa,
-	check_for_invalid_token
+	check_for_invalid_token,
+	check_for_invalid_token_request
 }
