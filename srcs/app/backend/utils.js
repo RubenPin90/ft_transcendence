@@ -401,7 +401,7 @@ async function verify_custom_code(userid, response, data) {
 	if (custom.endsWith('_temp'))
 		custom = custom.slice(0, -5);
 	if (data.Code !== custom) {
-		response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'Wrong password', "Content": null });
+		response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'Incorrect code', "Content": null });
 		return -3;
 	}
 	await mfa_db.update_mfa_value('custom', custom, userid);
@@ -631,7 +631,7 @@ async function replace_all_templates(request, response, state, override) {
     settings_html_mfa_string +='{{2FAOPTIONS}}'
     settings_html_mfa_string +='</select></form>'
     settings_html_mfa_string +='<div class="flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl cursor-pointer">'
-    settings_html_mfa_string +='<button onclick="change_preffered_mfa()">'
+    settings_html_mfa_string +='<button onclick="change_preferred_mfa()">'
     settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">'
     settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />'
     settings_html_mfa_string +='</svg></button></div></div>'
@@ -1192,7 +1192,20 @@ async function get_data(request, response) {
 				response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'send_custom_verification', "Content": parsed.settings.self});
 				return true;
 			}
-			response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({'Repsonse': 'none', 'Content': null});
+			response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({'Response': 'none', 'Content': null});
+			return true;
+		} else if (link.get == 'check_user'){
+			const check_user = await settings_db.get_settings_value('email', link.email);
+			if (!check_user || check_user == undefined) {
+				response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({'Response': 'wrong email', 'Content': null});
+				return true;
+			}
+			const pw = modules.check_encrypted_password(link.password, check_user.password);
+			if (!pw || pw === undefined || pw < 0) {
+				response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({'Response': 'wrong password', 'Content': null});
+				return true;
+			}
+			response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({'Response': 'success', 'Content': null});
 			return true;
 		}
 		response.code(404).headers({ 'Content-Type': 'application/json' }).send({"Response": 'Not found', "Content": null});

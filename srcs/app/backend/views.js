@@ -925,15 +925,15 @@ async function set_up_mfa_buttons(request, response) {
     else {
         if (parsed.otc.length !== 0 && !parsed.otc.endsWith('_temp')) {
             set++;
-            options += "<option>OTC</option>";
+            options += "<option value=\"2\">OTC</option>";
         }
         if (parsed.custom.length !== 0 && !parsed.custom.endsWith('_temp')) {
             set++;
-            options += "<option>Custom</option>";
+            options += "<option value=\"3\">Custom</option>";
         }
         if (parsed.email.length !== 0 && !parsed.email.endsWith('_temp')) {
             set++;
-            options += "<option>Email</option>";
+            options += "<option value=\"1\">Email</option>";
         }
     }
 
@@ -951,7 +951,7 @@ async function set_up_mfa_buttons(request, response) {
         settings_html_mfa_string +='</select></form>'
         
         settings_html_mfa_string +='<div class="flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl cursor-pointer">'
-        settings_html_mfa_string +='<button onclick="change_preffered_mfa()">'
+        settings_html_mfa_string +='<button onclick="get_preferred_mfa()" id="mfa_update_btn">'
         settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">'
         settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />'
         settings_html_mfa_string +='</svg></button></div></div>'
@@ -999,6 +999,83 @@ async function set_up_mfa_buttons(request, response) {
 	settings_html_mfa_string +='</button></a></div></div></div></div></div>';
     return response.code(200).headers({'Content-Type': 'application/json','Access-Control-Allow-Origin': '*'}).send({"Response": "success","Content": settings_html_mfa_string});
 }
+
+async function check_preferred_mfa(request, response){
+    if (request.method === "POST") {
+        const data = request.body;
+        const userid = data.Userid;
+        if (!userid || userid === undefined || userid < 0)
+            return `1_${userid}`;
+        if (data.Function == 'create_otc') {
+            const otc_return = await utils.create_otc(userid, response);
+            if (!otc_return || otc_return === undefined || otc_return < 0)
+                return `2_${otc_return}`;
+            return true;
+        } else if (data.Function == 'verify_otc') {
+            var verified = await utils.verify_otc(request, response, data, null);
+            console.log(verified);
+            if (verified && verified !== undefined && !(verified < 0)) {
+                const check_mfa = await mfa_db.get_mfa_value('self', userid);
+                var new_otc_str = check_mfa.otc;
+                if (new_otc_str.endsWith('_temp'))
+                    new_otc_str = new_otc_str.slice(0, -5);
+                await mfa_db.update_mfa_value('otc', new_otc_str, userid);
+                if (check_mfa.prefered === 0)
+                    await mfa_db.update_mfa_value('prefered', 2, userid);
+                response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "success", "Content": null});
+            }
+            else
+                response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "failed", "Content": null});
+            return true;
+        } else if (data.Function == 'create_custom') {
+            return await utils.create_custom_code(userid, response, data);
+        } else if (data.Function == 'verify_function') {
+            return await utils.verify_custom_code(userid, response, data);
+        } else if (data.Function == 'create_email') {
+            const returned2 = await utils.create_email_code(userid, response, data);
+            return returned2;
+        } else if (data.Function == 'verify_email') {
+            return await utils.verify_email_code(userid, response, data);
+        } else if (data.Function == 'remove_custom_code') {
+            const clear_return = await utils.clear_settings_mfa(userid, 'custom', response);
+            if (!clear_return || clear_return === undefined || clear_return < 0)
+                return `3_${clear_return}`;
+            return true;
+        } else if (data.Function === 'remove_otc') {
+            const clear_return = await utils.clear_settings_mfa(userid, 'otc', response);
+            if (!clear_return || clear_return === undefined || clear_return < 0)
+                return `4_${clear_return}`;
+            return true;
+        } else if (data.Function === 'remove_email') {
+            const clear_return = await utils.clear_settings_mfa(userid, 'email', response);
+            if (!clear_return || clear_return === undefined || clear_return < 0)
+                return `5_${clear_return}`;
+            return true;
+        }
+    }
+}
+
+async function change_preferred_mfa(request, response){
+    const [keys, values] = modules.get_cookies(request);
+    if (!keys?.includes('token')) {
+        return login(request, response);
+    }
+
+    const tokenIndex = values[keys.indexOf('token')];
+
+    const userid = modules.get_jwt(tokenIndex).userid;
+    const data = request.Value;
+    // var settings = settings_db.get_settings_value('self', userid);
+    const status = settings_db.update_settings_value('mfa', data, userid);
+    if (!status || status == undefined){
+        response.Code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "failed", "Content": null});
+        return true;
+    }
+    response.Code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "success", "Content": null});
+    return true;
+}
+
+
 export {
     login,
     register,
@@ -1021,5 +1098,7 @@ export {
     block_friend,
     delete_account,
     play,
-    set_up_mfa_buttons
+    set_up_mfa_buttons,
+    check_preferred_mfa,
+    change_preferred_mfa
 }

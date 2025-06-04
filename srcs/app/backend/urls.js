@@ -85,6 +85,8 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.post('/mfa_setup', (req, reply) => views.set_up_mfa_buttons(req, reply));
   fastify.post('/mfa', (req, reply) => views.mfa(req, reply));
 
+  fastify.post('/check_login', (req, reply) => views.check_login(req, reply));
+
   fastify.post('/home', async (request, reply) => {
     try {
       const link = request.body;
@@ -103,6 +105,8 @@ export default fastifyPlugin(async function routes(fastify) {
     }
   });
   fastify.post("/get_data", async (request, reply) => utils.get_data(request, reply));
+  fastify.post("/check_preferred_mfa", async (request, reply) => views.check_preferred_mfa(request, reply));
+  fastify.post("/change_preferred_mfa", async (request, reply) => views.change_preferred_mfa(request, reply));
 
   // --- 404 fallback ---
   fastify.setNotFoundHandler((req, reply) => {

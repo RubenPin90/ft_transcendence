@@ -228,8 +228,8 @@ document.body.addEventListener('click', (event) => {
     const href = button.getAttribute('href');
     if (href !== window.location.pathname){
         history.pushState({route: href}, '', href);
-        handleRouteChange();
     }
+    handleRouteChange();
 });
 
 

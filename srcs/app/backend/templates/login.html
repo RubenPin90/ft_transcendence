@@ -1,12 +1,6 @@
 <div id="login_div" class="hidden">
     <div class="relative h-screen flex items-center justify-center px-4 py-10">
-        <div id="2fa_field" class="hidden h-3/5 w-11/12 max-w-lg flex flex-col items-center justify-center absolute z-10 bg-gray-800/70 rounded-3xl border-[#ff00d0] border-2 shadow-strong shadow-[#ff00d0]/80">
-            <span class="text-3xl mb-6 font-bold text-gray-300">Enter your choosen 2FA</span>
-            <input type="text" id="2fa_value" placeholder="enter your 2FA code" class="p-4 rounded-xl text-center w-3/4">
-            <button id="login-button" onclick="submit_code()" class="mt-4 bg-violet-700 hover:bg-violet-800 w-24 text-white font-bold py-2 text-lg rounded-xl mb-4">
-                Submit
-            </button>
-        </div>
+        <div id="{{mfa_div_check}}"></div>
         <div id="login-container" class="field">
             <div class="relative flex border-b mb-8 gap justify-around">
                 <div><a href="/login" data-link><button id="loginBtn" class="tab flex-1 text-purple-800 text-center py-4 font-bold text-3xl rounded-lg">Login</button></a></div>
