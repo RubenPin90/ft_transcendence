@@ -1,13 +1,10 @@
-FROM node:bullseye-slim
+FROM node:bookworm-slim
 
 WORKDIR /app
 
-COPY --chown=node:node package*.json ./
+COPY package*.json ./
 
-COPY --chown=node:node . .
-
-USER node
-# RUN chown -R node:node /app
+COPY . .
 
 RUN npm install 
 RUN npm run build-frontend

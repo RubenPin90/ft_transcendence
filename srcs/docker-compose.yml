@@ -2,7 +2,6 @@ services:
   nginx:
     build:
       context: ./nginx
-      target: dev
     container_name: 'nginx'
     restart: always
     ports:
@@ -86,6 +85,8 @@ services:
       secrets:
         - smtp_password
     container_name: 'alertmanager'
+    entrypoint: [ "sh", "-c" ]
+    command: [ "tail -f /dev/null" ]
     restart: always
     user: root
 

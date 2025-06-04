@@ -1,6 +1,4 @@
-FROM nginx:1.27.5-alpine-slim as base
-
-FROM base as dev
+FROM nginx:1.27.5-alpine-slim
 
 RUN apk update && \
     apk add --no-cache openssl
