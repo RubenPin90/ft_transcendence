@@ -807,13 +807,10 @@ async function check_preferred_mfa(request, response){
         const userid = data.Userid;
         if (!userid || userid === undefined || userid < 0)
             return `1_${userid}`;
-        if (data.Function == 'create_otc') {
-            const otc_return = await utils.create_otc(userid, response);
-            if (!otc_return || otc_return === undefined || otc_return < 0)
-                return `2_${otc_return}`;
-            return true;
-        } else if (data.Function == 'verify_otc') {
-            var verified = await utils.verify_otc(request, response, data, null);
+        if (data.Function == 'verify_otc') {
+            console.log("verify OTC");
+            var verified = await utils.verify_otc(request, response, data, userid);
+            console.log("verified OTC");
             console.log(verified);
             if (verified && verified !== undefined && !(verified < 0)) {
                 const check_mfa = await mfa_db.get_mfa_value('self', userid);
@@ -828,32 +825,16 @@ async function check_preferred_mfa(request, response){
             else
                 response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "failed", "Content": null});
             return true;
-        } else if (data.Function == 'create_custom') {
-            return await utils.create_custom_code(userid, response, data);
-        } else if (data.Function == 'verify_function') {
-            return await utils.verify_custom_code(userid, response, data);
-        } else if (data.Function == 'create_email') {
-            const returned2 = await utils.create_email_code(userid, response, data);
-            return returned2;
-        } else if (data.Function == 'verify_email') {
-            return await utils.verify_email_code(userid, response, data);
-        } else if (data.Function == 'remove_custom_code') {
-            const clear_return = await utils.clear_settings_mfa(userid, 'custom', response);
-            if (!clear_return || clear_return === undefined || clear_return < 0)
-                return `3_${clear_return}`;
-            return true;
-        } else if (data.Function === 'remove_otc') {
-            const clear_return = await utils.clear_settings_mfa(userid, 'otc', response);
-            if (!clear_return || clear_return === undefined || clear_return < 0)
-                return `4_${clear_return}`;
-            return true;
-        } else if (data.Function === 'remove_email') {
-            const clear_return = await utils.clear_settings_mfa(userid, 'email', response);
-            if (!clear_return || clear_return === undefined || clear_return < 0)
-                return `5_${clear_return}`;
-            return true;
         }
+        else if (data.Function == 'verify_function') {
+            return await utils.verify_custom_code(userid, response, data);
+        }
+        else if (data.Function == 'verify_email') {
+            return await utils.verify_email_code(userid, response, data);
+        }
+        return true;
     }
+    return false;
 }
 
 async function change_preferred_mfa(request, response){
@@ -862,17 +843,16 @@ async function change_preferred_mfa(request, response){
         return login(request, response);
     }
 
-    const tokenIndex = values[keys.indexOf('token')];
+    const token = values[keys.indexOf('token')];
 
-    const userid = modules.get_jwt(tokenIndex).userid;
-    const data = request.Value;
-    // var settings = settings_db.get_settings_value('self', userid);
-    const status = settings_db.update_settings_value('mfa', data, userid);
+    const userid = modules.get_jwt(token).userid;
+    const data = request.body.Value;
+    const status = await mfa_db.update_mfa_value('prefered', data, userid);
     if (!status || status == undefined){
-        response.Code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "failed", "Content": null});
+        response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "failed", "Content": null});
         return true;
     }
-    response.Code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "success", "Content": null});
+    response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "success", "Content": null});
     return true;
 }
 

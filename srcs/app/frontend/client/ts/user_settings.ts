@@ -68,7 +68,7 @@ async function delete_account() {
         if (data.Response == "success")
             Log_out();
     } catch (err) {
-        console.log(err);
+        console.error(err);
     }
 }
 
@@ -233,7 +233,6 @@ async function change_user(){
         if (!splited || !name_field)
             return;
         name_field.innerHTML = `${splited[0]}<br>${usernameValue}`;
-        console.log(name_field.innerHTML);
 
     }
     catch (err){
@@ -253,14 +252,8 @@ async function change_logindata(){
     const passValue = passField.value;
     const repValue = repField.value;
 
-    console.log("EMAIL::::", emailValue);
-    console.log("PASS:::::", passValue);
-    console.log("REPE:::::", repValue);
-
-
     if (emailValue == '')
         console.log("EMAILVALUE IS EMPTY");
-
     
     const value_struct = {
         email: emailValue,

@@ -18,7 +18,6 @@ async function show_profile_page() : Promise<string>{
     }
 
     const data = await response.json();
-    console.log(data.Response);
     if (data.Response === 'success'){
         var element = document.getElementById("profile_div");
         if (element){

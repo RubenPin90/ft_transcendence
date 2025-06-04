@@ -1151,7 +1151,6 @@ async function get_data(request, response) {
 					response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Error', "Content": 'Wrong password'})
 				return true;
 			}
-			console.log(parsed.mfa.prefered);
 			if (parsed.mfa && parsed.mfa.email && !parsed.mfa.email.endsWith('_temp') && parsed.mfa.prefered === 1) {
 				var email_code = Math.floor(Math.random() * 1000000);
 				const email_code_len = 6 - (String(email_code).length);
