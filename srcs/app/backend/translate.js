@@ -105,8 +105,12 @@ async function cycle_translations(text, lang, origin) {
 	const json_data = await JSON.parse(data);
 	const json_keys = Object.keys(json_data);
 	if (origin == undefined) {
-		for (var index = 0; index < json_keys.length; index++)
-			text = text.replaceAll(json_keys[index], await find_translation(json_keys[index], lang, json_data));
+		for (var index = 0; index < json_keys.length; index++) {
+			const word = json_keys[index];
+			const translation = await find_translation(word, lang, json_data);
+			const regex = new RegExp(`\\b${word}\\b`, 'gu');
+			text = text.replaceAll(regex, translation);
+		}
 		return text;
 	}
 	const translated_keys = get_translated_keys(json_data, origin.userid);
@@ -114,7 +118,9 @@ async function cycle_translations(text, lang, origin) {
 	const json_data2 = await JSON.parse(data);
 	for (var index = 0; index < json_keys2.length; index++) {
 		const key = find_key_by_value(json_data2, json_keys2[index], origin.userid);
-		text = text.replaceAll(json_keys2[index], await find_translation(key, lang, json_data));
+		const translation = await find_translation(key, lang, json_data);
+		const regex = new RegExp(`\\b${json_keys2[index]}\\b`, 'gu');
+		text = text.replace(regex, translation);
 	}
 	return text;
 }
