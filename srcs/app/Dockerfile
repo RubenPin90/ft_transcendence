@@ -3,14 +3,17 @@ FROM node:bookworm-slim
 WORKDIR /app
 
 COPY package*.json ./
+RUN npm install 
 
 COPY . .
 
-RUN npm install 
 RUN npm run build-frontend
 RUN npm run rebuild:css
 RUN npm run start:css
 
-WORKDIR /app 
+COPY app_entrypoint.sh /tools/app_entrypoint.sh
+RUN chmod +x /tools/app_entrypoint.sh
 
-CMD [ "sh", "-c", "node database/create_db.js && mv db.sqlite database/db.sqlite && node backend/server.js" ]
+ENTRYPOINT [ "/tools/app_entrypoint.sh" ]
+
+CMD [ "node", "backend/server.js" ]

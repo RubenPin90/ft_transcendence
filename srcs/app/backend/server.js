@@ -11,8 +11,8 @@ import { SocketRegistry } from './socketRegistry.js';
 import { MatchManager, GAME_MODES } from './game/matchManager.js';
 import { handleClientMessage } from './game/messageHandler.js';
 import { TournamentManager } from './game/tournamentManager.js';
-import urlsPlugin from './urls.js';
 import { read_secrets } from './secrets.js';
+import handleShutdown from './signals.js';
 
 const PORT = 8080;
 
@@ -32,12 +32,14 @@ await fastify.register(fastifyStatic, {
   prefix: '/client/js/',
 });
 
+await read_secrets(fastify);
+
 await fastify.register(fastifyCookie);
 
+import urlsPlugin from './urls.js';
 // Register routes from urls.js
 await fastify.register(urlsPlugin);
 
-await read_secrets(fastify);
 
 // Start the server
 await fastify.listen({ port: PORT, host: '0.0.0.0' });
@@ -104,6 +106,9 @@ wss.on('connection', (ws, req) => {
     }
   });
 });
+
+ handleShutdown({ fastify, wss });
+console.log(fastify);
 
 export {
   fastify
