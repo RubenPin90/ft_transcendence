@@ -88,7 +88,7 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.post("/check_preferred_mfa", async (request, reply) => views.check_preferred_mfa(request, reply));
   fastify.post("/change_preferred_mfa", async (request, reply) => views.change_preferred_mfa(request, reply));
 
-  fastify.get("/check_expire", (request, reply) => utils.check_expired_token(request, reply));
+  fastify.post("/check_expire", (request, reply) => utils.check_expired_token(request, reply));
   // Block done
 
   // --- 404 fallback ---

@@ -59,11 +59,11 @@ async function show_profile_page() : Promise<string>{
 
 async function check_cookies_expire() : Promise<boolean>{
     const response = await fetch('/check_expire', {
-        method: 'GET',
+        method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({})
     })
     if (!response.ok){
         alert("Error in check_cookies_expire in redirect");

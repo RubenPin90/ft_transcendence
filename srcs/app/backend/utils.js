@@ -1238,7 +1238,7 @@ async function check_for_invalid_token(request, response, keys, values) {
 	return false;
 }
 
-async function check_expired_token(request, reply){
+async function check_expired_token(request, response){
 	var [keys, values] = modules.get_cookies(request);
 	if (keys.length == 0)
 		return false;

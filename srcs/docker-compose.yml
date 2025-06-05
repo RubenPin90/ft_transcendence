@@ -78,7 +78,8 @@ services:
     command: "--path.rootfs=/host"
     pid: host
     volumes:
-      - /:/host:ro,rslave
+      - /:/host:ro,rslave #TODO comment out when on my PC (ENES) wsl throws error and cant make
+      # - /:/host:ro
     depends_on:
       - prometheus
     networks:
