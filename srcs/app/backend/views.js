@@ -446,14 +446,20 @@ async function update_settings(request, response) {
 
 async function update_user(request, response) {
     const data = request.body;
+    
+    const trans_file = await fs.readFile('./translations.json', 'utf8');
+    const forbidden_names = ['Login', 'Register', 'Settings', 'Logout', 'Sign in with Google', 'Already have an account? Log in', 'Sign up with Github', 'Sign up with Google', 'Sign in with Github', 'Dont have an account? Create one', '404 - Page Not Found', 'The page you were looking for does not exist', 'Upload file', 'Submit', 'Repeat Password', 'Password', 'E-Mail', 'Play', 'Profile', 'Log Out', 'Sign up', 'PvE', '1v1 Mathmaking', 'Tournament', 'Tournaments', 'Search for an opponent', 'Searching for an opponent', 'Cancel Search', 'Join by code', 'Join', 'Create Tournament', 'Waiting for players', 'Copy', 'START', 'READY', 'Leave', 'Customization', 'Username', 'email', 'win/loss', 'elo', 'status', 'Match History', 'opponent', 'final score', 'date', 'Change username', 'Change login info', 'Change avatar', 'Welcome home user', 'Welcome', 'Change language', 'Choose a default authentication method', 'Disable email authentication', 'Create custom 6 diggit code', 'Create OTC', 'Recreate custom 6 diggit code', 'Remove custom 6 digit code', 'Regenerate OTC', 'Remove OTC', 'Otc', 'Custom', 'Enable email authentication', 'Change User Information', 'Choose your main language', 'Next', 'Create your 2FA custom', '6 diggit code', 'Create your 2FA custom 6 diggit code', 'Verify your 2FA custom 6 diggit code', 'Verify', 'Input your Email code', 'Input your OTC code from your authenticator app', 'Input your Custom code', 'Friends', 'Blocked Users', 'MFA', 'User', 'Home', 'Back', 'Delete account', 'Change login data'];
+    // const forbidden_names_translated = 
     if (data === null || data === undefined){
-        return response.code(400).send({ message: 'Invalid data'});
+        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid data'});
+        return true;
+    }
+    if (trans_file.includes(data)) {
+        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid data'});
     }
     const [keys, values] = modules.get_cookies(request);
-    if (!keys?.includes('token')) {
-        return login(request, response);
-        return // Here was a redirect(response, '/login', 302);
-    }
+    if (!keys?.includes('token'))
+        return await login(request, response);
 
     const tokenIndex = keys.findIndex((key) => key === 'token');
     const token = values[tokenIndex];
@@ -469,22 +475,21 @@ async function update_user(request, response) {
     try {
         const result = await users_db.update_users_value('username', data, userid);
         if (result) {
-            return response.code(200).send({ "Response": 'Successfully updated Username'});
+            return response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'Successfully updated Username'});
         }
         else{
-            return response.code(500).send({ "Response": 'Failed to update Username'});
+            return response.code(500).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'Failed to update Username'});
         }
     }
     catch (err){
-        return response.code(500).send({ "Response": 'Server error'});
+        return response.code(500).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'Server error'});
     }
 }
 
 async function friends(request, response){
     const [keys, values] = modules.get_cookies(request);
-    if (!keys?.includes('token')) {
-        return login(request, response);
-    }
+    if (!keys?.includes('token'))
+        return await login(request, response);
 
     const token = values[keys.indexOf("token")];
     let decoded;
