@@ -88,7 +88,7 @@ async function register(request, response) {
 
 async function home(request, response) {
     var [keys, values] = modules.get_cookies(request);
-    await utils.check_for_invalid_token(request, response, keys, values);
+    const valid_token = await utils.check_for_invalid_token(request, response, keys, values);
     if (request.url === '/' && !keys?.includes('token'))
         return await login(request, response);
     const code = request.query.code;
@@ -120,81 +120,76 @@ async function home(request, response) {
 }
 
 async function mfa(request, response) {
-    if (request.method === "POST") {
-        const data = request.body;
-        const userid = await utils.get_decrypted_userid(request, response);
-        if (!userid || userid === undefined || userid < 0)
-            return `1_${userid}`;
-        if (data.Function == 'create_otc') {
-            const otc_return = await utils.create_otc(userid, response);
-            if (!otc_return || otc_return === undefined || otc_return < 0)
-                return `2_${otc_return}`;
-            return true;
-        } else if (data.Function == 'verify_otc') {
-            var verified = await utils.verify_otc(request, response, data, null);
-            console.log(verified);
-            if (verified && verified !== undefined && !(verified < 0)) {
-                const check_mfa = await mfa_db.get_mfa_value('self', userid);
-                var new_otc_str = check_mfa.otc;
-                if (new_otc_str.endsWith('_temp'))
-                    new_otc_str = new_otc_str.slice(0, -5);
-                await mfa_db.update_mfa_value('otc', new_otc_str, userid);
-                if (check_mfa.prefered === 0)
-                    await mfa_db.update_mfa_value('prefered', 2, userid);
-                response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "success", "Content": null});
-            }
-            else
-                response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "failed", "Content": null});
-            return true;
-        } else if (data.Function == 'create_custom') {
-            return await utils.create_custom_code(userid, response, data);
-        } else if (data.Function == 'verify_function') {
-            console.log("IN HERE");
-            return await utils.verify_custom_code(userid, response, data);
-        } else if (data.Function == 'create_email') {
-            return await utils.create_email_code(userid, response, data);
-        } else if (data.Function == 'verify_email') {
-            return await utils.verify_email_code(userid, response, data);
-        } else if (data.Function == 'remove_custom_code') {
-            const clear_return = await utils.clear_settings_mfa(userid, 'custom', response);
-            if (!clear_return || clear_return === undefined || clear_return < 0)
-                return `3_${clear_return}`;
-            return true;
-        } else if (data.Function === 'remove_otc') {
-            const clear_return = await utils.clear_settings_mfa(userid, 'otc', response);
-            if (!clear_return || clear_return === undefined || clear_return < 0)
-                return `4_${clear_return}`;
-            return true;
-        } else if (data.Function === 'remove_email') {
-            const clear_return = await utils.clear_settings_mfa(userid, 'email', response);
-            if (!clear_return || clear_return === undefined || clear_return < 0)
-                return `5_${clear_return}`;
-            return true;
-        }
+    const [keys, values] = modules.get_cookies(request);
+    var user_encrypted;
+    try {
+        user_encrypted = await modules.get_jwt(values[keys.indexOf('token')]);
+    } catch (err) {
+        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
+        return true;
     }
-    const status = await send.send_html('settings.html', response, 200, async (data) => {
-        data = await utils.replace_all_templates(request, response);
-        data = utils.show_page(data, "mfa_div");
-        return data.replace("{{mfa-button}}", data);
-    });
-    if (!status || status === undefined || status < 0 || status == false)
-        return `7_${status}`;
-    return true;
+    const data = request.body;
+    const userid = user_encrypted.userid;
+    if (!userid || userid === undefined || userid < 0)
+        return `1_${userid}`;
+    if (data.Function == 'create_otc') {
+        const otc_return = await utils.create_otc(userid, response);
+        if (!otc_return || otc_return === undefined || otc_return < 0)
+            return `2_${otc_return}`;
+        return true;
+    } else if (data.Function == 'verify_otc') {
+        var verified = await utils.verify_otc(request, response, data, userid);
+        console.log(verified);
+        if (verified && verified !== undefined && !(verified < 0)) {
+            const check_mfa = await mfa_db.get_mfa_value('self', userid);
+            var new_otc_str = check_mfa.otc;
+            if (new_otc_str.endsWith('_temp'))
+                new_otc_str = new_otc_str.slice(0, -5);
+            await mfa_db.update_mfa_value('otc', new_otc_str, userid);
+            if (check_mfa.prefered === 0)
+                await mfa_db.update_mfa_value('prefered', 2, userid);
+            response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "success", "Content": null});
+        }
+        else
+            response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "failed", "Content": null});
+        return true;
+    } else if (data.Function == 'create_custom') {
+        return await utils.create_custom_code(userid, response, data);
+    } else if (data.Function == 'verify_function') {
+        console.log("IN HERE");
+        return await utils.verify_custom_code(userid, response, data);
+    } else if (data.Function == 'create_email') {
+        return await utils.create_email_code(userid, response, data);
+    } else if (data.Function == 'verify_email') {
+        return await utils.verify_email_code(userid, response, data);
+    } else if (data.Function == 'remove_custom_code') {
+        const clear_return = await utils.clear_settings_mfa(userid, 'custom', response);
+        if (!clear_return || clear_return === undefined || clear_return < 0)
+            return `3_${clear_return}`;
+        return true;
+    } else if (data.Function === 'remove_otc') {
+        const clear_return = await utils.clear_settings_mfa(userid, 'otc', response);
+        if (!clear_return || clear_return === undefined || clear_return < 0)
+            return `4_${clear_return}`;
+        return true;
+    } else if (data.Function === 'remove_email') {
+        const clear_return = await utils.clear_settings_mfa(userid, 'email', response);
+        if (!clear_return || clear_return === undefined || clear_return < 0)
+            return `5_${clear_return}`;
+        return true;
+    }
 }
 
 
-async function user(request, response) {
+async function user(request, response, userid, lang) {
     const data = request.body;
     if (request.method == 'POST') {
         if (data.Function == "change_language") {
-            const [keys, values] = modules.get_cookies(request);
             const new_lang = data.Lang;
-            const old_lang = await modules.get_jwt(values[keys.indexOf('lang')]);
+            const old_lang = lang;
             const new_lang_decrypted = await modules.create_jwt(new_lang, '1h');
             modules.set_cookie(response, 'lang', new_lang_decrypted, 3600);
-            const userid = await modules.get_jwt(values[keys.indexOf('token')]);
-            await settings_db.update_settings_value('lang', new_lang, userid.userid);
-            console.log(await modules.get_jwt(values[keys.indexOf('lang')]));
+            await settings_db.update_settings_value('lang', new_lang, userid);
             const new_page = await translator.cycle_translations(data.Page, new_lang, old_lang);
             response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'success', 'Content': new_page}); // 'Content': data.Page
             return true;
@@ -216,7 +211,7 @@ async function user(request, response) {
 
 async function settings(request, response) {
     var [keys, values] = modules.get_cookies(request);
-    await utils.check_for_invalid_token(request, response, keys, values);
+    const valid_token = await utils.check_for_invalid_token(request, response, keys, values);
     if (!keys?.includes('token'))
         return await login(request, response);
     const request_url = request.url.slice(9); // /settings/route -> /route
@@ -224,7 +219,7 @@ async function settings(request, response) {
         return await mfa(request, response);
     console.log(request_url);
     if (request_url == "/user")
-        return await user(request, response);
+        return await user(request, response, valid_token.userid, valid_token.lang);
 
     const status = await send.send_html('settings.html', response, 200, async (data) => {
         data = await utils.replace_all_templates(request, response);
@@ -254,15 +249,23 @@ async function verify_email(request, response) {
 }
 
 async function verify_2fa(request, response) {
+    const [keys, values] = modules.get_cookies(request);
+    var user_encrypted;
+    try {
+        user_encrypted = await modules.get_jwt(values[keys.indexOf('token')]);
+    } catch (err) {
+        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
+        return true;
+    }
     const frontend_data = request.body;
     const replace_data = {'Function': 'verify', 'Code': frontend_data.code};
-    const temp = await utils.verify_otc(request, response, replace_data, frontend_data.userid);
+    const temp = await utils.verify_otc(request, response, replace_data, user_encrypted.userid);
     if (temp === false || !temp || temp === undefined || temp < 0) {
         response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'failed', "Content": null});
     } else {
-        const token = await modules.create_jwt(frontend_data.userid, '1h');
+        // const token = await modules.create_jwt(frontend_data.userid, '1h');
         
-        modules.set_cookie(response, 'token', token, true, true, 'strict');
+        // modules.set_cookie(response, 'token', token, true, true, 'strict');
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'reload', "Content": null});
     }
     return true;
@@ -285,39 +288,22 @@ async function verify_custom(request, response) {
 
 async function profile(request, response) {
     var [keys, values] = modules.get_cookies(request);
-    await utils.check_for_invalid_token(request, response, keys, values);
-    if (!keys?.includes('token')) {
-        // const status = await send.send_html('index.html', response, 200, async(data) => {
-        //     data = await utils.replace_all_templates(request, response);
-        //     data = utils.show_page(data, "login_div");
-        //     return data.replace('{{profile}}', data);
-        // });
-        // return true;
-        console.log(modules.get_cookies(request));
+    const valid_token = await utils.check_for_invalid_token(request, response, keys, values);
+    if (!keys?.includes('token'))
         return await login(request, response);
-    }
 
     if (request.method == 'POST') {
-        const token = values[keys.indexOf('token')];
-        let decoded;
-        try {
-            decoded = await modules.get_jwt(token);
-        } catch (err){
-            console.error(`Error in profile views.js: ${err}`);
-            response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
-            return true;
-        }
-        const user = await users_db.get_users_value('self', decoded.userid);
+        const user = await users_db.get_users_value('self', valid_token.userid);
         if (!user || user === undefined){
             response.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'fail', "Content": "No user or user undefined"});
             return true;
         }
-        const settings = await settings_db.get_settings_value('self', decoded.userid);
+        const settings = await settings_db.get_settings_value('self', valid_token.userid);
         if (!settings || settings === undefined){
             response.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'fail', "Content": "no settings or settings undefined"});
             return true;
         }
-        const userid = decoded.userid;
+        const userid = valid_token.userid;
         var inner = request.body.innervalue;
         
         inner = inner.replace('{{username}}', user.username);
@@ -365,31 +351,6 @@ async function logout(request, response, override) {
         return data;
     });
 }
-
-
-async function user_settings(request, response) {
-    const [keys, values] = modules.get_cookies(request.headers.cookie);
-    if (!keys?.includes('token')) {
-        return // Here was a redirect(response, '/login', 302);
-    }
-
-    const tokenIndex = keys.findIndex((key) => key === 'token');
-    const token = values[tokenIndex];
-    let decoded;
-    try {
-        decoded = await modules.get_jwt(token);
-    } catch (err) {
-        return // Here was a redirect(response, '/login', 302);
-    }
-
-    const status = await send.send_html('user_settings.html', response, 200);
-    if (!status || status === undefined){
-        return `Error rendering user settings page: ${status}`;
-    }
-    return true;
-}
-
-
 
 async function update_settings(request, response) {
     if (request.method !== 'POST'){
@@ -488,22 +449,12 @@ async function update_user(request, response) {
 
 async function friends(request, response){
     const [keys, values] = modules.get_cookies(request);
-    await utils.check_for_invalid_token(request, response, keys, values);
+    const valid_token = await utils.check_for_invalid_token(request, response, keys, values);
     if (!keys?.includes('token'))
         return await login(request, response);
 
     if (request.method == 'POST') {
-
-        const token = values[keys.indexOf("token")];
-        let decoded;
-        try {
-            decoded = await modules.get_jwt(token);
-        } catch (err) {
-            console.error(`Error in profile views.js: ${err}`);
-            response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
-            return true;
-        }
-        const userid = decoded.userid;
+        const userid = valid_token.userid;
         var inner = request.body.innervalue;
         // inner = await translator.cycle_translations(inner, decoded_lang);
         inner = inner.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
@@ -869,7 +820,6 @@ export {
     verify_custom,
     profile,
     logout,
-    user_settings,
     update_user,
     update_settings,
     friends,
