@@ -1,0 +1,11 @@
+◦ Major module: Use a framework to build the backend.
+◦ Minor module: Use a framework or a toolkit to build the frontend.
+◦ Minor module: Use a database for the backend.
+◦ Major module: Implementing a remote authentication.
+◦ Major module: Remote players
+◦ Major module: Implement Two-Factor Authentication (2FA) and JWT.
+◦ Minor module: Monitoring system.
+◦ Minor module: Expanding browser compatibility. (maybe)
+◦ Minor module: Supports multiple languages.
+◦ Minor module: Server-Side Rendering (SSR) integration.
+◦ Major module: Standard user management, authentication, users across tournaments.
