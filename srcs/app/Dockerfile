@@ -11,6 +11,6 @@ RUN npm run build-frontend
 RUN npm run rebuild:css
 RUN npm run start:css
 
-WORKDIR /app
+WORKDIR /app 
 
 CMD [ "sh", "-c", "node database/create_db.js && mv db.sqlite database/db.sqlite && node backend/server.js" ]
