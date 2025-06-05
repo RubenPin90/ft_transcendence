@@ -12,6 +12,7 @@ import * as friends_request from '../database/db_friend_request.js'
 import { promises as fs, utimes } from 'fs';
 import { log, profile } from 'console';
 import * as translator from './translate.js';
+import { fastify } from './server.js';
 import * as views from './views.js';
 import * as utils from './utils.js';
 
@@ -32,6 +33,7 @@ function create_username(email) {
 	return modified_sliced;
 }
 
+console.log(fastify.google);
 const client_id = "120580817734-tr50q5s7mu9clbb7olk85h78tkdpsokl.apps.googleusercontent.com"; //TODO REMOVE
 const client_secret = "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"; //TODO REMOVE
 

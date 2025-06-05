@@ -12,6 +12,7 @@ import { MatchManager, GAME_MODES } from './game/matchManager.js';
 import { handleClientMessage } from './game/messageHandler.js';
 import { TournamentManager } from './game/tournamentManager.js';
 import urlsPlugin from './urls.js';
+import { read_secrets } from './secrets.js';
 
 const PORT = 8080;
 
@@ -36,10 +37,13 @@ await fastify.register(fastifyCookie);
 // Register routes from urls.js
 await fastify.register(urlsPlugin);
 
+await read_secrets(fastify);
+
 // Start the server
 await fastify.listen({ port: PORT, host: '0.0.0.0' });
 const server = fastify.server;
-// console.log(`Server running at http://localhost:${PORT}`);
+
+console.log(`Server running at http://localhost:${PORT}`);
 
 // Setup WebSocket server
 const wss = new WebSocketServer({ noServer: true });
@@ -101,15 +105,6 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-
-// Graceful shutdown
-// const handleSIGINT = () => {
-//   wss.close(() => {
-//     fastify.close(() => {
-//       process.exit(0);
-//     });
-//   });
-// };
-
-// process.on('SIGTERM', handleSIGINT);
-// process.on('SIGINT', handleSIGINT); // For Ctrl+C too
+export {
+  fastify
+}

@@ -1,5 +1,0 @@
-home
-login
-register
-settings
-verify_email
