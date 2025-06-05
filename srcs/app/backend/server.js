@@ -11,8 +11,9 @@ import { SocketRegistry } from './socketRegistry.js';
 import { MatchManager, GAME_MODES } from './game/matchManager.js';
 import { handleClientMessage } from './game/messageHandler.js';
 import { TournamentManager } from './game/tournamentManager.js';
-import urlsPlugin from './urls.js';
 import { read_secrets } from './secrets.js';
+import handleShutdown from './signals.js';
+import urlsPlugin from './urls.js';
 
 const PORT = 8080;
 
@@ -104,6 +105,8 @@ wss.on('connection', (ws, req) => {
     }
   });
 });
+
+ handleShutdown({ fastify, wss });
 
 export {
   fastify

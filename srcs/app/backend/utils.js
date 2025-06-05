@@ -33,7 +33,6 @@ function create_username(email) {
 	return modified_sliced;
 }
 
-console.log(fastify.google);
 const client_id = "120580817734-tr50q5s7mu9clbb7olk85h78tkdpsokl.apps.googleusercontent.com"; //TODO REMOVE
 const client_secret = "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"; //TODO REMOVE
 
