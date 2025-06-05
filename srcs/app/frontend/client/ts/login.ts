@@ -1,3 +1,7 @@
+import { connect as openSocket } from './socket.js';
+
+
+
 function alert_user(message: string){
     var error_message = document.getElementById("error_message") as HTMLSpanElement;
     if (!error_message)
@@ -174,7 +178,7 @@ async function login2(){
 async function login() {
     const email2 = document.getElementById("email-input_LogIn") as HTMLInputElement;
     const password2 = document.getElementById("password-input_LogIn") as HTMLInputElement;
-    if (!email2 && !password2) {
+    if (!email2 || !password2) {
         alert("NO THIS");
         return;
     }
@@ -227,6 +231,12 @@ async function login() {
             return;
         current_file.innerHTML = content2value;
         window.history.pushState({}, '', '/');
+        try {
+            await openSocket();           // waits until WS is OPEN
+            console.log('WebSocket connected after login ✅');
+          } catch (err) {
+            console.error('WS failed to connect', err);
+          }
     } catch (err) {
         console.error(`Error with redirect Login: ${err}`);
         return;
@@ -234,6 +244,7 @@ async function login() {
 }
 
 
+(window as any).login = login;
 
     // let data;
     // try {

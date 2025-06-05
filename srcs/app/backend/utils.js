@@ -1040,9 +1040,8 @@ async function replace_all_templates(request, response, state, override) {
 		play_main +=         '</div>';
 		play_main +=       '</div>';
 
-		play_main +=       '<div id="bracket-overlay" class="bracket-overlay" hidden>';
-		play_main +=         '<button id="bracket-begin-btn" class="bracket-begin-btn" hidden>Begin round&nbsp;1</button>';
-		play_main +=       '</div>';
+
+		play_main += '<div id="bracket-overlay" class="bracket-overlay" hidden></div>';
 
 		play_main +=       '<template id="match-card-tpl">';
 		play_main +=         '<div class="match-card">';
@@ -1058,6 +1057,8 @@ async function replace_all_templates(request, response, state, override) {
 
 
 	const index_html_raw = await fs.readFile("./backend/templates/index.html", 'utf8')
+
+	const play_main_string = play_raw.replace("{{main-menu}}", play_main);
 
 	if (state == 1) {
 		var final_string = login_html;
@@ -1111,6 +1112,7 @@ function show_page(data, tag_name) {
 	page = page.replace(search_tag, replace_tag);
 	return page;
 }
+  
 
 
 async function get_data(request, response) {

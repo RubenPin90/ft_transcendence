@@ -1,6 +1,7 @@
 // tournamentManager.js (refactored to work with the new SocketRegistry)
 import { v4 as uuidv4 } from 'uuid';
 import { MatchManager }   from './matchManager.js';
+import * as db from '../../database/db_matches_tournaments.js';
 
 /**
  * Helper utilities ----------------------------------------------------------
@@ -31,8 +32,33 @@ export class TournamentManager {
     // Now the event really comes from this instance
     this.matchManager.on('matchFinished', ({ roomId, winnerId }) => {
       console.log('matchFinished event received:', { roomId, winnerId });
+    
       const lobby = this.rooms[roomId];
       if (!lobby) return;
+    
+      // ───────────────────────────────────────────────
+      // Identify the loser(s) of this best-of-one match
+      // ───────────────────────────────────────────────
+      const losers = lobby.players
+        .filter(p => getPlayerId(p) !== winnerId)
+        .map(p => getPlayerId(p));
+    
+      // Tell every loser that their tournament run is over
+      losers.forEach(uid => {
+        this.#sendToUser(uid, {
+          type   : 'eliminated',
+          payload: {
+            tournamentId : lobby.tournamentId,
+            matchId      : roomId,
+            winnerId,
+            reason       : 'lostMatch'
+          }
+        });
+        const t = this.tournaments[lobby.tournamentId];
+        if (t) t.eliminated.add(uid);
+      });
+
+    
       this.reportMatchResult(
         lobby.tournamentId,
         roomId,
@@ -41,6 +67,11 @@ export class TournamentManager {
     });
   }
 
+  #activeIds(tournament) {
+    return tournament.players
+      .map(getPlayerId)
+      .filter(id => !tournament.eliminated.has(id));
+  }
   // -------------------------------------------------------------------------
   // Convenience wrappers around the registry
   // -------------------------------------------------------------------------
@@ -74,7 +105,7 @@ export class TournamentManager {
 
   
 
-  createTournament(ws = null, userId) {
+  async createTournament(ws = null, userId) {
     if (userId !== 'SERVER' && this.userAlreadyInTournament(userId)) {
       ws?.readyState === WS_OPEN && ws.send(JSON.stringify({
         type   : 'error',
@@ -103,7 +134,9 @@ export class TournamentManager {
       pendingRound : null,
       openMatches  : null,
       roundWinners : null,
+      eliminated   : new Set(),
     };
+    await db.create_tournament_row(tourney.id, tourney.host); 
 
     this.tournaments[id] = tourney;
 
@@ -208,45 +241,55 @@ export class TournamentManager {
     this.#broadcastToUsers(playerIds, lobbyPayload);
   }
 
-  reportMatchResult(tournamentId, matchId, winnerId) {
+  async reportMatchResult (tournamentId, matchId, winnerId) {
     const tourney = this.tournaments[tournamentId];
     if (!tourney) return;
   
-    // ─────────────────────────────────────────────────────────────
-    // 1. Locate the match and its round
-    // ─────────────────────────────────────────────────────────────
+    /* ───────────────────── 1. locate match object in memory ───────────────────── */
     let roundIdx = -1;
     let matchObj = null;
   
     for (let i = 0; i < tourney.rounds.length; i++) {
       matchObj = tourney.rounds[i].find(m => m.matchId === matchId);
-      if (matchObj) {
-        roundIdx = i;
-        break;
-      }
+      if (matchObj) { roundIdx = i; break; }
     }
-  
     if (!matchObj) return;
+  
     matchObj.winner = winnerId;
   
-    // ─────────────────────────────────────────────────────────────
-    // 2. If this was the last round, declare the champion
-    // ─────────────────────────────────────────────────────────────
-    if (roundIdx + 1 >= tourney.rounds.length) {
-      tourney.winner = winnerId;
-      this.#broadcastAll('tournamentFinished', { tournamentId, winnerId });
-      return;
+    /* ───────────────────── 1-bis.  persist winner in the DB  ───────────────────── */
+    try {
+      await db.update_match('winner', winnerId, matchId);
+    } catch (err) {
+      console.error('DB-update failed:', err);
     }
   
-    // ─────────────────────────────────────────────────────────────
-    // 3. Replace the placeholder in the next round with winner
-    // ─────────────────────────────────────────────────────────────
-    const nextRound = tourney.rounds[roundIdx + 1];
+    /* ───────────────────── 2. last round?  declare champion ───────────────────── */
+    if (roundIdx + 1 >= tourney.rounds.length) {
+      tourney.winner = winnerId;
+  
+      try {
+        await db.set_tournament_winner(tournamentId, winnerId);
+      } catch (err) {
+        console.error('DB-update winner failed:', err);
+      }
+  
+      this.#broadcastToUsers(
+        this.#activeIds(tourney),
+        {
+          type   : 'tournamentFinished',
+          payload: { tournamentId, winnerId }
+        }
+      );
+      return; // nothing else to do
+    }
+  
+    /* ───────────────────── 3. propagate winner to next round ───────────────────── */
+    const nextRound   = tourney.rounds[roundIdx + 1];
     const placeholder = nextRound.find(m =>
       m.players.some(p => p && p.pendingMatchId === matchId)
     );
-  
-    if (!placeholder) return; // safety check
+    if (!placeholder) return;        // should never happen
   
     const winnerName =
       tourney.players.find(p => getPlayerId(p) === winnerId)?.name ??
@@ -259,28 +302,22 @@ export class TournamentManager {
         : p
     );
   
-    // ─────────────────────────────────────────────────────────────
-    // 3-bis. Broadcast updated bracket to all tournament players
-    // ─────────────────────────────────────────────────────────────
+    /* 3-bis. broadcast updated bracket */
     this.#broadcastToUsers(
-      tourney.players.map(getPlayerId),
+      this.#activeIds(tourney),
       {
-        type: 'tournamentBracketMsg',
-        payload: { tournamentId, rounds: tourney.rounds },
+        type   : 'tournamentBracketMsg',
+        payload: { tournamentId, rounds: tourney.rounds }
       }
     );
   
-    // ─────────────────────────────────────────────────────────────
-    // 4. If both players are ready, create the next match room
-    // ─────────────────────────────────────────────────────────────
+    /* ───────────────────── 4. spawn next room if ready ───────────────────── */
     const [p1, p2] = placeholder.players;
     if (p1 && !p1.pendingMatchId && p2 && !p2.pendingMatchId) {
       this.createMatchRoom(tournamentId, placeholder.matchId, p1, p2);
     }
   
-    // ─────────────────────────────────────────────────────────────
-    // 5. If the entire next round is ready, begin it
-    // ─────────────────────────────────────────────────────────────
+    /* ───────────────────── 5. if whole round is ready, begin it ───────────── */
     const nextRoundFilled =
       roundIdx + 1 < tourney.rounds.length &&
       tourney.rounds[roundIdx + 1].every(m =>
@@ -291,6 +328,7 @@ export class TournamentManager {
       this.beginRound(tournamentId, roundIdx + 1);
     }
   }
+  
   
   broadcastTournamentUpdate() {
     const list = Object.values(this.tournaments).map(t => ({
@@ -375,7 +413,7 @@ export class TournamentManager {
     tourney.status = 'bracket';
   
     this.#broadcastToUsers(
-      tourney.players.map(getPlayerId),
+      this.#activeIds(tourney),
       {
         type   : 'tournamentBracketMsg',
         payload: { tournamentId, rounds: tourney.rounds }
@@ -388,7 +426,6 @@ export class TournamentManager {
     if (!t || !t.rounds?.[roundIdx]) return;
     if (!t || t.status === 'running') return;
     t.status = 'running';
-  
     t.rounds[roundIdx].forEach(({ matchId, players }) => {
       const [p1, p2] = players;
       this.createMatchRoom(tournamentId, matchId, p1, p2 ?? null);
@@ -413,19 +450,15 @@ export class TournamentManager {
     // ------------------------------------------------------------------
     // 1.  Build the room and pre-seat the creator
     // ------------------------------------------------------------------
-    const creatorId  = getPlayerId(player1);   // <-- NEW
-    const opponentId = getPlayerId(player2);   // <-- NEW
-  
+    const creatorId  = getPlayerId(player1);
+    const opponentId = getPlayerId(player2);
     this.matchManager.createRoom({
       roomId    : matchId,
       creatorId : creatorId,
       maxPlayers: 2,
     });
   
-    // 2.  Seat ONLY the opponent (creator is already inside)
-    // this.matchManager.joinRoom(matchId, opponentId);
-    // this.matchManager.joinRoomforTournament(matchId, opponentId);
-     // 3.  Notify the participants
+     // 2.  Notify the participants
      this.#notifyPlayers(lobbyRoom, tournamentId);
   }
   
@@ -455,9 +488,7 @@ export class TournamentManager {
     console.log(`Room created: ${room.matchId} with players ${room.players[0].id} vs ${room.players[1].id}`);
   }
 
-  // -------------------------------------------------------------------------
-  // Ready toggles, kicks, leaves
-  // -------------------------------------------------------------------------
+
   toggleReady(userId, tournamentId) {
     const tournament = this.tournaments[tournamentId];
     if (!tournament) return console.error(`toggleReady: tournament ${tournamentId} not found`);
@@ -466,17 +497,6 @@ export class TournamentManager {
     if (!player) return console.error(`toggleReady: user ${userId} not in tournament ${tournamentId}`);
 
     player.ready = !player.ready;
-    this.broadcastTLobby(tournament);
-    this.broadcastTournamentUpdate();
-  }
-
-  kickPlayer(tournamentId, userId) {
-    const tournament = this.tournaments[tournamentId];
-    if (!tournament) return console.error(`Tournament ${tournamentId} not found`);
-
-    tournament.players = removeUser(tournament.players, userId);
-    if (tournament.host === userId) tournament.host = tournament.players[0] ? getPlayerId(tournament.players[0]) : null;
-
     this.broadcastTLobby(tournament);
     this.broadcastTournamentUpdate();
   }
@@ -490,6 +510,7 @@ export class TournamentManager {
 
     if (tournament.players.length === 0) delete this.tournaments[tournament.id];
 
+    console.log(db.show_tournaments());
     this.broadcastTLobby(tournament);
     this.broadcastTournamentUpdate();
   }

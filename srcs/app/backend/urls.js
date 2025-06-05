@@ -79,18 +79,19 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.post('/block_friend', (req, reply) => views.block_friend(req, reply));
   // Block done
 
-  fastify.post('/field_login', (req, reply) => views.field_login(req, reply)); // ?
-  fastify.post('/field_signup', (req, reply) => views.field_signup(req, reply)); // ?
+  fastify.get('/play', (req, reply) => views.play(req, reply));
+
+  
   fastify.post('/delete_account', (req, reply) => views.delete_account(req, reply));
   fastify.post('/mfa_setup', (req, reply) => views.set_up_mfa_buttons(req, reply));
   fastify.post('/mfa', (req, reply) => views.mfa(req, reply));
-  fastify.post("/get_data", async (request, reply) => utils.get_data(request, reply));
+  fastify.post('/get_data', utils.get_data);  
   fastify.post("/check_preferred_mfa", async (request, reply) => views.check_preferred_mfa(request, reply));
   fastify.post("/change_preferred_mfa", async (request, reply) => views.change_preferred_mfa(request, reply));
 
   fastify.post("/check_expire", (request, reply) => utils.check_expired_token(request, reply));
   // Block done
-
+  fastify.get('/game/*', (req, reply) => views.home(req, reply));
   // --- 404 fallback ---
   fastify.setNotFoundHandler((req, reply) => {
     return send.send_error_page('404.html', reply, 404);

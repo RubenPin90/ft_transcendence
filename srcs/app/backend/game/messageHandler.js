@@ -1,6 +1,5 @@
 import WebSocket from 'ws';
-import { createGameAI }          from './matchMaking.js';
-import { joinQueue1v1 }          from './matchMaking.js';
+import { createGameAI, joinQueue1v1 }          from './matchMaking.js';
 
 const getPlayerId = p => (typeof p === 'string' ? p : p.id);
 
@@ -81,6 +80,10 @@ export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager)
         break;
       }
     
+      // ✅ Store match ID on socket for later paddle movement
+      ws.currentGameId = matchId;
+      ws.inGame        = true;
+    
       // 1) Register player in MatchManager
       tournamentManager.matchManager.joinRoom(matchId, ws.userId);
     
@@ -115,6 +118,7 @@ export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager)
       break;
     }
     
+    
     case 'joinQueue': {
       const { mode } = data.payload;
       if (mode === 'pve')      createGameAI(matchManager, ws.userId, ws);
@@ -129,16 +133,21 @@ export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager)
 
     case 'movePaddle': {
       const { direction, active } = data.payload;
-      const room = matchManager.rooms.get(ws.currentGameId);
+    
+      const gameId = ws.currentGameId;
+      const room = matchManager.rooms.get(gameId);
       if (!room) break;
+    
       const player = room.players.find(p => p.playerId === ws.userId);
       if (!player) break;
-
+    
       const dy = active ? (direction === 'up' ? -1 : direction === 'down' ? 1 : 0) : 0;
       const deltaY = dy * (room.paddleSpeed ?? 1) / 60;
+    
       player.paddleY = Math.max(0, Math.min(1, player.paddleY + deltaY));
       break;
     }
+    
 
     case 'leaveGame': {
       ws.inGame = false;

@@ -9,7 +9,7 @@ COPY . .
 
 RUN npm run build-frontend
 
-RUN npm run start:css
+# RUN chown -R node:node /app
 
 # RUN chown -R node:node /app
 

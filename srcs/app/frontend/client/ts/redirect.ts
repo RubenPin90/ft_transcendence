@@ -1,3 +1,6 @@
+import { check } from './play.js';
+import { connect } from './socket.js';
+
 const available_divs = ['change_avatar_div','user_prof_div', 'userpass_div', 'useravatar_div', 'username_div' ,'lang_prof_div' ,'settings_main_div', 'mfa_div','user_settings_div', 'register_div', 'lang_div', 'profile_div', 'menu_div', 'login_div', 'home_div', 'game_div', 'friends_div', 'change_user_div', 'change_login_div']
 
 async function show_profile_page() : Promise<string>{
@@ -105,7 +108,7 @@ async function show_friends_page() : Promise<string>{
     return 'friends_div';
 }
 
-function toggle_divs(render : string){
+export function toggle_divs(render : string){
     available_divs.forEach(divs => {
         const element = document.getElementById(divs);
         if (element){
@@ -120,7 +123,7 @@ function toggle_divs(render : string){
     }
 }
 
-async function check_cookie_fe(): Promise<boolean> {
+export async function check_cookie_fe(): Promise<boolean> {
     const cookie_response = await fetch("/get_data", {
         method: "POST",
         headers: {
@@ -142,7 +145,7 @@ async function check_cookie_fe(): Promise<boolean> {
     return false;
 }
 
-async function render_mfa() : Promise<string>{
+export async function render_mfa() : Promise<string>{
     // console.log("HERE");
     var innervalue = document.getElementById("mfa_div")?.innerHTML;
 
@@ -193,8 +196,17 @@ async function show_login(){
 }
 
 //TODO change window.location.href since it force refreshes the webpage
-async function where_am_i(path : string) : Promise<string> {
+export async function where_am_i(path : string) : Promise<string> {
     switch (path) {
+        case '/home': return 'home_div';
+        case '/play':
+            if (!await check_cookie_fe()) {
+                history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            await connect();
+            check();
+            return 'play_div';
         case '/profile': 
             if (await check_cookies_expire() == true){
                 alert("expired cookies");
@@ -352,7 +364,6 @@ document.body.addEventListener('click', (event) => {
     }
     handleRouteChange();
 });
-
 
 window.addEventListener('popstate', handleRouteChange)
 

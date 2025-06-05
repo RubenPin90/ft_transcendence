@@ -9,71 +9,53 @@
     sock.readyState === WebSocket.OPEN && sock.send(JSON.stringify(msg));
   }
 
+  //TODO: remove button logic 
   export function renderBracketOverlay(rounds: BracketRounds) {
-    const overlay   = document.getElementById('bracket-overlay')  as HTMLDivElement;
-    const beginBtn  = document.getElementById('bracket-begin-btn') as HTMLButtonElement;
-    const cardTpl   = (document.getElementById('match-card-tpl') as HTMLTemplateElement).content;
+    const overlay = document.getElementById('bracket-overlay') as HTMLDivElement;
+    const cardTpl = (document.getElementById('match-card-tpl') as HTMLTemplateElement).content;
   
-    if (!overlay || !beginBtn || !cardTpl) {
+    if (!overlay || !cardTpl) {
       console.error('Bracket overlay HTML missing');
       return;
     }
-    
+  
     console.log('Rendering tournament bracket overlay with rounds:', rounds);
-
-    overlay.replaceChildren(beginBtn);
   
-
-  rounds.forEach((round, rIdx) => {
-    const col = document.createElement('div');
-    col.className = 'round-col';
-
-    const h3 = document.createElement('h3');
-    h3.textContent = `Round ${rIdx + 1}`;
-    col.appendChild(h3);
-
-    round.forEach(match => {
-      if (!match || !Array.isArray(match.players)) return;
-
-      const card = cardTpl.cloneNode(true) as DocumentFragment;
-
-      const p1El = card.querySelector<HTMLDivElement>('.p1');
-      const p2El = card.querySelector<HTMLDivElement>('.p2');
-
-      if (!p1El || !p2El) {
-        console.warn('Match-card template is missing .p1 or .p2');
-        return;
-      }
-
-      const nam = (p: any) =>
-        p && !('pendingMatchId' in p) ? p.name ?? p.id?.slice(0, 4) : '— TBD —';
-
-      p1El.textContent = nam(match.players[0]) || 'BYE';
-      p2El.textContent = nam(match.players[1]) || 'BYE';
-
-      col.appendChild(card);
+    // Clear out any existing children (no begin button)
+    overlay.replaceChildren();
+  
+    rounds.forEach((round, rIdx) => {
+      const col = document.createElement('div');
+      col.className = 'round-col';
+  
+      const h3 = document.createElement('h3');
+      h3.textContent = `Round ${rIdx + 1}`;
+      col.appendChild(h3);
+  
+      round.forEach(match => {
+        if (!match || !Array.isArray(match.players)) return;
+  
+        const card = cardTpl.cloneNode(true) as DocumentFragment;
+  
+        const p1El = card.querySelector<HTMLDivElement>('.p1');
+        const p2El = card.querySelector<HTMLDivElement>('.p2');
+  
+        if (!p1El || !p2El) {
+          console.warn('Match-card template is missing .p1 or .p2');
+          return;
+        }
+  
+        const nam = (p: any) =>
+          p && !('pendingMatchId' in p) ? p.name ?? p.id?.slice(0, 4) : '— TBD —';
+  
+        p1El.textContent = nam(match.players[0]) || 'BYE';
+        p2El.textContent = nam(match.players[1]) || 'BYE';
+  
+        col.appendChild(card);
+      });
+  
+      overlay.appendChild(col);
     });
-
-    overlay.insertBefore(col, beginBtn);
-  });
-
-  
-    try {
-      const TLobby = (window as any).getCurrentTLobby?.();
-      const myId   = (window as any).getMyId?.();
-      const amHost = TLobby && myId && TLobby.hostId === myId;
-  
-      beginBtn.hidden = !amHost;
-      if (amHost) {
-        beginBtn.onclick = () => {
-          socket?.send(JSON.stringify({
-            type: 'beginRound',
-            payload: { tournamentId: TLobby.id }
-          }));
-          overlay.hidden = true;
-        };
-      }
-    } catch { beginBtn.hidden = true; }
   
     overlay.hidden = false;
   }
@@ -191,31 +173,11 @@
         row.appendChild(readyLbl);
       }
 
-      /* kick button (host only, not yourself) */
-      if (amHost && isFilled && p!.id !== myId) {
-        const kick = document.createElement('button');
-        kick.className   = 'kick-btn';
-        kick.dataset.id  = p!.id;
-        kick.textContent = 'Kick';
-        row.appendChild(kick);
-      }
-
       frag.appendChild(row);
     }
 
     table.appendChild(frag);
 
-    /* ---------- kick-button handlers (host only) --------------------- */
-    if (amHost) {
-      table.querySelectorAll<HTMLButtonElement>('.kick-btn').forEach(btn => {
-        btn.onclick = () => {
-          const pid = btn.dataset.id;
-          if (!pid) return;
-          if (!confirm('Kick this player from the lobby?')) return;
-          send(sock, { type: 'kickPlayer', payload: { playerId: pid } });
-        };
-      });
-    }
 
     /* ---------- share code ------------------------------------------- */
     (document.getElementById('t-share-code') as HTMLInputElement).value =
