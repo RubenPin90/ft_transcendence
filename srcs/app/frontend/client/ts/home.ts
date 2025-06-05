@@ -1,6 +1,4 @@
-async function Logout() {
-    //console.log("In Logout function");
-    
+async function Log_out() {
     try{
         const respsone = await fetch('/logout',{
             method: 'POST',

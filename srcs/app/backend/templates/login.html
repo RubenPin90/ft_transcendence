@@ -1,8 +1,8 @@
 <div id="login_div" class="hidden">
-    <div class="min-h-screen flex items-center justify-center px-4 py-10">
+    <div class="relative h-screen flex items-center justify-center px-4 py-10">
+        <div id="{{mfa_div_check}}"></div>
         <div id="login-container" class="field">
             <div class="relative flex border-b mb-8 gap justify-around">
-                <!-- <div id="highlight" class="absolute top-0 left-0 h-full w-1/2 bg-purple-800 transition-all duration-500 rounded-t-lg -z-10"></div> -->
                 <div><a href="/login" data-link><button id="loginBtn" class="tab flex-1 text-purple-800 text-center py-4 font-bold text-3xl rounded-lg">Login</button></a></div>
                 <div><a href="/register" data-link><button id="signupBtn" class="tab flex-1 text-center py-4 font-bold text-3xl text-white rounded-lg">Sign Up</button></a></div>
             </div>
@@ -33,7 +33,7 @@
                 </button>
                 <input type="password" id="password-input_LogIn" placeholder="Password" required class="input_field" />
             </div>
-            <button id="login-button" onclick="login()" class="mt-4 bg-violet-700 hover:bg-violet-800 text-white font-bold py-2 text-lg rounded-xl w-full mb-4 transition-all">
+            <button id="login-button" onclick="login2()" class="mt-4 bg-violet-700 hover:bg-violet-800 text-white font-bold py-2 text-lg rounded-xl w-full mb-4 transition-all">
                 Login
             </button>
 

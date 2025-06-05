@@ -18,6 +18,14 @@
     @apply absolute bg-gradient-to-br shadow-2xl shadow-red-950 z-0 rounded-full
 }
 
+.trash_enable{
+    @apply flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl cursor-pointer
+}
+
+.trash_disable{
+@apply flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#b62a2a] from-45% to-50% via-black from-[#b62a2a] border-black border border-spacing-5 rounded-xl cursor-not-allowed
+}
+
 .field{
     @apply bg-gray-600 w-11/12 max-w-lg rounded-3xl p-6 mx-auto bg-clip-padding backdrop-filter backdrop-blur-xl bg-opacity-30 border-[#ff00d0] border-2 shadow-strong shadow-[#ff00d0]/80
 }
