@@ -28,21 +28,29 @@ import { hideAllPages } from './helpers.js';
 import { setupMatchmakingHandlers } from './matchmaking.js';
 import { on, send, getSocket } from './socket.js';
 import { where_am_i, toggle_divs } from './redirect.js';
-// ────────────────────────────────────────────────────────────
-//  1.  guarantee we have a socket right away and recover userId
-// ────────────────────────────────────────────────────────────
 
-let currentRoomId: string | null = null;
-let userId: string | null = null;
-let currentMatch: string | null = null;
+/*
+ * ────────────────────────────────────────────────────────────
+ *  Module‑level state
+ * ────────────────────────────────────────────────────────────
+ */
+let currentRoomId: string | null       = null;
+let currentMatch: string | null        = null;
 let teardownInput: (() => void) | null = null;
 
-// ────────────────────────────────────────────────────────────
-//  2.  generic error banner
-// ────────────────────────────────────────────────────────────
+let currentTournamentId: string | null = null;  // <‑‑ remember active tournament
+let isFirstRound                       = true;  // <‑‑ flag to auto‑start only round 1
+
+/*
+ * ────────────────────────────────────────────────────────────
+ *  1.  Guarantee we have a socket right away and recover userId
+ * ────────────────────────────────────────────────────────────
+ */
+
 console.log('[play.ts] Initializing play module...');
+
 on('welcome', (msg) => {
-  const id = msg.payload.userId;
+  const id   = msg.payload.userId;
   localStorage.setItem('playerId', id);
 
   const sock = getSocket();
@@ -50,14 +58,18 @@ on('welcome', (msg) => {
 });
 
 on('error', (msg) => {
-  const banner = document.getElementById('error-banner')!;
-  banner.textContent = msg.payload.message;
-  banner.style.display = 'block';
+  const banner          = document.getElementById('error-banner')!;
+  banner.textContent    = msg.payload.message;
+  banner.style.display  = 'block';
 });
 
-// ────────────────────────────────────────────────────────────
-//  3.  TLobby and tournament events – unchanged API
-// ────────────────────────────────────────────────────────────
+/*
+ * ────────────────────────────────────────────────────────────
+ *  2.  TLobby and tournament events – unchanged API except for
+ *      new round‑start flow
+ * ────────────────────────────────────────────────────────────
+ */
+
 on('joinedTLobby', (msg) => {
   const { playerId, TLobby } = msg.payload;
   setMyId(playerId);
@@ -71,14 +83,15 @@ on('joinedTLobby', (msg) => {
 
 on<'matchAssigned'>('matchAssigned', (msg) => {
   const { tournamentId, matchId, players } = msg.payload;
-  const myId   = localStorage.getItem('playerId') ?? (getSocket() as any).userId;
-  const me     = players.find(p => p.id === myId);
-  const rival  = players.find(p => p.id !== myId);
+  const myId         = localStorage.getItem('playerId') ?? (getSocket() as any).userId;
+  const me           = players.find(p => p.id === myId);
+  const rival        = players.find(p => p.id !== myId);
   if (!me || !rival) return;
-  
+
   console.log('[matchAssigned] navigating to game:', matchId, players);
   localStorage.setItem('currentGameId', matchId);
-  currentRoomId = matchId;
+  currentRoomId        = matchId;
+  currentTournamentId  = tournamentId;   // remember for later beginRound
 
   setTimeout(() => {
     send({ type: 'joinMatchRoom', payload: { tournamentId, matchId } });
@@ -87,11 +100,21 @@ on<'matchAssigned'>('matchAssigned', (msg) => {
 });
 
 on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
+  /*
+   * After *every* round the server broadcasts the updated bracket. We now start
+   * *only* the very first round automatically. For later rounds we wait for
+   * each match winner to acknowledge the alert and then – if they actually
+   * *won* – fire a beginRound after a 2 s grace period.
+   */
   const { tournamentId, rounds } = msg.payload as {
     tournamentId: string;
     rounds: MatchStub[][] | MatchStub[];
   };
 
+  // Store for later beginRound use in setOnGameEnd
+  currentTournamentId = tournamentId;
+
+  /* Bracket overlay rendering – unchanged */
   const normalized: MatchStub[][] = Array.isArray(rounds[0])
     ? rounds as MatchStub[][]
     : [rounds as MatchStub[]];
@@ -100,7 +123,6 @@ on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
     location.href = '/tournament/round2';
   }
   renderBracketOverlay(normalized);
-
 
   await new Promise(r => setTimeout(r, 700));
 
@@ -114,12 +136,15 @@ on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
     await showVersusOverlay(A.name, B.name);
   }
 
-  send({
-    type   : 'beginRound',
-    payload: { tournamentId }
-  });
+  /*
+   * Only auto‑start the *very first* round. Later rounds are started from
+   * setOnGameEnd once winners acknowledge.
+   */
+  if (isFirstRound) {
+    send({ type: 'beginRound', payload: { tournamentId } });
+    isFirstRound = false;
+  }
 });
-
 
 on('tournamentCreated', (msg) => {
   const TLobby: TLobbyState = msg.payload;
@@ -156,6 +181,8 @@ on<'tournamentFinished'>('tournamentFinished', (msg) => {
   // optional: clear local tournament state if you store it
   setCurrentTLobby(null);
   localStorage.removeItem('currentGameId');
+  currentTournamentId = null;
+  isFirstRound        = true;
 
   // notify the user
   const myId = localStorage.getItem('playerId') ??
@@ -169,12 +196,11 @@ on<'tournamentFinished'>('tournamentFinished', (msg) => {
 
   // return to main menu
   toggle_divs('home_div');
-  window.location.href = '/'
+  window.location.href = '/';
 });
 
-
 on('tLobbyState', (msg) => {
-  const lobby = msg.payload as TLobbyState;
+  const lobby   = msg.payload as TLobbyState;
   const current = getCurrentTLobby();
   if (current && current.id !== lobby.id) return;
   setCurrentTLobby(lobby);
@@ -182,19 +208,17 @@ on('tLobbyState', (msg) => {
 });
 
 on<'eliminated'>('eliminated', (msg) => {
-  const { reason } = msg.payload; 
+  const { reason } = msg.payload;
 
-  // Optional: visual feedback before leaving
   alert('You have been eliminated from the tournament 🏳️');
 
   // Prevent stale state inside the SPA
   localStorage.removeItem('currentGameId');
-  setCurrentTLobby(null as any);        // clear t-lobby state if you track it
+  setCurrentTLobby(null as any);
   teardownInput?.();
   teardownInput = null;
   toggle_divs('home_div');
-  window.location.href = '/'
-
+  window.location.href = '/';
 });
 
 on<'roundStarted'>('roundStarted', msg => {
@@ -203,9 +227,12 @@ on<'roundStarted'>('roundStarted', msg => {
   navigate(`/tournament/round${roundNumber}`);
 });
 
-// ────────────────────────────────────────────────────────────
-//  4.  Generic matchmaking & game-page transitions
-// ────────────────────────────────────────────────────────────
+/*
+ * ────────────────────────────────────────────────────────────
+ *  3.  Generic matchmaking & game‑page transitions
+ * ────────────────────────────────────────────────────────────
+ */
+
 on('matchFound', (msg) => {
   const { gameId, mode, userId } = msg.payload;
   queued = false;
@@ -215,11 +242,12 @@ on('matchFound', (msg) => {
   navigate(`/game/${mode === 'PVP' || mode === '1v1' ? '1v1' : 'pve'}`);
 });
 
+/*
+ * ────────────────────────────────────────────────────────────
+ *  4.  UI helpers & routing
+ * ────────────────────────────────────────────────────────────
+ */
 
-
-// ────────────────────────────────────────────────────────────
-//  5.  UI helpers & routing
-// ────────────────────────────────────────────────────────────
 let markQueued: ((v: boolean) => void) | null = null;
 let currentMode: string | null = null;
 let queued = false;
@@ -233,12 +261,11 @@ function showVersusOverlay(left: string, right: string): Promise<void> {
       el.style.cssText = `
         position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
         background:rgba(0,0,0,.8); color:#fff; font:700 3rem/1 sans-serif; z-index:9999;
-        text-align:center; opacity:0; transition:opacity .4s;
-      `;
+        text-align:center; opacity:0; transition:opacity .4s;`;
       document.body.appendChild(el);
     }
 
-    el.textContent   = `${left}  vs  ${right}`;
+    el.textContent = `${left}  vs  ${right}`;
     requestAnimationFrame(() => (el!.style.opacity = '1'));
 
     const SHOW_MS = 2500;
@@ -272,9 +299,41 @@ function joinByCodeWithSocket(code?: string) {
   joinByCode(getSocket(), code);
 }
 
+/*
+ * ────────────────────────────────────────────────────────────
+ *  5.  ROUND‑TO‑ROUND FLOW  (NEW setOnGameEnd implementation)
+ * ────────────────────────────────────────────────────────────
+ */
+
 setOnGameEnd((winnerId: string) => {
+  console.log('[play.ts] Game ended – winner:', winnerId);
+
+  // stop arrow‑key listeners, mark state clean
+  teardownInput?.();
+  teardownInput = null;
+  markQueued?.(false);
+  queued = false;
+
+  const myId = localStorage.getItem('playerId') ?? (getSocket() as any).userId;
+
+  /*
+   * The alert is synchronous. Code below runs only *after* the player clicks
+   * “OK”. If I am one of the winners we schedule a beginRound after 2 seconds.
+   */
   alert(`Player ${winnerId} wins!`);
+
+  if (myId === winnerId && currentTournamentId) {
+    setTimeout(() => {
+      console.log('[play.ts] Winner acknowledged. Requesting next round…');
+      send({
+        type   : 'beginRound',
+        payload: { tournamentId: currentTournamentId }
+      });
+    }, 2000);
+  }
 });
+
+/* ───────────────────────────────────────── Route handling ── */
 
 const navigate = (path: string) => {
   if (path === window.location.pathname) return;
@@ -282,23 +341,21 @@ const navigate = (path: string) => {
   route();
 };
 
-
-
 const ROUND_RE = /^\/tournament\/round(\d+)$/;
 
 function route() {
   const path = window.location.pathname;
   console.log('[route] current path:', path);
-
   teardownInput?.();             // stop old key listeners
   teardownInput = null;
+  markQueued?.(false);
 
   hideAllPages();                // hides all “pages” incl. #game-container
 
   /* ───────────── Round page ───────────── */
   if (ROUND_RE.test(path)) {
     const [, roundStr] = path.match(ROUND_RE)!;
-    const roundNo = Number(roundStr);
+    const roundNo      = Number(roundStr);
 
     // show the bracket overlay (already rendered elsewhere)
     const overlay = document.getElementById('bracket-overlay');
@@ -375,28 +432,22 @@ function showGameContainerAndStart(): void {
   teardownInput = setupInputHandlers();
 }
 
-
-setOnGameEnd((winnerId) => {
-  teardownInput?.();           // stop arrow-key listeners
-  teardownInput = null;
-  alert(`Player ${winnerId} wins!`);
-});
-
-export function check(){
-  console.log("in check()");
+export function check() {
   const path = window.location.pathname;
-  if (path != '/login' && path != '/register' && !document.cookie.includes('session_id') && path === '/play') {
-    console.log('[play.ts] No session_id cookie, redirecting to /login');
-    console.log('[play.ts] DOMContentLoaded or is it');
+  if (path === '/play') {
     setupCodeJoinHandlers();
     setupButtonsDelegated(navigate, getSocket());
     ({ markQueued } = setupMatchmakingHandlers(navigate, getSocket()));
     route();
-}}
-
+  }
+}
 
 window.addEventListener('popstate', check);
-      
+
+/* ─────────────────────────────────────────
+ *  Matchmaking helpers – unchanged
+ * ───────────────────────────────────────── */
+
 function enterMatchmaking() {
   if (queued) return;
   queued = true;

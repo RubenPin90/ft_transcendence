@@ -53,16 +53,21 @@ export function startGame(mode: GameMode): void {
   if (!userId) {
     userId = localStorage.getItem('playerId');
   }
+  console.log('here1');
   if (!currentRoomId) {
     currentRoomId = localStorage.getItem('currentGameId');
   }
+  console.log('here2');
 
   if (mode === 'pve') {
-    if (searchingForMatch || currentRoomId) return;
+    console.log('here3');
+    if (searchingForMatch) return;
     searchingForMatch = true;
-  
-    const sendJoinQueue = () =>
+    console.log('here4');
+    const sendJoinQueue = () =>{
+      console.log('[startGame] sending joinQueue for mode:', mode);
       send({ type: 'joinQueue', payload: { mode } });
+    }
   
     if (ws.readyState === WebSocket.OPEN) {
       sendJoinQueue();
@@ -119,6 +124,7 @@ export function stopGame(): void {
   currentRoomId = null;
   userId        = null;
   inputHandlersRegistered = false;
+  // localStorage.removeItem('currentGameId');
 }
 
 

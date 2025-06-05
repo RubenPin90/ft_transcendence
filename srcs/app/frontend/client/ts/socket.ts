@@ -34,10 +34,17 @@ let socket: CustomWebSocket | null = null;
 
 // You can replace this with actual token logic if needed
 declare const authToken: string | null;
-declare function getJwt(): string | null;
+// declare function getJwt(): string | null;
+
 
 function isLoggedIn(): boolean {
-  return !!authToken || !!getJwt();
+  return !!localStorage.getItem('playerId');
+}
+
+
+function getJwt(): string | null {
+  const m = document.cookie.match(/(?:^|;\s*)token=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
 }
 
 function createSocket(): WebSocket {
@@ -59,26 +66,29 @@ function createSocket(): WebSocket {
   return ws;
 }
 
+// socket.ts
 function ensureSocket(): WebSocket {
   if (socket && socket.readyState <= WebSocket.OPEN) return socket;
 
-  if (!isLoggedIn()) throw new Error('WebSocket requested before auth');
+  if (socket?._justFailed) return socket;         //  ← ? защищает от null
 
-  if (socket && socket._justFailed) return socket;
+  if (!isLoggedIn()) throw new Error('WebSocket requested before auth');
 
   socket = createSocket() as CustomWebSocket;
   socket._justFailed = false;
 
   socket.addEventListener('close', () => {
     socket!._justFailed = true;
+    const ref = socket;
     setTimeout(() => {
-      if (socket) socket._justFailed = false;
+      if (socket === ref) socket = null;
     }, 250);
-    socket = null;
   });
 
   return socket;
 }
+
+
 
 /**
  * Call **after** your login request succeeds.

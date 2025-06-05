@@ -85,9 +85,9 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.post('/delete_account', (req, reply) => views.delete_account(req, reply));
   fastify.post('/mfa_setup', (req, reply) => views.set_up_mfa_buttons(req, reply));
   fastify.post('/mfa', (req, reply) => views.mfa(req, reply));
-  fastify.post("/get_data", async (request, reply) => utils.get_data(request, reply));
+  fastify.post('/get_data', utils.get_data);  
   // Block done
-
+  fastify.get('/game/*', (req, reply) => views.home(req, reply));
   // --- 404 fallback ---
   fastify.setNotFoundHandler((req, reply) => {
     return send.send_error_page('404.html', reply, 404);

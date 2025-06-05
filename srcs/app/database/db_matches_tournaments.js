@@ -29,12 +29,12 @@ export async function get_match_by (field, value) {
   }
 }
 
-export async function create_match (points, player1, player2, match_id) {
+export async function create_match (points, player1, player2, match_id, tournament_id = null) {
   const db = await _db();
   try {
     /* checks */
-    const p1 = await db.get('SELECT 1 FROM settings WHERE self = ?', [player1]);
-    const p2 = await db.get('SELECT 1 FROM settings WHERE self = ?', [player2]);
+    const p1 = await db.get('SELECT 1 FROM users WHERE self = ?', [player1]);
+    const p2 = await db.get('SELECT 1 FROM users WHERE self = ?', [player2]);
     if (!p1 || !p2) return -1;
 
     const dup = await db.get('SELECT 1 FROM match WHERE match_id = ?', [match_id]);
@@ -42,14 +42,15 @@ export async function create_match (points, player1, player2, match_id) {
 
     /* insert */
     return await db.run(
-      `INSERT INTO match (points, player1, player2, match_id)
-       VALUES (?,?,?,?)`,
-      [points, player1, player2, match_id]
+      `INSERT INTO match (points, player1, player2, match_id, tournament_id)
+       VALUES (?,?,?,?,?)`,
+      [points, player1, player2, match_id, tournament_id]
     );
   } finally {
     await db.close();
   }
 }
+
 
 export async function update_match (field, value, match_id) {
   const cols = ['points', 'player1', 'player2'];
@@ -86,49 +87,62 @@ export async function get_tourney_rows (tournament_id = null) {
   try {
     if (tournament_id)
       return await db.all(
-        'SELECT * FROM tournament WHERE tournament_id = ?',
+        'SELECT * FROM tournaments WHERE tournament_id = ?',
         [tournament_id]
       );
-    return await db.all('SELECT * FROM tournament');
+    return await db.all('SELECT * FROM tournaments');
   } finally {
     await db.close();
   }
 }
 
-export async function create_tourney_row (tournament_id, round, match_id) {
+export async function list_tournament_results () {
   const db = await _db();
   try {
-    const match = await db.get(
-      'SELECT 1 FROM match WHERE match_id = ?',
-      [match_id]
-    );
-    if (!match) return -1;
-
-    return await db.run(
-      `INSERT INTO tournament (tournament_id, round, match_id)
-       VALUES (?,?,?)`,
-      [tournament_id, round, match_id]
-    );
+    return await db.all(`
+      SELECT
+        t.tournament_id,
+        u_host.username AS host_name,
+        COALESCE(
+          CASE
+            WHEN t.winner_id = t.host_id THEN 'win'
+            ELSE 'lost to ' || u_win.username
+          END,
+          '-- in progress --'
+        )                 AS result,
+        t.created_at
+      FROM tournaments t
+      JOIN  users u_host ON u_host.self = t.host_id             -- ← users
+      LEFT JOIN users u_win  ON u_win.self  = t.winner_id       -- ← users
+      ORDER BY t.created_at DESC
+    `);
   } finally {
     await db.close();
   }
 }
 
-export async function set_tourney_winner (tournament_id, round, winner) {
+
+export async function create_tournament_row(tournament_id, host_id) {
   const db = await _db();
   try {
-    const ok = await db.get('SELECT 1 FROM settings WHERE self = ?', [winner]);
-    if (!ok) return -1;
-
     return await db.run(
-      `UPDATE tournament
-         SET winner = ?
-       WHERE tournament_id = ? AND round = ?`,
-      [winner, tournament_id, round]
+      `INSERT INTO tournaments (tournament_id, host_id)
+       VALUES (?, ?)`,
+      [tournament_id, host_id]
     );
-  } finally {
-    await db.close();
-  }
+  } finally { await db.close(); }
+}
+
+export async function set_tournament_winner(tournament_id, winner_id) {
+  const db = await _db();
+  try {
+    return await db.run(
+      `UPDATE tournaments
+         SET winner_id = ?
+       WHERE tournament_id = ?`,
+      [winner_id, tournament_id]
+    );
+  } finally { await db.close(); }
 }
 
 export async function delete_tourney (tournament_id) {
@@ -155,15 +169,24 @@ export async function show_matches() {
   }
 }
 
-
-export async function show_tournaments() {
+export async function show_tournaments () {
   const db = await _db();
   try {
     return await db.all(`
-      SELECT *
-        FROM tournament AS t
-        JOIN match AS m ON t.match_id = m.match_id
-      ORDER BY t.tournament_id, t.round`);
+      SELECT
+        t.tournament_id,
+        u_host.username                 AS host_name,
+        CASE
+          WHEN t.winner_id IS NULL           THEN '-- in progress --'
+          WHEN t.winner_id = t.host_id       THEN 'win'
+          ELSE 'lost to ' || u_win.username
+        END                            AS result,
+        t.created_at
+      FROM tournaments t
+      JOIN  users u_host ON u_host.self = t.host_id        -- ← users
+      LEFT JOIN users u_win  ON u_win.self  = t.winner_id  -- ← users
+      ORDER BY t.created_at DESC
+    `);
   } finally {
     await db.close();
   }
