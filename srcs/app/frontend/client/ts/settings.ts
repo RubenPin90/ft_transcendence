@@ -260,7 +260,7 @@ async function create_email() {
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({"Function": "create_email"})
     });
-
+    
     if (!response.ok)
         throw new Error(`HTTP Fehler! Status: ${response.status}`);
 

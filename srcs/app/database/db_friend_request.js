@@ -47,39 +47,29 @@ async function create_friend_request_value(sender_id, receiver_id) {
         filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
-    // if (sender_id <= 0 && receiver_id <= 0){
-    //     console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-    //     try{
-    //         var row = await db.run(`
-    //             INSERT INTO friend_request (sender_id, receiver_id)
-    //             VALUES (?, ?)`, [sender_id, receiver_id]);
-    //             return row;
-    //     } catch(err) {
-    //         console.error(`Error in create_friend_request_value: ${err}`);
-    //         return null;
-    //     }
-    //     return null;
-    // }
-
 
     try {
+        console.log("wwwwww");
         const sender = await db.get(`
             SELECT * FROM settings
             WHERE self = ?`, [sender_id]);
         if (!sender)
             return -1;
+        console.log("wwwwww");
         const receiver = await db.get(`
             SELECT * FROM settings
-            WHERE self = ?`, [sender_id]);
+            WHERE self = ?`, [receiver_id]);
         if (!receiver)
-            return -1;
+            return -2;
+        console.log("wwwwww");
 		const existing_request = await db.get(
             `SELECT * FROM friend_request
             WHERE sender_id = ? AND receiver_id = ?`,
             [sender_id, receiver_id]
         );
         if (existing_request)
-            return -2;
+            return -3;
+        console.log("wwwwww");
         var row = await db.run(`
             INSERT INTO friend_request (sender_id, receiver_id)
             VALUES (?, ?)`, [sender_id, receiver_id]);
@@ -210,36 +200,36 @@ async function show_accepted_friends(userid){
             SELECT * FROM friend_request
             WHERE (receiver_id = ? OR sender_id = ?) AND status = 'accepted'
             `, [userid, userid]);
-            for (var single of rows){
-                var correctId;
-                if (single.receiver_id === userid){
-                    correctId = single.sender_id;
-                }else{
-                    correctId = single.receiver_id;
-                }
-                const sender_settings = await db.get(`
-                    SELECT * FROM settings WHERE self = ?
-                    `, [correctId]);
-                const sender_user = await db.get(`
-                    SELECT * FROM users WHERE self = ?
-                    `, [sender_settings.self]);
-                const name = sender_user.username || 'unknown';
-                if (sender_user.status === 1){
-                    html += `
-                    <div class="relative flex-shrink-0">
-                        <img class="w-24 h-24 rounded-full border-4 border-green-600" src="${sender_settings.pfp}">
-                        <span class="absolute text-center w-full">${name}</span><br>
-                    </div> 
-                    `;
-                } else{
-                    html += `
-                    <div class="relative flex-shrink-0">
-                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="${sender_settings.pfp}">
-                        <span class="absolute text-center w-full">${name}</span><br>
-                    </div> 
-                    `;
-                }
+        for (var single of rows){
+            var correctId;
+            if (single.receiver_id === userid){
+                correctId = single.sender_id;
+            }else{
+                correctId = single.receiver_id;
             }
+            const sender_settings = await db.get(`
+                SELECT * FROM settings WHERE self = ?
+                `, [correctId]);
+            const sender_user = await db.get(`
+                SELECT * FROM users WHERE id = ?
+                `, [sender_settings.id]);
+            const name = sender_user.username || 'unknown';
+            if (sender_user.status === 1){
+                html += `
+                <div class="relative flex-shrink-0">
+                <img class="w-24 h-24 rounded-full border-4 border-green-600" src="${sender_settings.pfp}">
+                <span class="absolute text-center w-full">${name}</span><br>
+                </div> 
+                `;
+            } else{
+                html += `
+                <div class="relative flex-shrink-0">
+                <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="${sender_settings.pfp}">
+                <span class="absolute text-center w-full">${name}</span><br>
+                </div> 
+                `;
+            }
+        }
     } catch (err) {
         console.error(`Error in show_accepted_friends: ${err}`);
         return null;

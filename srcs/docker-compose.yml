@@ -2,7 +2,6 @@ services:
   nginx:
     build:
       context: ./nginx
-      target: dev
     container_name: 'nginx'
     restart: always
     ports:
@@ -38,6 +37,8 @@ services:
       - jwt_secret
     networks:
       - trancendence-network
+    # develop:
+    #   watch:  
 
   prometheus:
     image: prom/prometheus:v2.53.4
@@ -46,6 +47,7 @@ services:
     restart: always
     volumes:
       - ${PROMETHEUS_YML}:/etc/prometheus/prometheus.yml
+      - ${RULES_YML}:/etc/prometheus/alert_rules.yml
     networks:
       - trancendence-network
     command:
@@ -62,20 +64,39 @@ services:
       - grafana_data:/var/lib/grafana
       - ${GRAFANA_PROVISION}:/etc/grafana/provisioning
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD__FILE=/run/secrets/admin_password
       - GF_SECURITY_ADMIN_USER=${USER_NAME}
-      - GF_SERVER_ROOT_URL=https://rpinchas.42.fr/grafana/
+      - GF_SECURITY_ADMIN_PASSWORD__FILE=/run/secrets/admin_password
+      - GF_SERVER_ROOT_URL=https://localhost/grafana/
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
     secrets:
       - admin_password
-    # depends_on:
-    #   - prometheus
-    
+    depends_on:
+      - prometheus
+
+  alertmanager:
+    build: 
+      context: ./monitoring/alertmanager
+      args:
+        - SMTP_HOST=${SMTP_HOST}
+        - SMTP_USER=${SMTP_USER}
+        - SMTP_PASS_FILE=/run/secrets/smtp_password
+        - EMAIL_FROM=${SMTP_USER}
+        - EMAIL_TO=${EMAIL_TO}
+      secrets:
+        - smtp_password
+    container_name: 'alertmanager'
+    entrypoint: [ "sh", "-c" ]
+    command: [ "tail -f /dev/null" ]
+    restart: always
+    user: root
+
   node_exporter:
     image: quay.io/prometheus/node-exporter:v1.9.1
     container_name: 'node-exporter'
     restart: always
-    command: "--path.rootfs=/host"
+    command: 
+      - "--path.rootfs=/host"
+      - "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)"
     pid: host
     volumes:
       - /:/host:ro,rslave #TODO comment out when on my PC (ENES) wsl throws error and cant make
@@ -99,8 +120,6 @@ services:
       - prometheus
     networks:
       - trancendence-network
-    devices:
-      - /dev/kmsg
     privileged: true
 
 secrets:

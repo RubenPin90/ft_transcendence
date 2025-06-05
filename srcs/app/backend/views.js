@@ -22,8 +22,8 @@ async function login(request, response) {
         const parsed = await utils.process_login(request, response);
         if (!parsed || parsed === undefined || parsed < 0)
             return true;
-        const token = modules.create_jwt(parsed.settings.self, '1h');
-        const lang = modules.create_jwt(parsed.settings.lang, '1h');
+        const token = await modules.create_jwt(parsed.settings.self, '1h');
+        const lang = await modules.create_jwt(parsed.settings.lang, '1h');
 
         modules.set_cookie(response, 'token', token, 3600);
         modules.set_cookie(response, 'lang', lang, 3600);
@@ -70,8 +70,8 @@ async function register(request, response) {
             response.code(500).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Failed creating table in user', "Content": null});
             return true;
         }
-        const token = modules.create_jwt(settings.self, '1h');
-        const lang = modules.create_jwt('en', '1h');
+        const token = await modules.create_jwt(settings.self, '1h');
+        const lang = await modules.create_jwt('en', '1h');
         
         modules.set_cookie(response, 'token', token, 3600); //todo change back to 3600
         modules.set_cookie(response, 'lang', lang, 3600); //todo change back to 3600
@@ -152,8 +152,7 @@ async function mfa(request, response) {
             console.log("IN HERE");
             return await utils.verify_custom_code(userid, response, data);
         } else if (data.Function == 'create_email') {
-            const returned2 = await utils.create_email_code(userid, response, data);
-            return returned2;
+            return await utils.create_email_code(userid, response, data);
         } else if (data.Function == 'verify_email') {
             return await utils.verify_email_code(userid, response, data);
         } else if (data.Function == 'remove_custom_code') {
@@ -190,12 +189,12 @@ async function user(request, response) {
         if (data.Function == "change_language") {
             const [keys, values] = modules.get_cookies(request);
             const new_lang = data.Lang;
-            const old_lang = modules.get_jwt(values[keys.indexOf('lang')]);
-            const new_lang_decrypted = modules.create_jwt(new_lang, '1h');
+            const old_lang = await modules.get_jwt(values[keys.indexOf('lang')]);
+            const new_lang_decrypted = await modules.create_jwt(new_lang, '1h');
             modules.set_cookie(response, 'lang', new_lang_decrypted, 3600);
-            const userid = modules.get_jwt(values[keys.indexOf('token')]);
+            const userid = await modules.get_jwt(values[keys.indexOf('token')]);
             await settings_db.update_settings_value('lang', new_lang, userid.userid);
-            console.log(modules.get_jwt(values[keys.indexOf('lang')]));
+            console.log(await modules.get_jwt(values[keys.indexOf('lang')]));
             const new_page = await translator.cycle_translations(data.Page, new_lang, old_lang);
             response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'success', 'Content': new_page}); // 'Content': data.Page
             return true;
@@ -246,7 +245,7 @@ async function verify_email(request, response) {
     if (!valid_password || valid_password === undefined || valid_password < 0) {
         response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'failed', "Content": null});
     } else {
-        const token = modules.create_jwt(frontend_data.userid, '1h');
+        const token = await modules.create_jwt(frontend_data.userid, '1h');
         
         modules.set_cookie(response, 'token', token, true, true, 'strict');
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'reload', "Content": null});
@@ -261,7 +260,7 @@ async function verify_2fa(request, response) {
     if (temp === false || !temp || temp === undefined || temp < 0) {
         response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'failed', "Content": null});
     } else {
-        const token = modules.create_jwt(frontend_data.userid, '1h');
+        const token = await modules.create_jwt(frontend_data.userid, '1h');
         
         modules.set_cookie(response, 'token', token, true, true, 'strict');
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'reload', "Content": null});
@@ -276,7 +275,7 @@ async function verify_custom(request, response) {
     if (temp === false) {
         response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'failed', "Content": null});
     } else {
-        const token = modules.create_jwt(frontend_data.userid, '1h');
+        const token = await modules.create_jwt(frontend_data.userid, '1h');
         
         modules.set_cookie(response, 'token', token, true, true, 'strict');
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'reload', "Content": null});
@@ -302,7 +301,7 @@ async function profile(request, response) {
         const token = values[keys.indexOf('token')];
         let decoded;
         try {
-            decoded = modules.get_jwt(token);
+            decoded = await modules.get_jwt(token);
         } catch (err){
             console.error(`Error in profile views.js: ${err}`);
             response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
@@ -315,7 +314,8 @@ async function profile(request, response) {
         }
         const settings = await settings_db.get_settings_value('self', decoded.userid);
         if (!settings || settings === undefined){
-            return response.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'fail', "Content": "no settings or settings undefined"});
+            response.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'fail', "Content": "no settings or settings undefined"});
+            return true;
         }
         const userid = decoded.userid;
         var inner = request.body.innervalue;
@@ -328,7 +328,10 @@ async function profile(request, response) {
         inner = inner.replace('{{email}}', settings.email);
         inner = inner.replace('{{picture}}', settings.pfp);
         inner = inner.replace('{{status}}', ()=> {if (user.status === 1) return 'online'; else return 'offline'});
-        inner = inner.replace('{{Friends}}', await friends_request.show_accepted_friends(userid))
+        if (await friends_request.get_friend_request_value('self', userid) != undefined)
+            inner = inner.replace('{{Friends}}', await friends_request.show_accepted_friends(userid))
+        else
+            inner = inner.replace('{{Friends}}', '<span>No friends currenlty :\'( you lonely MF</span>');
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": inner});
         return true;
     }
@@ -346,9 +349,6 @@ async function profile(request, response) {
 
 async function logout(request, response, override) {
     const [keys, values] = modules.get_cookies(request);
-    if (!keys?.includes('token')) {
-        return;
-    }
 
     for (var pos = 0; pos < keys.length; pos++) {
         response.setCookie(keys[pos], '', {
@@ -381,7 +381,7 @@ async function user_settings(request, response) {
     const token = values[tokenIndex];
     let decoded;
     try {
-        decoded = modules.get_jwt(token);
+        decoded = await modules.get_jwt(token);
     } catch (err) {
         return // Here was a redirect(response, '/login', 302);
     }
@@ -414,7 +414,7 @@ async function update_settings(request, response) {
     const token = values[tokenIndex];
     let decoded;
     try {
-        decoded = modules.get_jwt(token);
+        decoded = await modules.get_jwt(token);
     }
     catch (err) {
         return // Here was a redirect(response, '/login', 302);
@@ -450,20 +450,26 @@ async function update_settings(request, response) {
 
 async function update_user(request, response) {
     const data = request.body;
+    
+    const trans_file = await fs.readFile('./translations.json', 'utf8');
+    const forbidden_names = ['Login', 'Register', 'Settings', 'Logout', 'Sign in with Google', 'Already have an account? Log in', 'Sign up with Github', 'Sign up with Google', 'Sign in with Github', 'Dont have an account? Create one', '404 - Page Not Found', 'The page you were looking for does not exist', 'Upload file', 'Submit', 'Repeat Password', 'Password', 'E-Mail', 'Play', 'Profile', 'Log Out', 'Sign up', 'PvE', '1v1 Mathmaking', 'Tournament', 'Tournaments', 'Search for an opponent', 'Searching for an opponent', 'Cancel Search', 'Join by code', 'Join', 'Create Tournament', 'Waiting for players', 'Copy', 'START', 'READY', 'Leave', 'Customization', 'Username', 'email', 'win/loss', 'elo', 'status', 'Match History', 'opponent', 'final score', 'date', 'Change username', 'Change login info', 'Change avatar', 'Welcome home user', 'Welcome', 'Change language', 'Choose a default authentication method', 'Disable email authentication', 'Create custom 6 diggit code', 'Create OTC', 'Recreate custom 6 diggit code', 'Remove custom 6 digit code', 'Regenerate OTC', 'Remove OTC', 'Otc', 'Custom', 'Enable email authentication', 'Change User Information', 'Choose your main language', 'Next', 'Create your 2FA custom', '6 diggit code', 'Create your 2FA custom 6 diggit code', 'Verify your 2FA custom 6 diggit code', 'Verify', 'Input your Email code', 'Input your OTC code from your authenticator app', 'Input your Custom code', 'Friends', 'Blocked Users', 'MFA', 'User', 'Home', 'Back', 'Delete account', 'Change login data'];
+    // const forbidden_names_translated = 
     if (data === null || data === undefined){
-        return response.code(400).send({ message: 'Invalid data'});
+        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid data'});
+        return true;
+    }
+    if (trans_file.includes(data)) {
+        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid data'});
     }
     const [keys, values] = modules.get_cookies(request);
-    if (!keys?.includes('token')) {
-        return login(request, response);
-        return // Here was a redirect(response, '/login', 302);
-    }
+    if (!keys?.includes('token'))
+        return await login(request, response);
 
     const tokenIndex = keys.findIndex((key) => key === 'token');
     const token = values[tokenIndex];
     let decoded;
     try {
-        decoded = modules.get_jwt(token);
+        decoded = await modules.get_jwt(token);
     }
     catch (err) {
         return // Here was a redirect(response, '/login', 302);
@@ -473,62 +479,63 @@ async function update_user(request, response) {
     try {
         const result = await users_db.update_users_value('username', data, userid);
         if (result) {
-            return response.code(200).send({ "Response": 'Successfully updated Username'});
+            return response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'Successfully updated Username'});
         }
         else{
-            return response.code(500).send({ "Response": 'Failed to update Username'});
+            return response.code(500).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'Failed to update Username'});
         }
     }
     catch (err){
-        return response.code(500).send({ "Response": 'Server error'});
+        return response.code(500).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'Server error'});
     }
 }
 
 async function friends(request, response){
     const [keys, values] = modules.get_cookies(request);
-    if (!keys?.includes('token')) {
-        return login(request, response);
+    await utils.check_for_invalid_token(request, response, keys, values);
+    if (!keys?.includes('token'))
+        return await login(request, response);
+
+    if (request.method == 'POST') {
+
+        const token = values[keys.indexOf("token")];
+        let decoded;
+        try {
+            decoded = await modules.get_jwt(token);
+        } catch (err) {
+            console.error(`Error in profile views.js: ${err}`);
+            response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
+            return true;
+        }
+        const userid = decoded.userid;
+        var inner = request.body.innervalue;
+        // inner = await translator.cycle_translations(inner, decoded_lang);
+        inner = inner.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
+        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": inner});
+        return true;
     }
 
-    const token = values[keys.indexOf("token")];
-    let decoded;
-    try {
-        decoded = modules.get_jwt(token);
-    } catch (err) {
-        return // Here was a redirect(response, '/login', 302);
+    const status = await send.send_html('index.html', response, 200, async(data) => {
+        const [keys, values] = modules.get_cookies(request);
+        const token = values[keys.indexOf("token")];
+        let decoded;
+        try {
+            decoded = await modules.get_jwt(token);
+        } catch (err) {
+            console.error(`Error in profile views.js: ${err}`);
+            response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
+            return true;
+        }
+        const userid = decoded.userid;
+        data = await utils.replace_all_templates(request, response);
+        data = utils.show_page(data, 'friends_div');
+        if (await friends_request.get_friend_request_value('self', userid) != undefined)
+            data = data.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
+        return data;
+    });
+    if (!status || status === undefined){
+        return `Error rendering user settings page: ${status}`;
     }
-
-    const userid = decoded.userid;
-
-
-    var inner = request.body.innervalue;
-    console.log("INNER::", inner);
-    // inner = await translator.cycle_translations(inner, decoded_lang);
-    inner = inner.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
-    return response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": inner});
-
-    // const status = await send.send_html('index.html', response, 200, async(data) => {
-    //     var [keys, values] = modules.get_cookies(request);
-    //     const lang_check = keys?.find((key) => key === 'lang');
-    //     if (!lang_check || lang_check === undefined || lang_check == false)
-    //         return false;
-    //     const langIndex = keys.indexOf('lang');
-    //     const lang = values[langIndex];
-    //     try {
-    //         var decoded_lang = modules.get_jwt(lang);
-    //     } catch (err) {
-    //         return false;
-    //     }
-    //     data = await translator.cycle_translations(data, decoded_lang.userid);
-    //     data = data.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
-    //     return data;
-    // });
-
-
-    // const status = await send.send_html('friends.html', response, 200);
-    // if (!status || status === undefined){
-    //     return `Error rendering user settings page: ${status}`;
-    // }
     return true;
 }
 
@@ -543,11 +550,10 @@ async function add_friends(request, response){
         response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid data'});
         return true;
     }
-    const tokenIndex = keys.findIndex((key) => key === 'token');
-    const token = values[tokenIndex];
+    const token = values[keys.indexOf('token')];
     let decoded;
     try {
-        decoded = modules.get_jwt(token);
+        decoded = await modules.get_jwt(token);
     } catch (err) {
         response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
         return true;
@@ -586,7 +592,7 @@ async function accept_friends(request, response){
 
     let decoded;
     try {
-        decoded = modules.get_jwt(values[keys.indexOf("token")]);
+        decoded = await modules.get_jwt(values[keys.indexOf("token")]);
     } catch (err) {
         response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
         return true;
@@ -612,7 +618,7 @@ async function reject_friend(request, response){
 
     let decoded;
     try {
-        decoded = modules.get_jwt(values[keys.indexOf("token")]);
+        decoded = await modules.get_jwt(values[keys.indexOf("token")]);
     } catch (err) {
         response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
         return true;
@@ -660,7 +666,7 @@ async function delete_account(request, response) {
     const token = values[keys.indexOf('token')];
     var decrypted;
     try {
-        decrypted = modules.get_jwt(token);
+        decrypted = await modules.get_jwt(token);
     } catch (err) {
         response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
         return true;
@@ -683,7 +689,7 @@ async function play(request, response) {
     const token = values[tokenIndex];
     let decoded;
     try {
-        decoded = modules.get_jwt(token);
+        decoded = await modules.get_jwt(token);
     } catch (err) {
         response.code(400).headers(response, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded' });
         return true;
@@ -716,7 +722,7 @@ async function set_up_mfa_buttons(request, response) {
     }
 
     const encrypted_userid = values[keys.indexOf('token')];
-    const userid = modules.get_jwt(encrypted_userid).userid;
+    const userid = await modules.get_jwt(encrypted_userid).userid;
     var set = 0;
     var options = '';
     var parsed = await mfa_db.get_mfa_value('self', userid);
@@ -844,7 +850,7 @@ async function change_preferred_mfa(request, response){
 
     const token = values[keys.indexOf('token')];
 
-    const userid = modules.get_jwt(token).userid;
+    const userid = await modules.get_jwt(token).userid;
     const data = request.body.Value;
     const status = await mfa_db.update_mfa_value('prefered', data, userid);
     if (!status || status == undefined){

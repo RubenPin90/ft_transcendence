@@ -12,6 +12,7 @@ import * as friends_request from '../database/db_friend_request.js'
 import { promises as fs, utimes } from 'fs';
 import { log, profile } from 'console';
 import * as translator from './translate.js';
+import { fastify } from './server.js';
 import * as views from './views.js';
 import * as utils from './utils.js';
 
@@ -32,34 +33,26 @@ function create_username(email) {
 	return modified_sliced;
 }
 
-const client_id = "120580817734-tr50q5s7mu9clbb7olk85h78tkdpsokl.apps.googleusercontent.com"; //TODO REMOVE
-const client_secret = "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"; //TODO REMOVE
-
-function google_input_handler() {
-	const client_id = "120580817734-tr50q5s7mu9clbb7olk85h78tkdpsokl.apps.googleusercontent.com";
+async function google_input_handler() {
+	const client_id = process.env.GOOGLE_CLIENT_ID;
 	const redirect_uri = "https://localhost/";
 	const scope = "openid email profile";
 	const url = `https://accounts.google.com/o/oauth2/auth?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&scope=${encodeURIComponent(scope)}&response_type=code&access_type=offline&approval_prompt=force`;
 	return url;
 }
-const github_client_id = "Ov23lixPpotS1gyX9qKy";
-const github_client_secret = "3f6f479d39df1383e3ecae2da90da74f6fc4edcd";
 
 function github_input_handler() {
-	// const client_id = process.env.github_client_id;
+	const client_id = process.env.GITHUB_CLIENT_ID;
 	const redirect = "https://localhost/";
 	const scope = "user:email";
-	// const state = process.env.github_state;
 	const state = generate_random_state();
-	const github_string = `https://github.com/login/oauth/authorize?client_id=${github_client_id}&redirect_uri=${redirect}&scope=${scope}&state=${state}`
+	const github_string = `https://github.com/login/oauth/authorize?client_id=${client_id}&redirect_uri=${redirect}&scope=${scope}&state=${state}`
 	return github_string;
 }
 
 async function encrypt_github(request) {
-	// const client_id = process.env.github_client_id;
-	const client_id = github_client_id;
-	// const client_secret = process.env.github_client_secret;
-	const client_secret = github_client_secret;
+	const client_id = process.env.GITHUB_CLIENT_ID;
+	const client_secret = (await fs.readFile(process.env.GITHUB_CLIENT_SECRET_FILE, 'utf8')).trim();
 	const redirect = "https://localhost/";
 	const base_code = request.url;
 	const sliced_code = base_code.slice(7);
@@ -96,10 +89,10 @@ async function encrypt_github(request) {
 		return -7;
 	username = username.replace(/\./g, '-');
 	const db_return = await settings_db.create_settings_value('', pfp, 0, user_email, 'en', 0, userid);
-	const userid_encode = modules.create_jwt(userid, '1h');
+	const userid_encode = await modules.create_jwt(userid, '1h');
 	if (db_return.self === undefined || db_return.return === undefined) {
 		const lang_check = await settings_db.get_settings_value('self', userid);
-		const lang_encode = modules.create_jwt(lang_check.lang, '1h');
+		const lang_encode = await modules.create_jwt(lang_check.lang, '1h');
 		return {"response": "success", "token": userid_encode, "lang": lang_encode};
 	}
 	if (db_return < 0)
@@ -110,26 +103,15 @@ async function encrypt_github(request) {
 	const check_username = await users_db.create_users_value(0, username, userid);
 	if (check_username < 0)
 		return -10;
-	const lang_encode = modules.create_jwt('en', '1h');
+	const lang_encode = await modules.create_jwt('en', '1h');
 	return {"response": "success", "token": userid_encode, "lang": lang_encode};
 }
 
 async function encrypt_google(request) {
-	const client_id = "120580817734-tr50q5s7mu9clbb7olk85h78tkdpsokl.apps.googleusercontent.com";
-	const client_secret = "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";
-	// const client_secret = process.env.google_client_secret;
-	// const base_code = request;
-	// const sliced_code = base_code.slice(6);
-	// if (!sliced_code || sliced_code === undefined || sliced_code.length == 0)
-		// return -1;
-	// const subbed_code = sliced_code.substring(0, sliced_code.indexOf("&scope"));
-	// if (!subbed_code || subbed_code === undefined || subbed_code.length == 0)
-		// return -2;
-	// const code = subbed_code.replace("%2F", "/");
-	// if (!code || code === undefined || code == subbed_code)
-		// return -3;
+	const client_id = process.env.GOOGLE_CLIENT_ID;
+	const client_secret = (await fs.readFile(process.env.GOOGLE_CLIENT_SECRET_FILE, 'utf8')).trim();
 	const code = request;
-	
+
 	try {
 		const header = {"Accept": 'application/json', "Content-Type": 'application/json'};
 		const body = JSON.stringify({'code': code, 'client_id': client_id, 'client_secret': client_secret, 'redirect_uri': 'https://localhost/', 'grant_type': 'authorization_code'})
@@ -151,10 +133,10 @@ async function encrypt_google(request) {
 		if (username < 0)
 			return -8;
 		const db_return = await settings_db.create_settings_value('', pfp, 0, email, 'en', userid, 0);
-		const userid_encode = modules.create_jwt(userid, '1h');
+		const userid_encode = await modules.create_jwt(userid, '1h');
 		if (db_return.self === undefined || db_return.return === undefined) {
 			const lang_check = await settings_db.get_settings_value('self', userid);
-			const lang_encode = modules.create_jwt(lang_check.lang, '1h');
+			const lang_encode = await modules.create_jwt(lang_check.lang, '1h');
 			return {"response": "success", "token": userid_encode, "lang": lang_encode};
 		}
 		if (db_return < 0)
@@ -165,7 +147,7 @@ async function encrypt_google(request) {
 		const check_username = await users_db.create_users_value(0, username, userid);
 		if (!check_username || check_username === undefined || check_username < 0)
 			return -11;
-		const lang_encode = modules.create_jwt('en', '1h');
+		const lang_encode = await modules.create_jwt('en', '1h');
 		return {"response": "success", "token": userid_encode, "lang": lang_encode};
 	} catch (error) {
 		console.error("Error during Google OAuth:", error);
@@ -226,12 +208,12 @@ async function process_login(request, response) {
 	return {'settings': check_settings, 'mfa': mfa};
 }
 
-function get_decrypted_userid(request, response) {
+async function get_decrypted_userid(request, response) {
 	const [keys, values] = modules.get_cookies(request);
 	if (keys === null && values === null)
 		return -1;
 	try {
-		var self_decoded = modules.get_jwt(values[keys.indexOf('token')]);
+		var self_decoded = await modules.get_jwt(values[keys.indexOf('token')]);
 	} catch (err) {
 		const err_string = String(err);
 		//console.log(err_string);
@@ -284,7 +266,7 @@ function otc_secret(base32_secret) {
 // replace_data: {'Function': 'verify', 'Code': ${code}}
 async function verify_otc(request, response, replace_data, userid) {
 	if (!userid || userid === undefined)
-		userid = get_decrypted_userid(request);
+		userid = await get_decrypted_userid(request);
 	if (userid < 0)
 		return -1;
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
@@ -554,8 +536,8 @@ function split_DOM_elemets(row) {
 }
 
 async function replace_all_templates(request, response, state, override) {
-	const github_login = github_input_handler();
-	const google_login = google_input_handler();
+	const github_login = await github_input_handler();
+	const google_login = await google_input_handler();
 
 	const friends_html_raw = await fs.readFile("./backend/templates/friends.html", 'utf8');
 	// const friends_html = friends_html_raw.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
@@ -1081,7 +1063,7 @@ async function replace_all_templates(request, response, state, override) {
 	const [keys, values] = modules.get_cookies(request);
 	if (keys?.includes('lang') && (override == undefined || !override)) {
 		const lang_encoded = values[keys.indexOf('lang')];
-		const lang_decrypted = modules.get_jwt(lang_encoded);
+		const lang_decrypted = await modules.get_jwt(lang_encoded);
 		if (lang_decrypted.userid != "en")
 			index_html = await translator.cycle_translations(index_html, lang_decrypted.userid);
 	} else if (override != undefined) {
@@ -1091,7 +1073,7 @@ async function replace_all_templates(request, response, state, override) {
 	const token = values[keys.indexOf('token')];
 	if (!token)
 		throw new Error("Token is not defined!");
-	const user_decrypted = modules.get_jwt(token);
+	const user_decrypted = await modules.get_jwt(token);
 	const check_user = await users_db.get_users_value('self', user_decrypted.userid);
 	index_html = index_html.replace("{{userid}}", check_user.username.toString());
 	return index_html_raw.replace("{{replace}}", index_html.toString());
@@ -1119,7 +1101,7 @@ async function get_data(request, response) {
 	try {
 		const link = request.body;
 		if (link.get == "{{userid}}") {
-			const userid_decrypted = modules.get_jwt(link.search);
+			const userid_decrypted = await modules.get_jwt(link.search);
 			const search_user = await users_db.get_users_value('self', userid_decrypted.userid);
 			response.code(200).headers({ 'Content-Type': 'application/json' }).send({ "username": search_user.username });
 			return true;
@@ -1137,7 +1119,7 @@ async function get_data(request, response) {
 				response.code(200).headers({ 'Content-Type': 'application/json' }).send({'content': "empty"});
 				return true;
 			}
-			const username = modules.get_jwt(values[keys.indexOf('token')]);
+			const username = await modules.get_jwt(values[keys.indexOf('token')]);
 			const check_user = await users_db.get_users_value('self', username.userid);
 			response.code(200).headers({ 'Content-Type': 'application/json' }).send({'username': check_user.username});
 			return true;
@@ -1220,8 +1202,8 @@ function retrieve_trash_icon_mfa(method, enable) {
 async function check_for_invalid_token(request, response, keys, values) {
 	if (keys.length == 0)
 		return false;
-	const token_decrypted = modules.get_jwt(values[keys.indexOf('token')]);
-	const lang_decrypted = modules.get_jwt(values[keys.indexOf('lang')]);
+	const token_decrypted = await modules.get_jwt(values[keys.indexOf('token')]);
+	const lang_decrypted = await modules.get_jwt(values[keys.indexOf('lang')]);
 	if (token_decrypted < 0 || lang_decrypted < 0) {
 		await views.logout(request, response, true);
 		return true;

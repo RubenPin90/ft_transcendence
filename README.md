@@ -7,7 +7,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/RubenPin90/ft_transcendence">
+  <a href="https://github.com/ARWChair/ft_transcendence">
     <img src="resources/transcendence_logo.png" alt="Logo" width="300" height="300">
   </a>
 
@@ -98,7 +98,7 @@ Here are a few examples.
 <!-- ROADMAP -->
 ## Roadmap
 
-See the [open issues](https://github.com/RubenPin90/ft_transcendence/issues) for a full list of proposed features (and known issues).
+See the [open issues](https://github.com/ARWChair/ft_transcendence/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -118,7 +118,7 @@ Project Link: [https://github.com/your_username/repo_name](https://github.com/yo
 
 List resources that might be helpful:
 
-* [42 Subject](https://github.com/RubenPin90/ft_transcendence/resources/en.subject_transcendence.pdf)
+* [42 Subject](https://github.com/ARWChair/ft_transcendence/resources/en.subject_transcendence.pdf)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -127,9 +127,9 @@ List resources that might be helpful:
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 [contributors-shield]: https://img.shields.io/badge/Contributors-blue?style=for-the-badge
-[contributors-url]: https://github.com/RubenPin90/ft_transcendence/graphs/contributors
+[contributors-url]: https://github.com/ARWChair/ft_transcendence/graphs/contributors
 [commits-shield]: https://img.shields.io/badge/Commits-yellow?style=for-the-badge
-[commits-url]: https://github.com/RubenPin90/ft_transcendence/graphs/commit-activity
+[commits-url]: https://github.com/ARWChair/ft_transcendence/graphs/commit-activity
 
 [product-screenshot]: images/screenshot.png
 [Next.js]: https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white
