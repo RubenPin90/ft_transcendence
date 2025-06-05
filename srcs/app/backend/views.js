@@ -502,6 +502,7 @@ async function friends(request, response){
 
 
     var inner = request.body.innervalue;
+    console.log("INNER::", inner);
     // inner = await translator.cycle_translations(inner, decoded_lang);
     inner = inner.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
     return response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": inner});

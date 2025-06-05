@@ -80,7 +80,7 @@ async function check_cookies_expire() : Promise<boolean>{
 }
 
 async function show_friends_page() : Promise<string>{
-    var innervalue = document.getElementById("friends_field")?.innerHTML;
+    var innervalue = document.getElementById("pending_friends")?.innerHTML;
 
     const response = await fetch ('/friends', {
         method: 'POST',
@@ -96,7 +96,7 @@ async function show_friends_page() : Promise<string>{
 
     const data = await response.json();
     if (data.Response === 'success'){
-        var element = document.getElementById("friends_field");
+        var element = document.getElementById("pending_friends");
         if (element){
             element.innerHTML = data.Content;
         }
@@ -198,7 +198,6 @@ async function show_login(){
 //TODO change window.location.href since it force refreshes the webpage
 export async function where_am_i(path : string) : Promise<string> {
     switch (path) {
-        case '/home': return 'home_div';
         case '/play':
             if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');
@@ -368,8 +367,14 @@ document.body.addEventListener('click', (event) => {
 window.addEventListener('popstate', handleRouteChange)
 
 
-setInterval(() => {
-    handleRouteChange();
+setInterval(async () => {
+    // handleRouteChange();
+    const path = window.location.pathname;
+    if (path === '/' || path === '/login' || path === '/register'){
+        return;
+    }
+    await show_profile_page();
+    await show_friends_page()
 }, 5000);
 
 handleRouteChange();

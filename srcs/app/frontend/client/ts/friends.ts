@@ -71,23 +71,3 @@ async function reject_friend(userid:string) {
     var block = document.getElementById(`request-${userid}`);
     block?.remove();
 }
-
-// async function block_friend(userid: string){
-//     try{
-//         const response = await fetch('/block_friend',{
-//             method: 'POST',
-//             headers: {
-//                 'Content-Type': 'application/json',
-//             },
-//             body: JSON.stringify({userid}),
-//         });
-//         if (!response.ok){
-//             alert("response is not ok in block_friend");
-//             return;
-//         }
-//     } catch (err){
-//         console.error("Error on block_friend:", err);
-//     }
-//     var block = document.getElementById(`request-${userid}`);
-//     block?.remove();
-// }

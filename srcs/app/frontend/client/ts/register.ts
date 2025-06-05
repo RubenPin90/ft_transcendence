@@ -1,5 +1,11 @@
 // helpers --------------------------------------------------------------
 
+function parse_emaiL(email : string) : boolean {
+    const regex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
+    return regex.test(email);
+
+}
+
 
 function GetInput(id: string): HTMLInputElement | null {
   const input = document.getElementById(id) as HTMLInputElement;
@@ -92,7 +98,7 @@ async function create_account() {
     return;
   }
 
-  if (parse_email(email) === false){
+  if (parse_emaiL(email) === false){
     return wrong_input("Invalid Email");
   }
   if (password !== repeat){

@@ -221,8 +221,8 @@ async function show_accepted_friends(userid){
                     SELECT * FROM settings WHERE self = ?
                     `, [correctId]);
                 const sender_user = await db.get(`
-                    SELECT * FROM users WHERE id = ?
-                    `, [sender_settings.id]);
+                    SELECT * FROM users WHERE self = ?
+                    `, [sender_settings.self]);
                 const name = sender_user.username || 'unknown';
                 if (sender_user.status === 1){
                     html += `
