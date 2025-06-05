@@ -69,7 +69,7 @@ async function check_cookies_expire() : Promise<boolean>{
         alert("Error in check_cookies_expire in redirect");
     }
     const data = await response.json();
-    if (data.Response == 'fail'){
+    if (data.Response == 'expired'){
         alert("your cookies expired");
         return true;
     }
@@ -104,7 +104,6 @@ async function show_friends_page() : Promise<string>{
     }
     return 'friends_div';
 }
-
 
 function toggle_divs(render : string){
     available_divs.forEach(divs => {
@@ -173,21 +172,41 @@ async function render_mfa() : Promise<string>{
     return 'mfa_div';
 }
 
-//TODO add more routes
+async function show_login(){
+    const response = await fetch('/get_data', {
+        method: 'POST',
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ "get": "login_html"}),
+    });
+    if (!response.ok){
+        alert("Response is not ok in show_login");
+        return;
+    }
+    const data = await response.text();
+    const field = document.getElementById("main_body");
+    if (!field){
+        return;
+    }
+    field.innerHTML = data;
+}
+
 //TODO change window.location.href since it force refreshes the webpage
 async function where_am_i(path : string) : Promise<string> {
     switch (path) {
         case '/profile': 
+            if (await check_cookies_expire() == true){
+                alert("expired cookies");
+                await show_login();
+                history.pushState({}, '', '/');
+                return 'login_div';
+            }
             if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/');
                 return 'login_div';
             }
-            if (await check_cookies_expire() == true){
-                alert("expired cookies");
-                return 'login_div';
-            }
             return await show_profile_page();
-        // add more routes here
         case '/register':
             if (await check_cookie_fe()) {
                 history.pushState({}, '', '/');
@@ -205,51 +224,105 @@ async function where_am_i(path : string) : Promise<string> {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
+            if (await check_cookies_expire() == true){
+                alert("expired cookies");
+                await show_login();
+                history.pushState({}, '', '/');
+                return 'login_div';
+            }
             return 'home_div';
-        case '/settings': 
+        case '/settings':
+            if (await check_cookies_expire() == true){
+                alert("expired cookies");
+                await show_login();
+                history.pushState({}, '', '/');
+                return 'login_div';
+            }
             if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
             return 'settings_main_div';
         case '/settings/user':
-        if (!await check_cookie_fe()) {
+            if (await check_cookies_expire() == true){
+                alert("expired cookies");
+                await show_login();
+                history.pushState({}, '', '/');
+                return 'login_div';
+            }
+            if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
             return 'user_prof_div';
         case '/settings/language': 
-        if (!await check_cookie_fe()) {
+            if (await check_cookies_expire() == true){
+                alert("expired cookies");
+                await show_login();
+                history.pushState({}, '', '/');
+                return 'login_div';
+            }
+            if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
             return 'lang_div';
-        case '/settings/mfa': 
-        if (!await check_cookie_fe()) {
+        case '/settings/mfa':
+            if (await check_cookies_expire() == true){
+                alert("expired cookies");
+                await show_login();
+                history.pushState({}, '', '/');
+                return 'login_div';
+            }
+            if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
             return await render_mfa();
-        case '/settings/user/change_user': 
-        if (!await check_cookie_fe()) {
+        case '/settings/user/change_user':
+            if (await check_cookies_expire() == true){
+                alert("expired cookies");
+                await show_login();
+                history.pushState({}, '', '/');
+                return 'login_div';
+            }
+            if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
             return 'username_div';
-        case '/settings/user/change_login': 
-        if (!await check_cookie_fe()) {
+        case '/settings/user/change_login':
+            if (await check_cookies_expire() == true){
+                alert("expired cookies");
+                await show_login();
+                history.pushState({}, '', '/');
+                return 'login_div';
+            }
+            if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
             return 'userpass_div';
-        case '/settings/user/change_avatar': 
-        if (!await check_cookie_fe()) {
+        case '/settings/user/change_avatar':
+            if (await check_cookies_expire() == true){
+                alert("expired cookies");
+                await show_login();
+                history.pushState({}, '', '/');
+                return 'login_div';
+            }
+            if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
             return 'useravatar_div';
-        case '/friends' : 
-        if (!await check_cookie_fe()) {
+        case '/friends' :
+            if (await check_cookies_expire() == true){
+                alert("expired cookies");
+                await show_login();
+                history.pushState({}, '', '/');
+                return 'login_div';
+            }
+            if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
@@ -282,5 +355,10 @@ document.body.addEventListener('click', (event) => {
 
 
 window.addEventListener('popstate', handleRouteChange)
+
+
+setInterval(() => {
+    handleRouteChange();
+}, 5000);
 
 handleRouteChange();

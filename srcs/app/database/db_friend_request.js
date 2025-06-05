@@ -47,6 +47,20 @@ async function create_friend_request_value(sender_id, receiver_id) {
         filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
+    // if (sender_id <= 0 && receiver_id <= 0){
+    //     console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+    //     try{
+    //         var row = await db.run(`
+    //             INSERT INTO friend_request (sender_id, receiver_id)
+    //             VALUES (?, ?)`, [sender_id, receiver_id]);
+    //             return row;
+    //     } catch(err) {
+    //         console.error(`Error in create_friend_request_value: ${err}`);
+    //         return null;
+    //     }
+    //     return null;
+    // }
+
 
     try {
         const sender = await db.get(`
@@ -93,7 +107,7 @@ async function update_friend_request_value(id, status) {
             SET status = ?
             WHERE id = ?`, [status, id]);
     } catch (err) {
-        console.error(`Error in update_settings_value: ${err}`);
+        console.error(`Error in update_friend_request_value: ${err}`);
         return null;
     } finally {
         await db.close();
@@ -126,6 +140,7 @@ async function show_pending_requests(userid){
         filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
+
     var html = '';
     try {
         var rows = await db.all(`
@@ -160,15 +175,7 @@ async function show_pending_requests(userid){
                             </svg>
                         </button>
                     </div>
-                    <div class="absolute right-3 top-1/2 -translate-y-1/2 flex space-x-2 text-gray-600">
-                        <button onclick="block_friend('${single.id}')">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke-width="1.5" stroke="currentColor" class="size-6 cursor-pointer text-red-700">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
-                            </svg>
-                        </button>
-                    </div>
+
                 </div>`;
             }
     } catch (err) {
@@ -179,12 +186,24 @@ async function show_pending_requests(userid){
         return html;
     }
 }
+                    // <div class="absolute right-3 top-1/2 -translate-y-1/2 flex space-x-2 text-gray-600">
+                    //     <button onclick="block_friend('${single.id}')">
+                    //         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    //             stroke-width="1.5" stroke="currentColor" class="size-6 cursor-pointer text-red-700">
+                    //             <path stroke-linecap="round" stroke-linejoin="round"
+                    //                 d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+                    //         </svg>
+                    //     </button>
+                    // </div>
 
 async function show_accepted_friends(userid){
     const db = await open({
         filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
+    if (!db){
+        return;
+    }
     var html = '';
     try {
         var rows = await db.all(`
@@ -208,21 +227,21 @@ async function show_accepted_friends(userid){
                 if (sender_user.status === 1){
                     html += `
                     <div class="relative flex-shrink-0">
-                    <img class="w-24 h-24 rounded-full border-4 border-green-600" src="${sender_settings.pfp}">
-                    <span class="absolute text-center w-full">${name}</span><br>
+                        <img class="w-24 h-24 rounded-full border-4 border-green-600" src="${sender_settings.pfp}">
+                        <span class="absolute text-center w-full">${name}</span><br>
                     </div> 
                     `;
                 } else{
                     html += `
                     <div class="relative flex-shrink-0">
-                    <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="${sender_settings.pfp}">
-                    <span class="absolute text-center w-full">${name}</span><br>
+                        <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="${sender_settings.pfp}">
+                        <span class="absolute text-center w-full">${name}</span><br>
                     </div> 
                     `;
                 }
             }
     } catch (err) {
-        console.error(`Error in show_pending_requests: ${err}`);
+        console.error(`Error in show_accepted_friends: ${err}`);
         return null;
     } finally {
         await db.close();

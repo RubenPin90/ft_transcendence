@@ -22,9 +22,31 @@ async function create_otc() {
         const qrcodeDiv = document.getElementById('mfa');
         const qrcodeButtonDiv = document.getElementById('mfa-button');
         if (qrcodeDiv && qrcodeButtonDiv) {
-            qrcodeDiv.innerHTML = `<img src=${data.qrCodeUrl}></p>`;
-            qrcodeButtonDiv.innerHTML = '<input id="Code" name="Code" placeholder="Code"></label> <button onclick="verify_code()">Verify</button> <a><button onclick="render_mfa()">Back</button></a>';
+            qrcodeDiv.innerHTML = `<img class="mx-auto mb-4" src=${data.qrCodeUrl}></p>`; ////////
+            // qrcodeButtonDiv.innerHTML = '<input id="Code" name="Code" placeholder="Code"></label> <button onclick="verify_code()">Verify</button> <a><button onclick="render_mfa()">Back</button></a>';
+            qrcodeButtonDiv.innerHTML = `
+            <input id="Code" class="input_field2" name="Code" placeholder="Code">
+            <div class="flex mt-2 gap-4 w-full">
+                <a class="flex-1">
+                    <button onclick="verify_code()" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
+                        <span class="font-bold text-lg">Submit</span>
+                    </button>
+                </a>
+                <a class="flex-1">
+                    <button onclick="render_mfa()" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
+                        <span class="font-bold text-lg">Back</span>
+                    </button>
+                </a>
+            </div>
+            `;
         }
+        const input_field = document.getElementById('Code') as HTMLInputElement;
+        if (!input_field){
+            alert("WTF");
+            return;
+        }
+        input_field.focus();
+        input_field.select();
     } catch (error) {
         // console.error('Fehler bei create_otc:', error.message);
         throw error;
@@ -37,6 +59,8 @@ async function verify_code() {
         alert("code not found");
         return;
     }
+    code.focus();
+    code.select();
     if (!code.value) {
         alert("Error. Input cant be empty");
         return;
@@ -130,14 +154,29 @@ async function create_custom_code() {
         return;
     }
 
-    qrcodeDiv.innerHTML = '<h1 class="text-4xl font-bold text-center bg mb-8">Create your 2FA custom<br>6 diggit code</h1>';
+    qrcodeDiv.innerHTML = '<h1 class="text-4xl font-bold text-center bg mb-4 text-white">Create your 2FA custom<br>6 diggit code</h1>';
     if (!document.getElementById('Code')) {
         qrcodeButtonDiv.innerHTML = `
-            <input id="Code" name="Code" placeholder="Code"><br>
-            <button id="nextButton">Next</button>
-            <button onclick="render_mfa()">Back</button>
+            <input id="Code" class="input_field2" name="Code" placeholder="Code"><br>
+            <div class="flex mt-2 gap-4 w-full">
+                <a class="flex-1">
+                    <button id="nextButton" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
+                        <span class="font-bold text-lg">Next</span>
+                    </button>
+                </a>
+                <a class="flex-1">
+                    <button onclick="render_mfa()" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
+                        <span class="font-bold text-lg">Back</span>
+                    </button>
+                </a>
+            </div>
         `;
-
+            // <button id="nextButton">Next</button>
+            // <button onclick="render_mfa()">Back</button>
+        const inputField = document.getElementById('Code') as HTMLInputElement;
+            if (!inputField) return;
+        inputField.focus();
+        inputField.select();
         const nextButton = document.getElementById('nextButton') as HTMLButtonElement;
 
         // Beim ersten Klick sendet der Button den Code und wechselt zur Verifikation
@@ -146,6 +185,8 @@ async function create_custom_code() {
             if (!inputField) return;
 
             const codeValue = inputField.value;
+            inputField.focus();
+            inputField.select();
             //console.log("Sende Code:", codeValue);
 
             try {
@@ -162,7 +203,8 @@ async function create_custom_code() {
 
                 const data = await response.json();
                 if (data.Response === "success") {
-                    qrcodeDiv.innerHTML = '<h2>Verify your 2FA custom 6 diggit code</h2>';
+                    // qrcodeDiv.innerHTML = '<h2>Verify your 2FA custom 6 diggit code</h2>';
+                    qrcodeDiv.innerHTML = '<h1 class="text-4xl font-bold text-center bg mb-4 text-white">Verify your 2FA custom 6 diggit code</h1>';
                     inputField.value = "";
                     nextButton.removeEventListener('click', firstClick);
                     nextButton.addEventListener('click', verify_custom_code);
@@ -231,13 +273,31 @@ async function create_email() {
             if (!emailDiv || !emailInputDiv){
                 return;
             }
-            emailDiv.innerHTML = '<h2>Verify your email code</h2>';
+            // emailDiv.innerHTML = '<h2>Verify your email code</h2>';
+
+
+            // <input type="text" id="email-code" placeholder="Code"></input>
+            // <button onclick="verifyEmail()">Verify</button>
+            // <button onclick="render_mfa()">Back</button>
+            emailDiv.innerHTML = '<h1 class="text-4xl font-bold text-center bg mb-4 text-white">Verify your email code</h1>';
             emailInputDiv.innerHTML = `
-                <input type="text" id="email-code" placeholder="Code"></input>
-                <br>
-                <button onclick="verifyEmail()">Verify</button>
-                <button onclick="render_mfa()">Back</button>
+                <input id="Code" class="input_field2" name="Code" placeholder="Code">
+                <div class="flex mt-2 gap-4 w-full">
+                    <a class="flex-1">
+                        <button onclick="verifyEmail()" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
+                            <span class="font-bold text-lg">Verify</span>
+                        </button>
+                    </a>
+                    <a class="flex-1">
+                        <button onclick="render_mfa()" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
+                            <span class="font-bold text-lg">Back</span>
+                        </button>
+                    </a>
+                </div>
             `;
+            const input_field = document.getElementById('Code') as HTMLInputElement;
+            input_field?.focus()
+            input_field?.select();
         }
     } catch (jsonError) {
         console.error(`Fehler beim Parsen der JSON-Antwort`);

@@ -73,8 +73,8 @@ async function register(request, response) {
         const token = modules.create_jwt(settings.self, '1h');
         const lang = modules.create_jwt('en', '1h');
         
-        modules.set_cookie(response, 'token', token, 10); //todo change back to 3600
-        modules.set_cookie(response, 'lang', lang, 10); //todo change back to 3600
+        modules.set_cookie(response, 'token', token, 3600); //todo change back to 3600
+        modules.set_cookie(response, 'lang', lang, 3600); //todo change back to 3600
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": null });
         return true;
     }
@@ -319,6 +319,10 @@ async function profile(request, response) {
         }
         const userid = decoded.userid;
         var inner = request.body.innervalue;
+
+        // if (await friends_request.get_friend_request_value(userid) === null){
+        //     await friends_request.create_friend_request_value(-1, 0);
+        // }
         
         inner = inner.replace('{{username}}', user.username);
         inner = inner.replace('{{email}}', settings.email);
@@ -623,34 +627,31 @@ async function reject_friend(request, response){
     return true;
 }
 
-async function block_friend(request, response){
-    const [keys, values] = modules.get_cookies(request);
-    const data = request.body;
-    if (!data || data === undefined){
-        response.code(400).send({ message: 'Invalid data'});
-        return true;
-    }
+// async function block_friend(request, response){
+//     const [keys, values] = modules.get_cookies(request);
+//     const data = request.body;
+//     if (!data || data === undefined){
+//         response.code(400).send({ message: 'Invalid data'});
+//         return true;
+//     }
 
-    let decoded;
-    try {
-        decoded = modules.get_jwt(values[keys.indexOf("token")]);
-    } catch (err) {
-        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
-        return true;
-    }
+//     let decoded;
+//     try {
+//         decoded = modules.get_jwt(values[keys.indexOf("token")]);
+//     } catch (err) {
+//         response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
+//         return true;
+//     }
 
-    // const userid = decoded.userid;
-
-    const receiver = data.userid;
-    // const result = await friends_request.delete_friend_request_value(receiver);
-    const result = await friends_request.update_friend_request_value(receiver, 'blocked');
-    if (!result || result === undefined){
-        console.error("error in deleting accepted friend request");
-        return null;
-    }
-    response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'success'});
-    return true;
-}
+//     const receiver = data.userid;
+//     const result = await friends_request.update_friend_request_value(receiver, 'blocked');
+//     if (!result || result === undefined){
+//         console.error("error in deleting accepted friend request");
+//         return null;
+//     }
+//     response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'success'});
+//     return true;
+// }
 
 async function delete_account(request, response) {
     const data = request.body;
@@ -869,7 +870,7 @@ export {
     add_friends,
     accept_friends,
     reject_friend,
-    block_friend,
+    // block_friend,
     delete_account,
     play,
     set_up_mfa_buttons,

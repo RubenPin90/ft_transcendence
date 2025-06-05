@@ -62,6 +62,10 @@
     @apply rounded-xl border-2 border-violet-800 py-3 text-black text-left pl-14 text-lg w-full outline-none
 }
 
+.input_field2{
+    @apply rounded-xl border-2 border-[#dac62f] py-3 text-black text-left pl-3 text-lg w-full outline-none
+}
+
 .input_field_error{
     @apply rounded-xl border-2 border-red-800 py-3 text-black bg-red-700/10 text-left pl-14 text-lg w-full
 }

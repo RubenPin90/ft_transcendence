@@ -99,6 +99,10 @@ async function create_account() {
     return wrong_input("Passwords are not the same");
   }
   
+  if (username.length > 10){
+    return wrong_input("username is too long max allowed 10 characters");
+  }
+
   let pfp = '';
   const picture = await fetch('/public/default_profile.svg');
   const blob = await picture.blob(); //Gets the raw binary data of the image

@@ -104,7 +104,6 @@ async function create_db() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user1 TEXT NOT NULL,
             user2 TEXT NOT NULL,
-            since DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user1) REFERENCES settings(self) ON DELETE CASCADE,
             FOREIGN KEY (user2) REFERENCES settings(self) ON DELETE CASCADE,
             UNIQUE (user1, user2)

@@ -600,7 +600,7 @@ async function replace_all_templates(request, response, state, override) {
 	settings_html_mfa_string += '<div id="mfa_div" class="hidden">';
 	settings_html_mfa_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
 
-	settings_html_mfa_string += '<div id="mfa"></div>'
+	settings_html_mfa_string += '<div id="mfa" class="flex w-full h-full"></div>'
     settings_html_mfa_string += '<div id="mfa-button">'
 
     settings_html_mfa_string +='<div class="flex gap-2">'
@@ -1240,8 +1240,10 @@ async function check_for_invalid_token(request, response, keys, values) {
 
 async function check_expired_token(request, response){
 	var [keys, values] = modules.get_cookies(request);
-	if (keys.length == 0)
+	if (keys.length == 0){
+        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'expired' });
 		return false;
+	}
 	const token_decrypted = modules.get_jwt(values[keys.indexOf('token')]);
 	const lang_decrypted = modules.get_jwt(values[keys.indexOf('lang')]);
 	if (token_decrypted < 0 || lang_decrypted < 0) {
