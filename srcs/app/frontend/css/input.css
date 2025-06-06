@@ -98,14 +98,21 @@
 }
 
 .full-btn{
-    @apply w-full h-[100px] mb-8 text-base border-black border-2
+    @apply w-full h-[100px] mb-8 text-base border-black border-solid border-2
 }
 
-/* .t-right{
-    @apply flex justify-between items-center border-2 border-black p-6 mb-6
+.t-right .t-card{
+    @apply flex justify-between items-center border-2 border-solid border-black p-6 mb-6
 }
 
-.t-card{
-    @apply flex justify-between items-center border-2 border-black p-6 mb-6
-} */
+.t-card .join-btn{
+    @apply w-[120px] h-[60px] border-2 border-solid border-black bg-white cursor-pointer
+}
 
+.TLobby-row{
+    @apply flex items-center
+}
+
+.t-status{
+    @apply inline-block w-4 h-4 rounded-full
+}
