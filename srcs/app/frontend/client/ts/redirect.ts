@@ -153,6 +153,7 @@ export async function check_cookie_fe(): Promise<boolean> {
 export async function render_mfa() : Promise<string>{
     // console.log("HERE");
     var innervalue = document.getElementById("mfa_div")?.innerHTML;
+    console.log("INNERHTML::", innervalue);
 
     const response = await fetch ('/mfa_setup', {
         method: 'POST',
@@ -387,3 +388,5 @@ window.addEventListener('popstate', handleRouteChange)
 // }, 5000);
 
 handleRouteChange();
+
+(window as any).render_mfa = render_mfa;

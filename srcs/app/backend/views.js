@@ -135,6 +135,7 @@ async function mfa(request, response) {
             return `1_${userid}`;
         if (data.Function == 'create_otc') {
             const otc_return = await utils.create_otc(userid, response);
+            console.log(otc_return);
             if (!otc_return || otc_return === undefined || otc_return < 0)
                 return `2_${otc_return}`;
             return true;
@@ -229,7 +230,7 @@ async function settings(request, response) {
         if (!valid_routes.includes(request_url))
             return await send.send_error_page("404.html", response, 404);
     }
-    if (request_url.startsWith == "/mfa")
+    if (request_url.startsWith("/mfa"))
         return await mfa(request, response);
     console.log(request_url);
     if (request_url == "/user")
@@ -727,6 +728,7 @@ async function check_preferred_mfa(request, response){
         return await utils.verify_custom_code(userid, response, data);
     }
     else if (data.Function == 'verify_email') {
+        console.log("/////////////////////////////////");
         return await utils.verify_email_code(userid, response, data);
     }
     return true;
