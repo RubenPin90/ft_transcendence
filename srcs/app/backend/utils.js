@@ -960,20 +960,15 @@ async function replace_all_templates(request, response, state, override) {
 	`;
 	const settings_html_user_profile_avatar_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_avatar_string);
 
-	// const play_raw = await fs.readFile("./backend/templates/game.html", 'utf8');
 
 	const play_raw = await fs.readFile("./backend/templates/play.html", 'utf8');
-
-	// play.ts (or wherever you build the template HTML)
 
 	let play_main = "";
 
 		play_main +=   '<div id="play_div" class="hidden"">';
 		play_main +=   '<div class="min-h-screen flex items-center justify-center px-4 py-10">';
 		play_main +=     '<div id="login-container" class="field">';
-
 		//tailwind done
-
 		play_main +='<div id="main-menu">';
 		play_main +=	'<h1 class="text-white font-bold text-2xl">Welcome, <span id="username">{{uname}}</span>!</h1>';
 		play_main +=		'<div class="flex flex-col gap-6 mt-6">'

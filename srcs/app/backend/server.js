@@ -48,10 +48,10 @@ fastify.get('/ws/game', { websocket: true }, (conn, req) => {
   const ws = conn;
 
   const [keys, values] = modules.get_cookies(req);
-  // console.log('keys and values', keys, values);
+  console.log('keys and values', keys, values);
   const user_encrypted = values[keys.indexOf("token")];
   const userId = modules.get_jwt(user_encrypted).userid;
-  // console.log('userId:', userId);
+  console.log('userId:', userId);
   console.log('🔑 ws token verified:', userId);
 
 
@@ -59,6 +59,7 @@ fastify.get('/ws/game', { websocket: true }, (conn, req) => {
   ws.userId        = userId;
   ws.inGame        = false;
   ws.currentGameId = null;
+  //db_userId_status(userId, online)
 
   console.log('🔌 ws authenticated:', userId);
   ws.send(JSON.stringify({ type: 'welcome', payload: { userId } }));
@@ -73,6 +74,7 @@ fastify.get('/ws/game', { websocket: true }, (conn, req) => {
 
   ws.on('close', () => {
     console.log('❌ ws closed:', userId);
+    //db_userId_status(userId, offline)
     tournamentManager.leaveTournament(userId);
     matchManager.unregisterSocket(userId);
     socketRegistry.remove(userId);
@@ -86,3 +88,4 @@ await fastify.listen({ port: PORT, host: '0.0.0.0' });
 export {
   fastify
 }
+

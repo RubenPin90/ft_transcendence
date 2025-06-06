@@ -148,13 +148,20 @@ export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager)
       break;
     }
     
-
     case 'leaveGame': {
+      const roomId = ws.currentGameId;
+      if (roomId && matchManager) {
+        // Tell MatchManager that this user wants to leave the match:
+        matchManager.leaveRoom(roomId, ws.userId);
+    
+        // (If this was a tournament match, MatchManager._forfeitMatch()
+        // will emit “matchFinished” and tournamentManager will catch it.)
+      }
+    
       ws.inGame = false;
       ws.currentGameId = null;
       break;
     }
-
     default:
       console.log('Unknown message type:', data.type);
   }

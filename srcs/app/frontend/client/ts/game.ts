@@ -122,11 +122,9 @@ export function stopGame(): void {
     stateListener = null;
   }
   currentRoomId = null;
-  userId        = null;
   inputHandlersRegistered = false;
-  // localStorage.removeItem('currentGameId');
+  localStorage.removeItem('currentGameId');
 }
-
 
 export function drawFrame(state: GameState): void {
   if (

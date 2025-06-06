@@ -8,8 +8,14 @@ COPY . .
 
 RUN npm install 
 RUN npm run build-frontend
+
 RUN npm run rebuild:css
-RUN chown -R node:node /app
+
+# RUN chown -R node:node /app
+
+# RUN chown -R node:node /app
+
+# USER node
 
 WORKDIR /app 
 
