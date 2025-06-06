@@ -19,52 +19,48 @@ export class TournamentManager {
   /**
    * @param {SocketRegistry} socketRegistry – our centralised registry
    */
-  constructor(socketRegistry, matchManager) {
-    this.socketRegistry = socketRegistry;
+    constructor(socketRegistry, matchManager) {
+      this.socketRegistry = socketRegistry;
 
-    this.MAX_PLAYERS = 4;
-    this.tournaments = {};
-    this.rooms       = {};
+      this.MAX_PLAYERS = 4;
+      this.tournaments = {};
+      this.rooms       = {};
 
-    // Use the shared instance – don’t create a new one
-    this.matchManager = matchManager;
+      // Use the shared instance – don’t create a new one
+      this.matchManager = matchManager;
 
-    // Now the event really comes from this instance
-    this.matchManager.on('matchFinished', ({ roomId, winnerId }) => {
-      console.log('matchFinished event received:', { roomId, winnerId });
-    
-      const lobby = this.rooms[roomId];
-      if (!lobby) return;
-    
-      // ───────────────────────────────────────────────
-      // Identify the loser(s) of this best-of-one match
-      // ───────────────────────────────────────────────
-      const losers = lobby.players
-        .filter(p => getPlayerId(p) !== winnerId)
-        .map(p => getPlayerId(p));
-    
-      // Tell every loser that their tournament run is over
-      losers.forEach(uid => {
-        this.#sendToUser(uid, {
-          type   : 'eliminated',
-          payload: {
-            tournamentId : lobby.tournamentId,
-            matchId      : roomId,
-            winnerId,
-            reason       : 'lostMatch'
-          }
-        });
-        const t = this.tournaments[lobby.tournamentId];
-        if (t) t.eliminated.add(uid);
+      // Now the event really comes from this instance
+      this.matchManager.on('matchFinished', ({ roomId, winnerId, reason, tournamentId }) => {
+    // If no tournamentId => it was just a casual match. Bail out.
+    if (!tournamentId) {
+      return;
+    }
+
+    console.log('tournament matchFinished:', { roomId, winnerId, tournamentId });
+    const lobby = this.rooms[roomId];
+    if (!lobby) return;
+
+    // …your existing logic for finding losers, sending “eliminated”, etc.…
+    const losers = lobby.players
+      .filter(p => getPlayerId(p) !== winnerId)
+      .map(p => getPlayerId(p));
+
+    losers.forEach(uid => {
+      this.#sendToUser(uid, {
+        type: 'eliminated',
+        payload: {
+          tournamentId : lobby.tournamentId,
+          matchId      : roomId,
+          winnerId,
+          reason       : 'lostMatch'
+        }
       });
-
-    
-      this.reportMatchResult(
-        lobby.tournamentId,
-        roomId,
-        winnerId
-      );
+      const t = this.tournaments[lobby.tournamentId];
+      if (t) t.eliminated.add(uid);
     });
+
+    this.reportMatchResult(lobby.tournamentId, roomId, winnerId);
+  });
   }
 
   #activeIds(tournament) {
@@ -456,6 +452,7 @@ export class TournamentManager {
       roomId    : matchId,
       creatorId : creatorId,
       maxPlayers: 2,
+      tournamentId: tournamentId
     });
   
      // 2.  Notify the participants

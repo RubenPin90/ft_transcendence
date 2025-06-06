@@ -69,6 +69,7 @@ export class MatchManager extends EventEmitter {
       maxPlayers = 2,
       creatorId,
       botId      = 'BOT',
+      tournamentId = null,
     } = options;
   
     const newRoom = {
@@ -86,6 +87,7 @@ export class MatchManager extends EventEmitter {
       isMaxSpeedReached   : false,
       hitsSinceMaxSpeed   : 0,
       ballBroadcastCountdown: 0,
+      tournamentId,
     };
   
     const maybeAddPlayer = (id, isBot) => {
@@ -141,12 +143,15 @@ export class MatchManager extends EventEmitter {
     const room = this.rooms.get(roomId)
     if (!room) return
     room.players = room.players.filter(p => p.playerId !== playerId)
+    console.log('here1');
     delete room.scoreBoard[playerId]
-    if (room.mode !== GAME_MODES.PVE && room.status !== 'finished') {
+    if ( room.status !== 'finished') {
+      console.log('here2');
       this._forfeitMatch(roomId, playerId)
       return
     }
-    if (room.players.length === 0) {
+    if (room.mode === GAME_MODES.PVE || room.players.length === 0) {
+      console.log('here3');
       this.removeRoom(roomId)
     }
   }
@@ -154,7 +159,7 @@ export class MatchManager extends EventEmitter {
   _forfeitMatch (roomId, leaverId) {
     const room = this.rooms.get(roomId)
     if (!room) return
-
+    console.log('here4');
     clearInterval(room.updateInterval)
     clearTimeout(room.pauseTimeout)
     const winner = room.players.find(p => p.playerId !== leaverId)
@@ -175,7 +180,6 @@ export class MatchManager extends EventEmitter {
       console.warn(`[${room.roomId}] DB: player not in settings - skipping create_match`);
     }
     // console.log(await show_matches());
-
   }
 
   async _recordMatchUpdate(room) {
@@ -191,35 +195,38 @@ export class MatchManager extends EventEmitter {
     const pointsStr = JSON.stringify(room.scoreBoard);
     await update_match('points', pointsStr, room.roomId);
     await update_match('winner', winnerId, room.roomId);
-    // console.log(await show_matches());
-
   }
 
   async _endMatch(roomId, winnerId, reason = 'normal') {
     const room = this.rooms.get(roomId);
     if (!room) return;
-
+  
     clearInterval(room.updateInterval);
     clearTimeout(room.pauseTimeout);
     room.status = 'finished';
-
+  
     await this._recordMatchEnd(room, winnerId).catch(console.error);
-
+  
     this._broadcastFor(roomId)({
       roomId,
       winner: winnerId,
       status: 'finished'
     });
-
+  
     console.log(`[${roomId}] Match finished. Winner: ${winnerId}, Reason: ${reason}`);
-    this.emit('matchFinished', { roomId, winnerId, reason });
-
-    update_match('winner', winnerId, roomId)
-
-    // console.log(await show_matches());
-
+  
+    this.emit('matchFinished', {
+      roomId,
+      winnerId,
+      reason,
+      tournamentId: room.tournamentId || null // emit null if not a tournament
+    });
+  
+    await update_match('winner', winnerId, roomId);
+  
     setTimeout(() => this.removeRoom(roomId), 500);
   }
+  
 
   _updateBotPaddle (room) {
     const bot = room.players.find(p => p.isBot)
@@ -266,26 +273,21 @@ export class MatchManager extends EventEmitter {
     };
   
     room.updateInterval = setInterval(() => {
-      // ───── Update Bot (PVE mode) ─────
       if (room.mode === MatchManager.GAME_MODES.PVE && room.status === 'running') {
         this._updateBotPaddle(room);
       }
   
-      // ───── Clamp paddles ─────
       for (const p of room.players) {
         p.paddleY = Math.max(halfPaddle, Math.min(1 - halfPaddle, p.paddleY));
       }
   
-      // ───── Update ball position ─────
       const b = room.ballState;
       b.x += b.vx / FPS;
       b.y += b.vy / FPS;
   
-      // ───── Bounce off top/bottom walls ─────
       if (b.y <= 0) { b.y = 0; b.vy *= -1; }
       if (b.y >= 1) { b.y = 1; b.vy *= -1; }
   
-      // ───── Collision with paddles ─────
       room.players.forEach((p, idx) => {
         const hit =
           (idx === 0 && b.x <= 0.02) ||
@@ -320,7 +322,6 @@ export class MatchManager extends EventEmitter {
         }
       });
   
-      // ───── Limit speed if it overshoots ─────
       const currentSpeed = Math.hypot(b.vx, b.vy);
       if (currentSpeed > MatchManager.MAX_BALL_SPEED) {
         const scale = MatchManager.MAX_BALL_SPEED / currentSpeed;
@@ -328,7 +329,6 @@ export class MatchManager extends EventEmitter {
         b.vy *= scale;
       }
   
-      // ───── Scoring logic ─────
       if (b.x < 0 || b.x > 1) {
         const scorerIdx = b.x < 0 ? 1 : 0;
   
@@ -361,7 +361,6 @@ export class MatchManager extends EventEmitter {
   
         broadcast(finalState);
   
-        // Resume match after delay
         room.pauseTimeout = setTimeout(() => {
           room.status = 'running';
           this._initBall(roomId);
@@ -371,7 +370,6 @@ export class MatchManager extends EventEmitter {
         return;
       }
   
-      // ───── Regular frame update ─────
       const state = {
         roomId,
         players: room.players.map(p => ({ id: p.playerId, y: p.paddleY })),

@@ -108,7 +108,10 @@ async function get_mfa_login(userid: string, method: string, email: string){
     mfa_div_field.className = "h-3/5 w-11/12 max-w-lg flex flex-col items-center justify-center absolute z-10 bg-gray-800/70 rounded-3xl border-[#ff00d0] border-2 shadow-strong shadow-[#ff00d0]/80";
 }
 
-async function login2(){
+document.getElementById('login-button')?.addEventListener('click', login2);
+
+export async function login2(){
+    console.log('login clicked');
 
     const email2 = document.getElementById("email-input_LogIn") as HTMLInputElement;
     const password2 = document.getElementById("password-input_LogIn") as HTMLInputElement;

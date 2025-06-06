@@ -978,11 +978,8 @@ async function replace_all_templates(request, response, state, override) {
 	`;
 	const settings_html_user_profile_avatar_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_avatar_string);
 
-	// const play_raw = await fs.readFile("./backend/templates/game.html", 'utf8');
 
 	const play_raw = await fs.readFile("./backend/templates/play.html", 'utf8');
-
-	// play.ts (or wherever you build the template HTML)
 
 	let play_main = "";
 
@@ -992,7 +989,7 @@ async function replace_all_templates(request, response, state, override) {
 		play_main +=       '<div id="main-menu">';
 		play_main +=         '<h1>Welcome, <span id="username">{{uname}}</span>!</h1>';
 		play_main +=         '<button id="sp-vs-pve-btn">PVE</button>';
-		play_main +=         '<button id="one-vs-one-btn">1v1 Matchmaking</button>';
+		play_main +=         '<button id="one-vs-one-btn">1v1</button>';
 		play_main +=         '<button id="tournament-btn">Tournament</button>';
 		play_main +=       '</div>';
 

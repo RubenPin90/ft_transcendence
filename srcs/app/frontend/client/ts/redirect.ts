@@ -1,4 +1,4 @@
-import { check } from './play.js';
+import { check, lastPath } from './play.js';
 import { connect } from './socket.js';
 
 const available_divs = ['change_avatar_div','user_prof_div', 'userpass_div', 'useravatar_div', 'username_div' ,'lang_prof_div' ,'settings_main_div', 'mfa_div','user_settings_div', 'register_div', 'lang_div', 'profile_div', 'menu_div', 'login_div', 'home_div', 'game_div', 'friends_div', 'change_user_div', 'change_login_div']
@@ -368,8 +368,8 @@ document.body.addEventListener('click', (event) => {
 window.addEventListener('popstate', handleRouteChange)
 
 
-setInterval(() => {
-    handleRouteChange();
-}, 5000);
+// setInterval(() => {
+//     handleRouteChange();
+// }, 5000);
 
 handleRouteChange();

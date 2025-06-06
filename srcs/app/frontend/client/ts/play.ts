@@ -38,8 +38,11 @@ let currentRoomId: string | null       = null;
 let currentMatch: string | null        = null;
 let teardownInput: (() => void) | null = null;
 
+
+
 let currentTournamentId: string | null = null;  // <‑‑ remember active tournament
-let isFirstRound                       = true;  // <‑‑ flag to auto‑start only round 1
+let isFirstRound                       = true;
+// let wasInGame = false;
 
 /*
  * ────────────────────────────────────────────────────────────
@@ -299,12 +302,6 @@ function joinByCodeWithSocket(code?: string) {
   joinByCode(getSocket(), code);
 }
 
-/*
- * ────────────────────────────────────────────────────────────
- *  5.  ROUND‑TO‑ROUND FLOW  (NEW setOnGameEnd implementation)
- * ────────────────────────────────────────────────────────────
- */
-
 setOnGameEnd((winnerId: string) => {
   console.log('[play.ts] Game ended – winner:', winnerId);
 
@@ -316,10 +313,6 @@ setOnGameEnd((winnerId: string) => {
 
   const myId = localStorage.getItem('playerId') ?? (getSocket() as any).userId;
 
-  /*
-   * The alert is synchronous. Code below runs only *after* the player clicks
-   * “OK”. If I am one of the winners we schedule a beginRound after 2 seconds.
-   */
   alert(`Player ${winnerId} wins!`);
 
   if (myId === winnerId && currentTournamentId) {
@@ -343,25 +336,50 @@ const navigate = (path: string) => {
 
 const ROUND_RE = /^\/tournament\/round(\d+)$/;
 
+const GAME_RE = /^\/game\/(?:pve|1v1)$/;
+let wasInGame = false;
+export let lastPath: string | null = null;
+
 function route() {
   const path = window.location.pathname;
   console.log('[route] current path:', path);
-  teardownInput?.();             // stop old key listeners
+  console.log('lastPath:', lastPath);
+
+  if (path === '/matchmaking' && lastPath !== '/play') {
+    console.log('[route] blocked direct /matchmaking; redirecting to /play');
+    window.history.replaceState(null, '', '/play');
+    return route();
+  }
+
+
+  teardownInput?.();
   teardownInput = null;
   markQueued?.(false);
 
-  hideAllPages();                // hides all “pages” incl. #game-container
+  hideAllPages();
 
-  /* ───────────── Round page ───────────── */
+  if (wasInGame && !GAME_RE.test(path)) {
+    const roomId = localStorage.getItem('currentGameId');
+    const userId = localStorage.getItem('playerId');
+    if (roomId && userId) {
+      console.log('[route] Detected leaving /game, sending leaveGame');
+      send({
+        type: 'leaveGame',
+        payload: { roomId, userId }
+      });
+      localStorage.removeItem('currentGameId');
+    }
+  }
+
+  wasInGame = GAME_RE.test(path);
+
   if (ROUND_RE.test(path)) {
     const [, roundStr] = path.match(ROUND_RE)!;
     const roundNo      = Number(roundStr);
 
-    // show the bracket overlay (already rendered elsewhere)
     const overlay = document.getElementById('bracket-overlay');
     if (overlay) overlay.style.display = 'block';
 
-    // headline “Round N”
     let hdr = document.getElementById('round-header') as HTMLElement | null;
     if (!hdr) {
       hdr = document.createElement('h2');
@@ -369,10 +387,8 @@ function route() {
       overlay?.prepend(hdr);
     }
     hdr.textContent = `Round ${roundNo}`;
-
     return;
   }
-  /* ────────────────────────────────────── */
 
   if (path === '/tournament') {
     document.getElementById('tournament-page')!.style.display = 'block';
@@ -387,27 +403,36 @@ function route() {
     return;
   }
 
-  if (path.startsWith('/game')) {
+  // ───────────── Game page ─────────────
+  if (GAME_RE.test(path)) {
     document.getElementById('game-container')!.style.display = 'block';
     const mode = path.split('/')[2] || 'pve';
     console.log(`[play.ts] Entering game mode: ${mode}`);
-    if (currentMode && currentMode !== mode) stopGame();   // stop previous loop
+
+    if (currentMode && currentMode !== mode) {
+      stopGame(); 
+    }
     currentMode = mode;
 
     initGameCanvas();
-    if (['pve', '1v1'].includes(mode)) startGame(mode as GameMode);
-
-    teardownInput = setupInputHandlers();        // new listeners for this room
+    if (['pve', '1v1'].includes(mode)) {
+      startGame(mode as GameMode);
+      teardownInput = () => {
+      };
+    }
+    lastPath = path;
     return;
   }
 
+  // ───────────── TLobby ─────────────
   if (path.startsWith('/tournament/')) {
     document.getElementById('t-lobby-page')!.style.display = 'block';
     return;
   }
 
+  // ───────────── Static pages ─────────────
   const mapping: Record<string, string> = {
-    '/profile' : 'profile-page',
+    '/profile': 'profile-page',
     '/settings': 'settings-page'
   };
   const pageId = mapping[path];
@@ -416,11 +441,26 @@ function route() {
     return;
   }
 
+  // ───────────── Main menu (по умолчанию) ─────────────
   const mainMenuEl = document.getElementById('main-menu');
   if (mainMenuEl) {
     mainMenuEl.style.display = 'block';
   }
 }
+
+// Повесьте на popstate, чтобы ловить “назад/вперёд”:
+window.addEventListener('popstate', () => {
+  route();
+});
+
+window.addEventListener('beforeunload', () => {
+  if (localStorage.getItem('currentGameId')) {
+    const roomId = localStorage.getItem('currentGameId')!;
+    const userId = localStorage.getItem('playerId')!;
+    console.log('[beforeunload] sending leaveGame');
+    send({ type: 'leaveGame', payload: { roomId, userId } });
+  }
+});
 
 function showGameContainerAndStart(): void {
   const cont = document.getElementById('game-container');
@@ -435,6 +475,7 @@ function showGameContainerAndStart(): void {
 export function check() {
   const path = window.location.pathname;
   if (path === '/play') {
+    lastPath = path;
     setupCodeJoinHandlers();
     setupButtonsDelegated(navigate, getSocket());
     ({ markQueued } = setupMatchmakingHandlers(navigate, getSocket()));
