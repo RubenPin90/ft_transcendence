@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
+import fs from 'fs/promises';
 
 dotenv.config();
 
@@ -16,9 +17,8 @@ function get_cookies(request) {
 	return [key, value];
 }
 
-const JWT_KEY = "3x@mpl3S3cr3tK3y!2023"; //TODO REMOVE
-
-function create_jwt(data, expire) {
+async function create_jwt(data, expire) {
+	const JWT_KEY = (await fs.readFile(process.env.JWT_SECRET_FILE, 'utf8')).trim();
 	var token;
 	try {
 		token = jwt.sign({ userid: data }, JWT_KEY, {expiresIn: expire});
@@ -28,12 +28,12 @@ function create_jwt(data, expire) {
 	return token;
 }
 
-function get_jwt(token) {
+async function get_jwt(token) {
+	const JWT_KEY = (await fs.readFile(process.env.JWT_SECRET_FILE, 'utf8')).trim();
 	var token2;
 	try {
 		token2 = jwt.verify(token, JWT_KEY);
 	} catch (err) {
-		// console.log(err);
 		return -1;
 	}
 	return token2;
@@ -43,8 +43,8 @@ function set_cookie(response, key, value, maxAge) {
 	response.setCookie(key, value, {
 		path: '/',
 		httpOnly: true,
-		secure: true,     // auf true setzen, wenn du HTTPS verwendest
-		maxAge: maxAge       // Cookie läuft in 1 Stunde ab
+		secure: true,
+		maxAge: maxAge
 	});
 }
 
@@ -52,8 +52,8 @@ function delete_cookie(response, key) {
 	response.setCookie(key, '', {
 		path: '/',
 		httpOnly: true,
-		secure: true,     // auf true setzen, wenn du HTTPS verwendest
-		maxAge: 0       // Cookie läuft in 1 Stunde ab
+		secure: true,
+		maxAge: 0
 	});
 }
 
@@ -78,6 +78,8 @@ async function check_encrypted_password(password, hashed) {
 }
 
 async function send_email(receiver, subject, text) {
+	const SMTP_USER = process.env.SMTP_USER;
+	const SMTP_PASSWORD = (await fs.readFile(process.env.SMTP_PASSWORD_FILE, 'utf8')).trim();
 	const transporter = nodemailer.createTransport({
 		service: 'gmail',
 		auth: {
