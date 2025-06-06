@@ -372,18 +372,18 @@ document.body.addEventListener('click', (event) => {
 window.addEventListener('popstate', handleRouteChange)
 
 
-setInterval(async () => {
+// setInterval(async () => {
     // handleRouteChange();
-    const path = window.location.pathname;
+    // const path = window.location.pathname;
     // if (path === '/' || path === '/login' || path === '/register'){
     //     return;
     // }
-    if (path === '/profile'){
-        toggle_divs(await show_profile_page());
-    }
-    if (path === '/friends'){
-        toggle_divs(await show_friends_page());
-    }
-}, 5000);
+    // if (path === '/profile'){
+        // toggle_divs(await show_profile_page());
+    // }
+    // if (path === '/friends'){
+        // toggle_divs(await show_friends_page());
+    // }
+// }, 5000);
 
 handleRouteChange();

@@ -59,6 +59,6 @@ export interface EliminatedMsg {
     tournamentId: string;
     matchId: string;
     winnerId: string;
-    reason: 'lostMatch'; // you can use a string literal or `string` if you have more reasons later
+    reason: 'lostMatch';
   };
 }

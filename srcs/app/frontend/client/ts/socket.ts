@@ -66,11 +66,10 @@ function createSocket(): WebSocket {
   return ws;
 }
 
-// socket.ts
 function ensureSocket(): WebSocket {
   if (socket && socket.readyState <= WebSocket.OPEN) return socket;
 
-  if (socket?._justFailed) return socket;         //  ← ? защищает от null
+  if (socket?._justFailed) return socket;
 
   if (!isLoggedIn()) throw new Error('WebSocket requested before auth');
 
@@ -90,10 +89,6 @@ function ensureSocket(): WebSocket {
 
 
 
-/**
- * Call **after** your login request succeeds.
- * Returns when the WebSocket is fully open.
- */
 export async function connect(): Promise<void> {
   const hasCookie = await check_cookie_fe();
   if (!hasCookie) throw new Error('User not authenticated – cookie missing');

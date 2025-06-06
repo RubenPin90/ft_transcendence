@@ -80,21 +80,17 @@ export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager)
         break;
       }
     
-      // ✅ Store match ID on socket for later paddle movement
       ws.currentGameId = matchId;
       ws.inGame        = true;
     
-      // 1) Register player in MatchManager
       tournamentManager.matchManager.joinRoom(matchId, ws.userId);
     
-      // 2) Track WebSocket connections and ready status
       room.sockets  ??= new Map();
       room.readySet ??= new Set();
     
       room.sockets.set(ws.userId, ws);
       room.readySet.add(ws.userId);
     
-      // 3) Start the match when both players have joined
       if (room.readySet.size === 2) {
         const startPayload = {
           type: 'matchStart',
@@ -151,11 +147,7 @@ export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager)
     case 'leaveGame': {
       const roomId = ws.currentGameId;
       if (roomId && matchManager) {
-        // Tell MatchManager that this user wants to leave the match:
         matchManager.leaveRoom(roomId, ws.userId);
-    
-        // (If this was a tournament match, MatchManager._forfeitMatch()
-        // will emit “matchFinished” and tournamentManager will catch it.)
       }
     
       ws.inGame = false;

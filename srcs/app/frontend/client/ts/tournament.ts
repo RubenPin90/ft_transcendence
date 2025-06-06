@@ -105,25 +105,13 @@
     });
   }
 
-  /* ------------------------------------------------------------------ *
-  * Lobby rendering – called whenever the server pushes a new TLobbyState
-  * ------------------------------------------------------------------ */
-
-  /**
-   * Re-render the tournament lobby page.
-   * Expects `TLobby.slots` to be a **number**, but will gracefully fall back
-   * to `players.length` if it isn’t.
-   */
   export function renderTLobby(TLobby: TLobbyState, sock: WebSocket) {
-    /* ---------- cache & locals --------------------------------------- */
     setCurrentTLobby(TLobby);
-    //console.log('socket', sock);
 
     const myId   = getMyId();
     const amHost = TLobby.hostId === myId;
     const players = Array.isArray(TLobby.players) ? TLobby.players : [];
 
-    /* ---------- UI helpers ------------------------------------------- */
     const totalSlots =
       typeof TLobby.slots === 'number'
         ? TLobby.slots
@@ -136,11 +124,9 @@
       return `${p.name}${youMark}${hostMark}  [${shortId}]`;
     };
 
-    /* ---------- page switching --------------------------------------- */
     hideAllPages();
     document.getElementById('t-lobby-page')!.style.display = 'block';
 
-    /* ---------- player table ----------------------------------------- */
     const table = document.getElementById('t-lobby-table')!;
     table.innerHTML = '';
 
@@ -153,13 +139,11 @@
       const row = document.createElement('div');
       row.className = 'TLobby-row';
 
-      /* name + id */
       const nameSpan       = document.createElement('span');
       nameSpan.className   = 't-name';
       nameSpan.textContent = isFilled ? displayName(p!) : '— empty —';
       row.appendChild(nameSpan);
 
-      /* ready indicator */
       //console.log(`Player ${p?.name} ready: ${p?.ready}`);
       const dot = document.createElement('span');
       dot.className = 't-status';
@@ -179,11 +163,9 @@
     table.appendChild(frag);
 
 
-    /* ---------- share code ------------------------------------------- */
     (document.getElementById('t-share-code') as HTMLInputElement).value =
       '#' + (TLobby.code ?? '----');
 
-    /* ---------- controls and status ---------------------------------- */
     const allReady =
       players.length === totalSlots && players.every(p => p.ready);
 

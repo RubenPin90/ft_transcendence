@@ -143,15 +143,12 @@ export class MatchManager extends EventEmitter {
     const room = this.rooms.get(roomId)
     if (!room) return
     room.players = room.players.filter(p => p.playerId !== playerId)
-    console.log('here1');
     delete room.scoreBoard[playerId]
     if ( room.status !== 'finished') {
-      console.log('here2');
       this._forfeitMatch(roomId, playerId)
       return
     }
     if (room.mode === GAME_MODES.PVE || room.players.length === 0) {
-      console.log('here3');
       this.removeRoom(roomId)
     }
   }
@@ -159,7 +156,6 @@ export class MatchManager extends EventEmitter {
   _forfeitMatch (roomId, leaverId) {
     const room = this.rooms.get(roomId)
     if (!room) return
-    console.log('here4');
     clearInterval(room.updateInterval)
     clearTimeout(room.pauseTimeout)
     const winner = room.players.find(p => p.playerId !== leaverId)
