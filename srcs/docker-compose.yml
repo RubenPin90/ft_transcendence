@@ -37,8 +37,6 @@ services:
       - jwt_secret
     networks:
       - trancendence-network
-    # develop:
-    #   watch:  
 
 
   prometheus:
@@ -82,11 +80,13 @@ services:
         - SMTP_USER=${SMTP_USER}
         - SMTP_PASS_FILE=/run/secrets/smtp_password
         - EMAIL_FROM=${SMTP_USER}
-        - EMAIL_TO=${EMAIL_TO}
+        - EMAIL_TO=${ADMIN_EMAIL}
       secrets:
         - smtp_password
     container_name: 'alertmanager'
     restart: always
+    networks:
+      - trancendence-network
     user: root
 
   node_exporter:
@@ -116,9 +116,13 @@ services:
       - /dev/disk/:/dev/disk:ro
     depends_on:
       - prometheus
+    ports: 
+      - "8080:8080"
     networks:
       - trancendence-network
     privileged: true
+    healthcheck:
+      disable: true
 
 secrets:
   admin_password:

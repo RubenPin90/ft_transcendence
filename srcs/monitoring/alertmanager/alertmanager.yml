@@ -17,5 +17,6 @@ receivers:
     auth_password: 'SMTP_PASS'
     from: 'EMAIL_FROM'
     to: 'EMAIL_TO'
+    send_resolved: true
     headers:
       subject: 'Prometheus Mail Alerts'

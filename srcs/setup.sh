@@ -21,6 +21,7 @@ declare -A users=(
     ["GOOGLE_CLIENT_ID"]=".secrets.google.client_id"
     ["GITHUB_CLIENT_ID"]=".secrets.github.client_id"
     ["SMTP_USER"]=".secrets.smtp.user"
+    ["ADMIN_EMAIL"]=".secrets.admin.mail"
 )
 
 echo "Setting up environment and secrets..."
