@@ -442,7 +442,6 @@ async function clear_settings_mfa(userid, search_value, response) {
 	for (const option of fallback_options) {
 		if (search_value == option)
 			continue;
-		//console.log(check_mfa[option]);
 		if (!check_mfa[option].endsWith('_temp') && check_mfa[option].length !== 0) {
 			await mfa_db.update_mfa_value('prefered', fallback_options.indexOf(option) + 1, userid);
 			found = true;
