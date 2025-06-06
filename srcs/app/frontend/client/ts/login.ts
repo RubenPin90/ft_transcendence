@@ -1,14 +1,11 @@
 import { connect as openSocket } from './socket.js';
 
-
-
 function alert_user(message: string){
     var error_message = document.getElementById("error_message") as HTMLSpanElement;
     if (!error_message)
         return;
     error_message.innerHTML = message;
 }
-
 
 async function submit_code(userid: string, method: string, email: string){
     const tfa_value = document.getElementById("2fa_value") as HTMLInputElement;
@@ -286,3 +283,8 @@ async function login() {
     //     throw new Error('Fehler beim Parsen der JSON-Antwort');
     // }
 // }
+
+// Am Ende von login.ts:
+(window as any).login = login;
+(window as any).submit_code = submit_code;
+(window as any).get_mfa_login = get_mfa_login;

@@ -1,7 +1,7 @@
 // shutdown.js
-export default function handleShutdown({ fastify, wss }) {
+export default function handleShutdown({ fastify }) {
     async function gracefulShutdown() {
-      wss.close(() => {
+      // fastify.close(() => {
         fastify.close()
           .then(() => {
             console.log('Fastify server closed');
@@ -11,8 +11,8 @@ export default function handleShutdown({ fastify, wss }) {
             console.error('Error closing Fastify server:', closeErr);
             process.exit(1);
           });
-      });
-    }
+      // });
+    };
     process.on('SIGINT', gracefulShutdown);
     process.on('SIGTERM', gracefulShutdown);
   }

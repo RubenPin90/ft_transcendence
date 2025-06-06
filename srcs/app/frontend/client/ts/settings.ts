@@ -1,6 +1,6 @@
 import { render_mfa } from "./redirect.js";
 
-async function create_otc() {
+export async function create_otc() {
     try {
         const response = await fetch('/settings/mfa', {
             method: 'POST',
