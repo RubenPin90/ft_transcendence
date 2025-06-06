@@ -231,61 +231,6 @@ async function settings(request, response) {
     return true;
 }
 
-async function verify_email(request, response) {
-    const frontend_data = request.body;
-    const check_mfa = await mfa_db.get_mfa_value('self', frontend_data.userid);
-    if (!check_mfa || check_mfa === undefined || check_mfa.email.length === 0 || check_mfa.email.endsWith('_temp'))
-        return false;
-    const valid_password = await modules.check_encrypted_password(frontend_data.code, check_mfa.email);
-    if (!valid_password || valid_password === undefined || valid_password < 0) {
-        response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'failed', "Content": null});
-    } else {
-        const token = await modules.create_jwt(frontend_data.userid, '1h');
-        
-        modules.set_cookie(response, 'token', token, true, true, 'strict');
-        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'reload', "Content": null});
-    }
-    return true;
-}
-
-async function verify_2fa(request, response) {
-    const [keys, values] = modules.get_cookies(request);
-    var user_encrypted;
-    try {
-        user_encrypted = await modules.get_jwt(values[keys.indexOf('token')]);
-    } catch (err) {
-        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
-        return true;
-    }
-    const frontend_data = request.body;
-    const replace_data = {'Function': 'verify', 'Code': frontend_data.code};
-    const temp = await utils.verify_otc(request, response, replace_data, user_encrypted.userid);
-    if (temp === false || !temp || temp === undefined || temp < 0) {
-        response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'failed', "Content": null});
-    } else {
-        // const token = await modules.create_jwt(frontend_data.userid, '1h');
-        
-        // modules.set_cookie(response, 'token', token, true, true, 'strict');
-        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'reload', "Content": null});
-    }
-    return true;
-}
-
-async function verify_custom(request, response) {
-    const frontend_data = request.body;
-    const replace_data = {'Function': 'verify', 'Code': frontend_data.code};
-    const temp = await utils.verify_custom_code(frontend_data.userid, response, replace_data);
-    if (temp === false) {
-        response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'failed', "Content": null});
-    } else {
-        const token = await modules.create_jwt(frontend_data.userid, '1h');
-        
-        modules.set_cookie(response, 'token', token, true, true, 'strict');
-        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'reload', "Content": null});
-    }
-    return true;
-}
-
 async function profile(request, response) {
     var [keys, values] = modules.get_cookies(request);
     const valid_token = await utils.check_for_invalid_token(request, response, keys, values);
@@ -815,9 +760,6 @@ export {
     settings,
     mfa,
     home,
-    verify_email,
-    verify_2fa,
-    verify_custom,
     profile,
     logout,
     update_user,
