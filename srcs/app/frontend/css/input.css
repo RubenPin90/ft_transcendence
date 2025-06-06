@@ -89,3 +89,23 @@
 .label_profile{
     @apply font-bold text-lg uppercase
 }
+
+
+/* Grigorii */
+
+.tournament-layout{
+    @apply grid gap-2 grid-cols-2
+}
+
+.full-btn{
+    @apply w-full h-[100px] mb-8 text-base border-black border-2
+}
+
+/* .t-right{
+    @apply flex justify-between items-center border-2 border-black p-6 mb-6
+}
+
+.t-card{
+    @apply flex justify-between items-center border-2 border-black p-6 mb-6
+} */
+

@@ -40,7 +40,10 @@ export function setOnGameEnd(cb: (winnerId: string) => void): void {
 
 export function initGameCanvas(): void {
   const canvas = document.getElementById('game') as HTMLCanvasElement | null;
-  if (!canvas) return;
+  if (!canvas) {
+    alert("GAME CANVAS NOT FOUND");
+    return;
+  }
   ctx = canvas.getContext('2d');
 }
 

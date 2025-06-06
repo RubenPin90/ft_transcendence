@@ -965,61 +965,65 @@ async function replace_all_templates(request, response, state, override) {
 
 	let play_main = "";
 
-		play_main +=   '<div id="play_div" class="hidden"">';
+		play_main +=   '<div id="play_div" class="hidden">';
 		play_main +=   '<div class="min-h-screen flex items-center justify-center px-4 py-10">';
 		play_main +=     '<div id="login-container" class="field">';
 		//tailwind done
 		play_main +='<div id="main-menu">';
 		play_main +=	'<h1 class="text-white font-bold text-2xl">Welcome, <span id="username">{{uname}}</span>!</h1>';
-		play_main +=		'<div class="flex flex-col gap-6 mt-6">'
-		play_main +=			'<a class="buttons"><button class="block w-full mb-6 mt-6" id="sp-vs-pve-btn"><span class="button_text">PVE</span></button>';
-		play_main +=			'<a class="buttons"><button class="block w-full mb-6 mt-6" id="one-vs-one-btn"><span class="button_text">1v1 Matchmaking</span></button>';
-		play_main +=			'<a class="buttons"><button class="block w-full mb-6 mt-6" id="tournament-btn"><span class="button_text">Tournament</span></button>';
+		play_main +=	'<div class="flex flex-col gap-6 mt-6">'
+		play_main +=		'<a class="buttons"><button class="block w-full mb-6 mt-6" id="sp-vs-pve-btn"><span class="button_text pointer-events-none">PVE</span></button></a>';
+		play_main +=		'<a class="buttons"><button class="block w-full mb-6 mt-6" id="one-vs-one-btn"><span class="button_text pointer-events-none">1v1</span></button></a>';
+		play_main +=		'<a class="buttons"><button class="block w-full mb-6 mt-6" id="tournament-btn"><span class="button_text pointer-events-none">Tournament</span></button></a>';
+		play_main +=	'</div>';
+
+
+
+		play_main +=	'<div id="game-container" class="hidden">';
+		play_main +=		'<h2 id="game-mode-title"></h2>';
+		play_main +=		'<canvas id="game" width="800" height="600"></canvas>';
+		play_main +=	'</div>';
+
+		play_main +=	'<div id="matchmaking_div" class="hidden">'
+		play_main +=		'<div id="matchmaking-page" class="matchmaking">';
+		play_main +=			'<h2>Searching for an opponent…</h2>';
+		play_main +=			'<div id="matchmaking-spinner" class="spinner"></div>';
 		play_main +=		'</div>';
+		play_main +=	'</div>';
 
-		play_main +=       '<div id="game-container" hidden>';
-		play_main +=         '<h2 id="game-mode-title"></h2>';
-		play_main +=         '<canvas id="game" width="800" height="600"></canvas>';
-		play_main +=       '</div>';
+		play_main +=	'<div id="tournament-page" class="hidden">';
+		play_main +=		'<h2 class="text-center mb-10">Tournaments</h2>';
+		play_main +=		'<div class="tournament-layout">';
+		play_main +=			'<div class="flex gap-4 mb-8">';
+		play_main +=				'<input id="t-code-input" class="full-btn" placeholder="Enter a Tournament code here" style="flex:1;height:100px">';
+		play_main +=				'<button id="t-code-btn" class="full-btn" style="width:180px;height:100px">Join<br>by&nbsp;code</button>';
+		play_main +=			'</div>';
+		play_main +=			'<div style="margin-bottom:2rem;text-align:center">';
+		play_main +=				'<button id="t-create-btn" class="full-btn" style="width:240px;height:60px;font-size:1.2rem">Create&nbsp;Tournament</button>';
+		play_main +=			'</div>';
+		play_main +=			'<div class="t-right" id="tournament-list"></div>';
+		play_main +=		'</div>';
+		play_main +=	'</div>';
 
-		play_main +=       '<div id="matchmaking-page" hidden class="matchmaking">';
-		play_main +=         '<h2>Searching for an opponent…</h2>';
-		play_main +=         '<div id="matchmaking-spinner" class="spinner"></div>';
-		play_main +=       '</div>';
-
-		play_main +=       '<div id="tournament-page" hidden>';
-		play_main +=         '<h2 style="text-align:center;margin-bottom:2.5rem">Tournaments</h2>';
-		play_main +=         '<div class="tournament-layout">';
-		play_main +=           '<div style="display:flex;gap:1rem;margin-bottom:2rem">';
-		play_main +=             '<input id="t-code-input" class="full-btn" placeholder="Enter a Tournament code here" style="flex:1;height:100px">';
-		play_main +=             '<button id="t-code-btn" class="full-btn" style="width:180px;height:100px">Join<br>by&nbsp;code</button>';
-		play_main +=           '</div>';
-		play_main +=           '<div style="margin-bottom:2rem;text-align:center">';
-		play_main +=             '<button id="t-create-btn" class="full-btn" style="width:240px;height:60px;font-size:1.2rem">Create&nbsp;Tournament</button>';
-		play_main +=           '</div>';
-		play_main +=           '<div class="t-right" id="tournament-list"></div>';
-		play_main +=         '</div>';
-		play_main +=       '</div>';
-
-		play_main +=       '<div id="t-lobby-page" hidden>';
-		play_main +=         '<h2 id="t-lobby-status" style="text-align:center;margin-bottom:1.5rem">Waiting for players…</h2>';
-		play_main +=         '<div id="t-lobby-table" class="TLobby-table"></div>';
-		play_main +=         '<div class="code-box">';
-		play_main +=           '<input id="t-share-code" readonly>';
-		play_main +=           '<button id="t-copy-code-btn" title="Copy code to clipboard"></button>';
-		play_main +=         '</div>';
-		play_main +=         '<div id="host-controls">';
-		play_main +=           '<button id="t-start-btn" class="full-btn" style="width:320px;height:80px;font-size:1.5rem">START</button>';
-		play_main +=         '</div>';
-		play_main +=         '<div id="player-controls">';
-		play_main +=           '<button id="t-ready-btn" class="full-btn" style="width:320px;height:80px;font-size:1.5rem">READY</button>';
-		play_main +=           '<span id="t-my-ready-dot" class="green-dot"></span>';
-		play_main +=         '</div>';
-		play_main +=         '<div style="display:flex;justify-content:space-between">';
-		play_main +=           '<button id="t-leave-btn" class="square-btn">Leave</button>';
-		play_main +=           '<button id="t-custom-btn" class="square-btn">Customization</button>';
-		play_main +=         '</div>';
-		play_main +=       '</div>';
+		play_main +=	'<div id="t-lobby-page" hidden>';
+		play_main +=		'<h2 id="t-lobby-status" style="text-align:center;margin-bottom:1.5rem">Waiting for players…</h2>';
+		play_main +=		'<div id="t-lobby-table" class="TLobby-table"></div>';
+		play_main +=		'<div class="code-box">';
+		play_main +=			'<input id="t-share-code" readonly>';
+		play_main +=			'<button id="t-copy-code-btn" title="Copy code to clipboard"></button>';
+		play_main +=		'</div>';
+		play_main +=		'<div id="host-controls">';
+		play_main +=		 	'<button id="t-start-btn" class="full-btn" style="width:320px;height:80px;font-size:1.5rem">START</button>';
+		play_main +=		'</div>';
+		play_main +=		'<div id="player-controls">';
+		play_main +=			'<button id="t-ready-btn" class="full-btn" style="width:320px;height:80px;font-size:1.5rem">READY</button>';
+		play_main +=			'<span id="t-my-ready-dot" class="green-dot"></span>';
+		play_main +=		'</div>';
+		play_main +=		'<div style="display:flex;justify-content:space-between">';
+		play_main +=			'<button id="t-leave-btn" class="square-btn">Leave</button>';
+		play_main +=			'<button id="t-custom-btn" class="square-btn">Customization</button>';
+		play_main +=		'</div>';
+		play_main +=	'</div>';
 
 
 		play_main += '<div id="bracket-overlay" class="bracket-overlay" hidden></div>';
@@ -1035,6 +1039,109 @@ async function replace_all_templates(request, response, state, override) {
 		play_main +=     '</div>'; // login-container
 		play_main +=   '</div>';   // flex container
 		play_main += '</div>';   // flex container
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		// play_main +=	'<div id="game-container" hidden>';
+		// play_main +=		'<h2 id="game-mode-title"></h2>';
+		// play_main +=		'<canvas id="game" width="800" height="600"></canvas>';
+		// play_main +=	'</div>';
+
+		// play_main +=	'<div id="matchmaking-page" hidden class="matchmaking">';
+		// play_main +=		'<h2>Searching for an opponent…</h2>';
+		// play_main +=		'<div id="matchmaking-spinner" class="spinner"></div>';
+		// play_main +=	'</div>';
+
+		// play_main +=	'<div id="tournament-page" hidden>';
+		// play_main +=		'<h2 style="text-align:center;margin-bottom:2.5rem">Tournaments</h2>';
+		// play_main +=		'<div class="tournament-layout">';
+		// play_main +=			'<div style="display:flex;gap:1rem;margin-bottom:2rem">';
+		// play_main +=				'<input id="t-code-input" class="full-btn" placeholder="Enter a Tournament code here" style="flex:1;height:100px">';
+		// play_main +=				'<button id="t-code-btn" class="full-btn" style="width:180px;height:100px">Join<br>by&nbsp;code</button>';
+		// play_main +=			'</div>';
+		// play_main +=			'<div style="margin-bottom:2rem;text-align:center">';
+		// play_main +=				'<button id="t-create-btn" class="full-btn" style="width:240px;height:60px;font-size:1.2rem">Create&nbsp;Tournament</button>';
+		// play_main +=			'</div>';
+		// play_main +=			'<div class="t-right" id="tournament-list"></div>';
+		// play_main +=		'</div>';
+		// play_main +=	'</div>';
+
+		// play_main +=	'<div id="t-lobby-page" hidden>';
+		// play_main +=		'<h2 id="t-lobby-status" style="text-align:center;margin-bottom:1.5rem">Waiting for players…</h2>';
+		// play_main +=		'<div id="t-lobby-table" class="TLobby-table"></div>';
+		// play_main +=		'<div class="code-box">';
+		// play_main +=			'<input id="t-share-code" readonly>';
+		// play_main +=			'<button id="t-copy-code-btn" title="Copy code to clipboard"></button>';
+		// play_main +=		'</div>';
+		// play_main +=		'<div id="host-controls">';
+		// play_main +=		 	'<button id="t-start-btn" class="full-btn" style="width:320px;height:80px;font-size:1.5rem">START</button>';
+		// play_main +=		'</div>';
+		// play_main +=		'<div id="player-controls">';
+		// play_main +=			'<button id="t-ready-btn" class="full-btn" style="width:320px;height:80px;font-size:1.5rem">READY</button>';
+		// play_main +=			'<span id="t-my-ready-dot" class="green-dot"></span>';
+		// play_main +=		'</div>';
+		// play_main +=		'<div style="display:flex;justify-content:space-between">';
+		// play_main +=			'<button id="t-leave-btn" class="square-btn">Leave</button>';
+		// play_main +=			'<button id="t-custom-btn" class="square-btn">Customization</button>';
+		// play_main +=		'</div>';
+		// play_main +=	'</div>';
+
+
+		// play_main += '<div id="bracket-overlay" class="bracket-overlay" hidden></div>';
+
+		// play_main +=       '<template id="match-card-tpl">';
+		// play_main +=         '<div class="match-card">';
+		// play_main +=           '<div class="p1"></div>';
+		// play_main +=           '<div class="vs">vs</div>';
+		// play_main +=           '<div class="p2"></div>';
+		// play_main +=         '</div>';
+		// play_main +=       '</template>';
+
+		// play_main +=     '</div>'; // login-container
+		// play_main +=   '</div>';   // flex container
+		// play_main += '</div>';   // flex container
 
 
 	const index_html_raw = await fs.readFile("./backend/templates/index.html", 'utf8')

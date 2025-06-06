@@ -687,8 +687,9 @@ async function play(request, response) {
         return await login(request, response);
     }
 
-    const tokenIndex = keys.findIndex((key) => key === 'token');
-    const token = values[tokenIndex];
+    // const tokenIndex = keys.findIndex((key) => key === 'token');
+    // const token = values[tokenIndex];
+    const token = values[keys.indexOf('token')];
     let decoded;
     try {
         decoded = await modules.get_jwt(token);

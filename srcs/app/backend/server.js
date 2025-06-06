@@ -44,14 +44,15 @@ await fastify.register(fastifyStatic, {
 });
 
 
-fastify.get('/ws/game', { websocket: true }, (conn, req) => {
+fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
   const ws = conn;
 
   const [keys, values] = modules.get_cookies(req);
   console.log('keys and values', keys, values);
   const user_encrypted = values[keys.indexOf("token")];
-  const userId = modules.get_jwt(user_encrypted).userid;
-  console.log('userId:', userId);
+  const userIdd = await modules.get_jwt(user_encrypted);
+  const userId = userIdd.userid;
+  console.log('userId.userId:', userId);
   console.log('🔑 ws token verified:', userId);
 
 

@@ -16,6 +16,7 @@ export function setupButtonsDelegated(
   console.log('Main menu:', mainMenu);
   if (mainMenu) {
     mainMenu.addEventListener('click', (event) => {
+      console.log("EVENT:::", event);
       const target = event.target as HTMLElement;
       console.log('Main menu button clicked:', target.id);
       switch (target.id) {
