@@ -34,9 +34,8 @@ export default fastifyPlugin(async function routes(fastify) {
     if (file.endsWith('.svg')) {
       mime = 'image/svg+xml';
     } else {
-      reply.code(404).send('SVG not found');
-      return false;
-      // return reply.callNotFound();
+      reply.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'SVG not found'});
+      return reply.callNotFound();
     }
     
     const filePath = path.join(process.cwd(),'frontend' ,'public', file);
@@ -44,7 +43,8 @@ export default fastifyPlugin(async function routes(fastify) {
       const data = await fs.readFile(filePath);
       reply.type(mime).send(data);
     } catch (err) {
-      reply.code(404).send('File not found');
+      reply.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'File not found'});
+      return reply.callNotFound();
     }
   });
   
