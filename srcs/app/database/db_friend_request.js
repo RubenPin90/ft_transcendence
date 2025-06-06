@@ -65,14 +65,14 @@ async function create_friend_request_value(sender_id, receiver_id) {
 		const existing_request = await db.get(
             `SELECT * FROM friend_request
             WHERE sender_id = ? AND receiver_id = ?`,
-            [sender_id, receiver_id]
+            [sender.self, receiver.self]
         );
         if (existing_request)
             return -3;
         console.log("wwwwww");
         var row = await db.run(`
             INSERT INTO friend_request (sender_id, receiver_id)
-            VALUES (?, ?)`, [sender_id, receiver_id]);
+            VALUES (?, ?)`, [sender.self, receiver.self]);
     } catch (err) {
         console.error(`Error in create_friend_request_value: ${err}`);
         return null;
@@ -149,7 +149,7 @@ async function show_pending_requests(userid){
                 <div id="request-${single.id}" class="flex bg-gray-200 rounded-lg relative">
                     <img src="${sender_settings.pfp}" alt="" class="w-10 h-10">
                     <div class="flex pl-2 items-center text-lg">${name}</div>
-                    <div class="absolute right-[68px] top-1/2 -translate-y-1/2 flex space-x-2 text-gray-600">
+                    <div class="absolute right-10 top-1/2 -translate-y-1/2 flex space-x-2 text-gray-600">
                         <button onclick="accept_friend('${single.id}')">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                 stroke-width="2" stroke="currentColor" class="size-6 cursor-pointer text-green-700 font-bold">
@@ -157,7 +157,7 @@ async function show_pending_requests(userid){
                             </svg>
                         </button>
                     </div>
-                    <div class="absolute right-10 top-1/2 -translate-y-1/2 flex space-x-2 text-gray-600">
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2 flex space-x-2 text-gray-600">
                         <button onclick="reject_friend('${single.id}')">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                 stroke-width="1.5" stroke="currentColor" class="size-6 cursor-pointer text-red-700 font-bold">
@@ -165,7 +165,6 @@ async function show_pending_requests(userid){
                             </svg>
                         </button>
                     </div>
-
                 </div>`;
             }
     } catch (err) {
@@ -207,6 +206,7 @@ async function show_accepted_friends(userid){
             }else{
                 correctId = single.receiver_id;
             }
+            console.log("correctID::", correctId);
             const sender_settings = await db.get(`
                 SELECT * FROM settings WHERE self = ?
                 `, [correctId]);

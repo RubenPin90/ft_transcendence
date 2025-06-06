@@ -971,12 +971,16 @@ async function replace_all_templates(request, response, state, override) {
 		play_main +=   '<div id="play_div" class="hidden"">';
 		play_main +=   '<div class="min-h-screen flex items-center justify-center px-4 py-10">';
 		play_main +=     '<div id="login-container" class="field">';
-		play_main +=       '<div id="main-menu">';
-		play_main +=         '<h1>Welcome, <span id="username">{{uname}}</span>!</h1>';
-		play_main +=         '<button id="sp-vs-pve-btn">PVE</button>';
-		play_main +=         '<button id="one-vs-one-btn">1v1 Matchmaking</button>';
-		play_main +=         '<button id="tournament-btn">Tournament</button>';
-		play_main +=       '</div>';
+
+		//tailwind done
+
+		play_main +='<div id="main-menu">';
+		play_main +=	'<h1 class="text-white font-bold text-2xl">Welcome, <span id="username">{{uname}}</span>!</h1>';
+		play_main +=		'<div class="flex flex-col gap-6 mt-6">'
+		play_main +=			'<a class="buttons"><button class="block w-full mb-6 mt-6" id="sp-vs-pve-btn"><span class="button_text">PVE</span></button>';
+		play_main +=			'<a class="buttons"><button class="block w-full mb-6 mt-6" id="one-vs-one-btn"><span class="button_text">1v1 Matchmaking</span></button>';
+		play_main +=			'<a class="buttons"><button class="block w-full mb-6 mt-6" id="tournament-btn"><span class="button_text">Tournament</span></button>';
+		play_main +=		'</div>';
 
 		play_main +=       '<div id="game-container" hidden>';
 		play_main +=         '<h2 id="game-mode-title"></h2>';
@@ -1228,14 +1232,15 @@ async function check_expired_token(request, response){
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'expired' });
 		return false;
 	}
-	const token_decrypted = modules.get_jwt(values[keys.indexOf('token')]);
-	const lang_decrypted = modules.get_jwt(values[keys.indexOf('lang')]);
+	const token_decrypted = await modules.get_jwt(values[keys.indexOf('token')]);
+	const lang_decrypted = await modules.get_jwt(values[keys.indexOf('lang')]);
 	if (token_decrypted < 0 || lang_decrypted < 0) {
 		await views.logout(request, response, true);
 		return true;
 	}
-	const token = token_decrypted.userid;
-	const lang = lang_decrypted.userid;
+	const token = await token_decrypted.userid;
+	const lang = await lang_decrypted.userid;
+
 	if (!token || token == undefined || token < 0 || !lang || lang == undefined || lang < 0) {
 		await views.logout(request, response, true);
 		return true;

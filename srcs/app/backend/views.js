@@ -328,7 +328,7 @@ async function profile(request, response) {
         inner = inner.replace('{{email}}', settings.email);
         inner = inner.replace('{{picture}}', settings.pfp);
         inner = inner.replace('{{status}}', ()=> {if (user.status === 1) return 'online'; else return 'offline'});
-        if (await friends_request.get_friend_request_value('self', userid) != undefined)
+        if (await friends_request.get_friend_request_value('receiver_id', userid) != undefined)
             inner = inner.replace('{{Friends}}', await friends_request.show_accepted_friends(userid))
         else
             inner = inner.replace('{{Friends}}', '<span>No friends currenlty :\'( you lonely MF</span>');
@@ -510,6 +510,7 @@ async function friends(request, response){
         const userid = decoded.userid;
         var inner = request.body.innervalue;
         // inner = await translator.cycle_translations(inner, decoded_lang);
+        // if (await friends_request.get_friend_request_value('self', userid) != undefined)
         inner = inner.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": inner});
         return true;
@@ -574,7 +575,8 @@ async function add_friends(request, response){
     }
 
     const result = await friends_request.create_friend_request_value(userid, receiver_db.self);
-    if (!result || result === undefined){
+    if (!result || result === undefined || result < 0){
+        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "Error" });
         console.error("create_friend_request_value caught an error");
         return null;
     }
