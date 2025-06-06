@@ -6,7 +6,6 @@ import fastifyCookie from '@fastify/cookie';
 import fastifyStatic from '@fastify/static';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import urlsPlugin from './urls.js';
 import { SocketRegistry } from './socketRegistry.js';
 import { MatchManager } from './game/matchManager.js';
 import { TournamentManager } from './game/tournamentManager.js';
@@ -76,7 +75,7 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
 
 
 await fastify.listen({ port: PORT, host: '0.0.0.0' });
-handleShutdown({ fastify, wss });
+handleShutdown({ fastify });
 
 export {
   fastify
