@@ -37,8 +37,6 @@ services:
       - jwt_secret
     networks:
       - trancendence-network
-    # develop:
-    #   watch:  
 
 
   prometheus:
