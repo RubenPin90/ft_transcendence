@@ -120,64 +120,73 @@ async function home(request, response) {
 }
 
 async function mfa(request, response) {
-    const [keys, values] = modules.get_cookies(request);
-    var user_encrypted;
-    try {
-        user_encrypted = await modules.get_jwt(values[keys.indexOf('token')]);
-    } catch (err) {
-        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
-        return true;
-    }
-    const data = request.body;
-    const userid = user_encrypted.userid;
-    if (!userid || userid === undefined || userid < 0)
-        return `1_${userid}`;
-    if (data.Function == 'create_otc') {
-        const otc_return = await utils.create_otc(userid, response);
-        if (!otc_return || otc_return === undefined || otc_return < 0)
-            return `2_${otc_return}`;
-        return true;
-    } else if (data.Function == 'verify_otc') {
-        var verified = await utils.verify_otc(request, response, data, userid);
-        console.log(verified);
-        if (verified && verified !== undefined && !(verified < 0)) {
-            const check_mfa = await mfa_db.get_mfa_value('self', userid);
-            var new_otc_str = check_mfa.otc;
-            if (new_otc_str.endsWith('_temp'))
-                new_otc_str = new_otc_str.slice(0, -5);
-            await mfa_db.update_mfa_value('otc', new_otc_str, userid);
-            if (check_mfa.prefered === 0)
-                await mfa_db.update_mfa_value('prefered', 2, userid);
-            response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "success", "Content": null});
+    if (request.method == 'POST') {
+        const [keys, values] = modules.get_cookies(request);
+        var user_encrypted;
+        try {
+            user_encrypted = await modules.get_jwt(values[keys.indexOf('token')]);
+        } catch (err) {
+            response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
+            return true;
         }
-        else
-            response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "failed", "Content": null});
-        return true;
-    } else if (data.Function == 'create_custom') {
-        return await utils.create_custom_code(userid, response, data);
-    } else if (data.Function == 'verify_function') {
-        console.log("IN HERE");
-        return await utils.verify_custom_code(userid, response, data);
-    } else if (data.Function == 'create_email') {
-        return await utils.create_email_code(userid, response, data);
-    } else if (data.Function == 'verify_email') {
-        return await utils.verify_email_code(userid, response, data);
-    } else if (data.Function == 'remove_custom_code') {
-        const clear_return = await utils.clear_settings_mfa(userid, 'custom', response);
-        if (!clear_return || clear_return === undefined || clear_return < 0)
-            return `3_${clear_return}`;
-        return true;
-    } else if (data.Function === 'remove_otc') {
-        const clear_return = await utils.clear_settings_mfa(userid, 'otc', response);
-        if (!clear_return || clear_return === undefined || clear_return < 0)
-            return `4_${clear_return}`;
-        return true;
-    } else if (data.Function === 'remove_email') {
-        const clear_return = await utils.clear_settings_mfa(userid, 'email', response);
-        if (!clear_return || clear_return === undefined || clear_return < 0)
-            return `5_${clear_return}`;
-        return true;
+        const data = request.body;
+        const userid = user_encrypted.userid;
+        if (!userid || userid === undefined || userid < 0)
+            return `1_${userid}`;
+        if (data.Function == 'create_otc') {
+            const otc_return = await utils.create_otc(userid, response);
+            if (!otc_return || otc_return === undefined || otc_return < 0)
+                return `2_${otc_return}`;
+            return true;
+        } else if (data.Function == 'verify_otc') {
+            var verified = await utils.verify_otc(request, response, data, userid);
+            console.log(verified);
+            if (verified && verified !== undefined && !(verified < 0)) {
+                const check_mfa = await mfa_db.get_mfa_value('self', userid);
+                var new_otc_str = check_mfa.otc;
+                if (new_otc_str.endsWith('_temp'))
+                    new_otc_str = new_otc_str.slice(0, -5);
+                await mfa_db.update_mfa_value('otc', new_otc_str, userid);
+                if (check_mfa.prefered === 0)
+                    await mfa_db.update_mfa_value('prefered', 2, userid);
+                response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "success", "Content": null});
+            }
+            else
+                response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "failed", "Content": null});
+            return true;
+        } else if (data.Function == 'create_custom') {
+            return await utils.create_custom_code(userid, response, data);
+        } else if (data.Function == 'verify_function') {
+            return await utils.verify_custom_code(userid, response, data);
+        } else if (data.Function == 'create_email') {
+            return await utils.create_email_code(userid, response, data);
+        } else if (data.Function == 'verify_email') {
+            return await utils.verify_email_code(userid, response, data);
+        } else if (data.Function == 'remove_custom_code') {
+            const clear_return = await utils.clear_settings_mfa(userid, 'custom', response);
+            if (!clear_return || clear_return === undefined || clear_return < 0)
+                return `3_${clear_return}`;
+            return true;
+        } else if (data.Function === 'remove_otc') {
+            const clear_return = await utils.clear_settings_mfa(userid, 'otc', response);
+            if (!clear_return || clear_return === undefined || clear_return < 0)
+                return `4_${clear_return}`;
+            return true;
+        } else if (data.Function === 'remove_email') {
+            const clear_return = await utils.clear_settings_mfa(userid, 'email', response);
+            if (!clear_return || clear_return === undefined || clear_return < 0)
+                return `5_${clear_return}`;
+            return true;
+        }
     }
+    const status = await send.send_html('settings.html', response, 200, async (data) => {
+        data = await utils.replace_all_templates(request, response);
+        data = utils.show_page(data, "mfa_div");
+        return data.replace("{{mfa-button}}", data);
+    });
+    if (!status || status === undefined || status < 0 || status == false)
+        return `7_${status}`;
+    return true;
 }
 
 
@@ -214,8 +223,13 @@ async function settings(request, response) {
     const valid_token = await utils.check_for_invalid_token(request, response, keys, values);
     if (!keys?.includes('token'))
         return await login(request, response);
-    const request_url = request.url.slice(9); // /settings/route -> /route
-    if (request_url == "/mfa")
+    const request_url = request.url.slice(9);
+    if (request.method == "GET") {    
+        const valid_routes = ["", "/mfa", "/user", "/user/change_user", "/user/change_login", "/user/change_avatar", "/user/change_user", "/language"];
+        if (!valid_routes.includes(request_url))
+            return await send.send_error_page("404.html", response, 404);
+    }
+    if (request_url.startsWith == "/mfa")
         return await mfa(request, response);
     console.log(request_url);
     if (request_url == "/user")
@@ -504,54 +518,25 @@ async function reject_friend(request, response){
     const [keys, values] = modules.get_cookies(request);
     const data = request.body;
     if (!data || data === undefined){
-        response.code(400).send({ message: 'Invalid data'});
+        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid data'});
         return true;
     }
 
-    let decoded;
+    let self_user;
     try {
-        decoded = await modules.get_jwt(values[keys.indexOf("token")]);
+        self_user = await modules.get_jwt(values[keys.indexOf("token")]);
     } catch (err) {
         response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
         return true;
     }
 
-    const receiver = data.userid;
+    const receiver = self_user.userid;
     const result = await friends_request.delete_friend_request_value(receiver);
     if (!result || result === undefined){
         console.error("error in deleting accepted friend request");
         return null;
     }
     response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin':  '*'}).send({ message: 'success'});
-    return true;
-}
-
-async function block_friend(request, response){
-    const [keys, values] = modules.get_cookies(request);
-    const data = request.body;
-    if (!data || data === undefined){
-        response.code(400).send({ message: 'Invalid data'});
-        return true;
-    }
-
-    let decoded;
-    try {
-        decoded = await modules.get_jwt(values[keys.indexOf("token")]);
-    } catch (err) {
-        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
-        return true;
-    }
-
-    // const userid = decoded.userid;
-
-    const receiver = data.userid;
-    // const result = await friends_request.delete_friend_request_value(receiver);
-    const result = await friends_request.update_friend_request_value(receiver, 'blocked');
-    if (!result || result === undefined){
-        console.error("error in deleting accepted friend request");
-        return null;
-    }
-    response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'success'});
     return true;
 }
 
@@ -583,7 +568,7 @@ async function play(request, response) {
     const token = values[tokenIndex];
     let decoded;
     try {
-        decoded = await await modules.get_jwt(token);
+        decoded = await modules.get_jwt(token);
     } catch (err) {
         return send.redirect(response, '/login', 302);
     }
@@ -614,7 +599,13 @@ async function set_up_mfa_buttons(request, response) {
     }
 
     const encrypted_userid = values[keys.indexOf('token')];
-    const userid = await modules.get_jwt(encrypted_userid).userid;
+    var userid
+    try {
+        userid = await modules.get_jwt(encrypted_userid).userid;
+    } catch (err) {
+        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
+        return true;
+    }
     var set = 0;
     var options = '';
     var parsed = await mfa_db.get_mfa_value('self', userid);
@@ -699,39 +690,36 @@ async function set_up_mfa_buttons(request, response) {
 }
 
 async function check_preferred_mfa(request, response){
-    if (request.method === "POST") {
-        const data = request.body;
-        const userid = data.Userid;
-        if (!userid || userid === undefined || userid < 0)
-            return `1_${userid}`;
-        if (data.Function == 'verify_otc') {
-            console.log("verify OTC");
-            var verified = await utils.verify_otc(request, response, data, userid);
-            console.log("verified OTC");
-            console.log(verified);
-            if (verified && verified !== undefined && !(verified < 0)) {
-                const check_mfa = await mfa_db.get_mfa_value('self', userid);
-                var new_otc_str = check_mfa.otc;
-                if (new_otc_str.endsWith('_temp'))
-                    new_otc_str = new_otc_str.slice(0, -5);
-                await mfa_db.update_mfa_value('otc', new_otc_str, userid);
-                if (check_mfa.prefered === 0)
-                    await mfa_db.update_mfa_value('prefered', 2, userid);
-                response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "success", "Content": null});
-            }
-            else
-                response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "failed", "Content": null});
-            return true;
+    const data = request.body;
+    const userid = data.Userid;
+    if (!userid || userid === undefined || userid < 0)
+        return `1_${userid}`;
+    if (data.Function == 'verify_otc') {
+        console.log("verify OTC");
+        var verified = await utils.verify_otc(request, response, data, userid);
+        console.log("verified OTC");
+        console.log(verified);
+        if (verified && verified !== undefined && !(verified < 0)) {
+            const check_mfa = await mfa_db.get_mfa_value('self', userid);
+            var new_otc_str = check_mfa.otc;
+            if (new_otc_str.endsWith('_temp'))
+                new_otc_str = new_otc_str.slice(0, -5);
+            await mfa_db.update_mfa_value('otc', new_otc_str, userid);
+            if (check_mfa.prefered === 0)
+                await mfa_db.update_mfa_value('prefered', 2, userid);
+            response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "success", "Content": null});
         }
-        else if (data.Function == 'verify_function') {
-            return await utils.verify_custom_code(userid, response, data);
-        }
-        else if (data.Function == 'verify_email') {
-            return await utils.verify_email_code(userid, response, data);
-        }
+        else
+            response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "failed", "Content": null});
         return true;
     }
-    return false;
+    else if (data.Function == 'verify_function') {
+        return await utils.verify_custom_code(userid, response, data);
+    }
+    else if (data.Function == 'verify_email') {
+        return await utils.verify_email_code(userid, response, data);
+    }
+    return true;
 }
 
 async function change_preferred_mfa(request, response){
@@ -768,7 +756,6 @@ export {
     add_friends,
     accept_friends,
     reject_friend,
-    block_friend,
     delete_account,
     play,
     set_up_mfa_buttons,
