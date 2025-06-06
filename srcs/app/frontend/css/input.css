@@ -2,117 +2,218 @@
 @tailwind components;
 @tailwind utilities;
 
-.form{
+.form {
     @apply rounded-xl border-solid border-2 border-violet-800 px-14 py-3 text-black text-center
 }
 
-.error_input{
+.error_input {
     @apply rounded-xl border-solid border-4 border-red-900 px-14 py-3 text-black text-center
 }
 
-.background{
+.background {
     @apply h-screen w-screen bg-gradient-to-br from-[#000766] via-black to-[#5e2669] relative
 }
 
-.bubble{
+.bubble {
     @apply absolute bg-gradient-to-br shadow-2xl shadow-red-950 z-0 rounded-full
 }
 
-.trash_enable{
+.trash_enable {
     @apply flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl cursor-pointer
 }
 
-.trash_disable{
+.trash_disable {
 @apply flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#b62a2a] from-45% to-50% via-black from-[#b62a2a] border-black border border-spacing-5 rounded-xl cursor-not-allowed
 }
 
-.field{
+.field {
     @apply bg-gray-600 w-11/12 max-w-lg rounded-3xl p-6 mx-auto bg-clip-padding backdrop-filter backdrop-blur-xl bg-opacity-30 border-[#ff00d0] border-2 shadow-strong shadow-[#ff00d0]/80
 }
 
-.user_field{
+.user_field {
     @apply bg-gray-600 w-11/12 max-w-5xl rounded-3xl p-6 mx-auto bg-clip-padding backdrop-filter backdrop-blur-xl bg-opacity-30 border-[#ff00d0] border-2 shadow-strong shadow-[#ff00d0]/80
 }
 
-.buttons{
+.buttons {
     @apply flex items-center gap-2 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl
 }
 
-.delete_button{
+.delete_button {
     @apply flex items-center gap-2 bg-gradient-to-br to-[#e41010] from-[#ee6e6e] border-black border border-spacing-5 rounded-xl
 }
 
-.buttons_small_C{
+.buttons_small_C {
     @apply to-[#d16e1d] from-[#e0d35f]
 }
 
-.button_text{
+.button_text {
     @apply font-bold text-3xl
 }
 
-.number_input{
+.number_input {
     @apply font-bold w-14 h-20 text-center bg-transparent border-b-4 text-white text-6xl
 }
 
-.field_error{
+.field_error {
     @apply text-red-700 text-lg font-semibold ml-1
 }
 
-.input_field{
+.input_field {
     @apply rounded-xl border-2 border-violet-800 py-3 text-black text-left pl-14 text-lg w-full outline-none
 }
 
-.input_field2{
+.input_field2 {
     @apply rounded-xl border-2 border-[#dac62f] py-3 text-black text-left pl-3 text-lg w-full outline-none
 }
 
-.input_field_error{
+.input_field_error {
     @apply rounded-xl border-2 border-red-800 py-3 text-black bg-red-700/10 text-left pl-14 text-lg w-full
 }
 
-.input_svg{
+.input_svg {
     @apply absolute py-4 start-0 flex items-center justify-center ps-4 pointer-events-none bg-gray-600/30 rounded-l-lg pr-4
 }
 
-.password_eye{
+.password_eye {
     @apply absolute py-4 end-0 flex items-center justify-center pe-4 pl-4 pointer-events-auto
 }
 
-.label_text{
+.label_text {
     @apply text-[#ffffff] font-bold text-lg
 }
 
-.input_total{
+.input_total {
     @apply transition
 }
 
-.label_profile{
+.label_profile {
     @apply font-bold text-lg uppercase
 }
 
 
 /* Grigorii */
 
-.tournament-layout{
+/* Tournament */
+.tournament-layout {
     @apply grid gap-2 grid-cols-2
 }
 
-.full-btn{
+.full-btn {
     @apply w-full h-[100px] mb-8 text-base border-black border-solid border-2
 }
 
-.t-right .t-card{
+.t-right .t-card {
     @apply flex justify-between items-center border-2 border-solid border-black p-6 mb-6
 }
 
-.t-card .join-btn{
+.t-card .join-btn {
     @apply w-[120px] h-[60px] border-2 border-solid border-black bg-white cursor-pointer
 }
 
-.TLobby-row{
+.TLobby-row {
     @apply flex items-center
 }
 
-.t-status{
+.t-status {
     @apply inline-block w-4 h-4 rounded-full
+}
+
+.t-name {
+    @apply flex-1
+}
+
+.t-status {
+    @apply w-4 h-4 rounded-full
+}
+
+.green-dot {
+    @apply w-3 h-3 rounded-full bg-[#4caf50]
+}
+
+.red-dot   {
+    @apply w-3 h-3 rounded-full bg-[#f44336]
+}
+
+
+/* Bracked */
+.bracket-overlay {
+    @apply fixed inset-0 z-[9999] flex gap-8 p-8 overflow-auto bg-[#000000e6] text-whit font-sans
+}
+
+.round-col {
+    @apply flex flex-col gap-4
+}
+
+.match-card {
+    @apply min-w-40 py-2 px-4 rounded-md bg-[#222] flex flex-col items-center
+}
+
+.match-card .vs {
+    @apply my-1 opacity-60    
+}
+
+
+/* STYLE */
+
+.full-btn {
+    @apply border-2 border-black bg-whit cursor-pointer hover:bg-[#f1f1f1]
+}
+
+.square-btn {
+    @apply border-2 border-black bg-white cursor-pointer w-36 h-16 hover:bg-[#f1f1f1]
+}
+
+.green-dot {
+    @apply w-6 h-6 rounded-full inline-block ml-auto mr-2 bg-[#46c34b]
+}
+
+.red-dot {
+    @apply w-6 h-6 rounded-full inline-block ml-auto mr-2 relative bg-[#e43f3f] after:text-white after:text-base after:font-bold after:absolute after:inset-0 after:grid after:place-items-center
+}
+
+
+
+
+.TLobby-table {
+    @apply max-w-[620px] m-0 
+    max-width:620px; margin:0 auto 2rem; border:2px solid #000;
+}
+.TLobby-row {
+    display:flex; justify-content:space-between; align-items:center;
+    border-top:2px solid #000; padding:12px 18px;
+    font-weight:600; text-transform:uppercase;
+}
+.TLobby-row:first-child { border-top:none; }
+.code-box {
+    max-width:380px; height:70px; margin:0 auto; display:flex;
+    border:2px solid #000;
+}
+.code-box input {
+    flex:1; border:none; font-size:1.4rem; padding:0 1rem; outline:none;
+    text-transform:uppercase;
+}
+.code-box button {
+    width:70px; border-left:2px solid #000; background:url('/copy.svg') center/28px no-repeat;
+    cursor:pointer;
+}
+
+.TLobby-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+
+.t-status {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+.green-dot {
+    background-color: #4caf50; height: 10px; width: 10px; border-radius: 50%
+}
+.red-dot {
+    background-color: #f44336; height: 10px; width: 10px; border-radius: 50%
 }
