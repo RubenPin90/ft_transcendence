@@ -34,16 +34,5 @@
     opacity: .6;
   }
   
-  /* host button */
-  .bracket-begin-btn {
-    margin-top: 2rem;
-    align-self: center;
-    padding: .6rem 1.4rem;
-    font-size: 1rem;
-    background: #357;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-  }
+
   

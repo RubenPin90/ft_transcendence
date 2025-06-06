@@ -1,3 +1,5 @@
+import { render_mfa } from "./redirect.js";
+
 async function remove_mfa(what : string){
     const response = await fetch ('/mfa',{
         method: 'POST',

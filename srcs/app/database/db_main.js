@@ -61,30 +61,35 @@ async function create_db() {
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
         );`);
 
-        // 1v1
+        // match
         await db.run(`
-        CREATE TABLE IF NOT EXISTS 1v1 (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            points TEXT NOT NULL,
-            player1 TEXT NOT NULL,
-            player2 TEXT NOT NULL,
-            date DATETIME DEFAULT CURRENT_TIMESTAMP,
-            match_id TEXT UNIQUE NOT NULL,
-            FOREIGN KEY (player1) REFERENCES settings(self) ON DELETE CASCADE,
-            FOREIGN KEY (player2) REFERENCES settings(self) ON DELETE CASCADE
-    );`);
+            CREATE TABLE IF NOT EXISTS match (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                points        TEXT NOT NULL,
+                player1       TEXT NOT NULL,
+                player2       TEXT NOT NULL,
+                winner        TEXT,                             -- NULL until the game ends
+                date          DATETIME DEFAULT CURRENT_TIMESTAMP,
+                match_id      TEXT UNIQUE NOT NULL,             -- uuid for the room
+                tournament_id TEXT,                             -- NULL → “normal” game
+                FOREIGN KEY (player1)      REFERENCES users(self)        ON DELETE CASCADE,
+                FOREIGN KEY (player2)      REFERENCES users(self)        ON DELETE CASCADE,
+                FOREIGN KEY (winner)       REFERENCES users(self)        ON DELETE SET NULL,
+                FOREIGN KEY (tournament_id)REFERENCES tournaments(tournament_id) ON DELETE CASCADE
+            );`);
 
         // tournaments
         await db.run(`
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tournament_id TEXT NOT NULL,
-            round INTEGER NOT NULL,
-            match_id TEXT NOT NULL,
-            winner TEXT,
-            date DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (match_id) REFERENCES 1v1(match_id) ON DELETE CASCADE,
-            FOREIGN KEY (winner) REFERENCES settings(self) ON DELETE SET NULL
+        CREATE TABLE IF NOT EXISTS tournaments (
+            tournament_id TEXT PRIMARY KEY,          -- uuid from createTournament
+            host_id       TEXT NOT NULL,             -- P1 / creator
+            winner_id     TEXT,                      -- NULL until bracket ends
+            created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (host_id)  REFERENCES users(self) ON DELETE CASCADE,
+            FOREIGN KEY (winner_id)REFERENCES users(self) ON DELETE SET NULL
         );`);
+            
+
 
 
         await db.run(`
@@ -104,7 +109,6 @@ async function create_db() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user1 TEXT NOT NULL,
             user2 TEXT NOT NULL,
-            since DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user1) REFERENCES settings(self) ON DELETE CASCADE,
             FOREIGN KEY (user2) REFERENCES settings(self) ON DELETE CASCADE,
             UNIQUE (user1, user2)

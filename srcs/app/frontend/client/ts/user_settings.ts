@@ -254,7 +254,7 @@ async function change_logindata(){
 
     if (emailValue == '')
         console.log("EMAILVALUE IS EMPTY");
-    
+
     const value_struct = {
         email: emailValue,
         password: passValue,

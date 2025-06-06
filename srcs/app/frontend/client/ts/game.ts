@@ -7,6 +7,9 @@ interface PlayerState {
   y: number;
 }
 
+let searchingForMatch = false;
+
+
 export interface GameState {
   roomId: string;
   players: PlayerState[];
@@ -37,34 +40,52 @@ export function setOnGameEnd(cb: (winnerId: string) => void): void {
 
 export function initGameCanvas(): void {
   const canvas = document.getElementById('game') as HTMLCanvasElement | null;
-  if (!canvas) return;
+  if (!canvas) {
+    alert("GAME CANVAS NOT FOUND");
+    return;
+  }
   ctx = canvas.getContext('2d');
 }
 
 
 export function startGame(mode: GameMode): void {
   ws = getSocket();
-  if (!currentRoomId) {
-    currentRoomId = localStorage.getItem('currentGameId');
-  }
+  console.log('[startGame] called, ws readyState:', ws?.readyState, 'mode:', mode);
+  userId        = localStorage.getItem('playerId');
+  currentRoomId = localStorage.getItem('currentGameId');
   if (!userId) {
     userId = localStorage.getItem('playerId');
   }
+  console.log('here1');
+  if (!currentRoomId) {
+    currentRoomId = localStorage.getItem('currentGameId');
+  }
+  console.log('here2');
 
   if (mode === 'pve') {
-    const sendJoinQueue = () =>
+    console.log('here3');
+    if (searchingForMatch) return;
+    searchingForMatch = true;
+    console.log('here4');
+    const sendJoinQueue = () =>{
+      console.log('[startGame] sending joinQueue for mode:', mode);
       send({ type: 'joinQueue', payload: { mode } });
+    }
+  
     if (ws.readyState === WebSocket.OPEN) {
       sendJoinQueue();
     } else {
       ws.addEventListener('open', sendJoinQueue, { once: true });
     }
   }
+  
 
   if (!matchFoundListener) {
     matchFoundListener = (msg) => {
+      searchingForMatch = false;
       currentRoomId = msg.payload.gameId;
       userId        = msg.payload.userId;
+      localStorage.setItem('currentGameId', currentRoomId);
       console.log(`Match ready: room=${currentRoomId}, user=${userId}`);
     };
     on('matchFound', matchFoundListener);
@@ -90,11 +111,9 @@ export function startGame(mode: GameMode): void {
 }
 
 export function stopGame(): void {
+  searchingForMatch = false;
   if (ws && ws.readyState === WebSocket.OPEN) {
-    send({
-      type: 'leaveGame',
-      payload: { roomId: currentRoomId, userId }
-    });
+    send({ type: 'leaveGame', payload: { roomId: currentRoomId, userId } });
   }
 
   if (matchFoundListener) {
@@ -105,8 +124,10 @@ export function stopGame(): void {
     off('state', stateListener);
     stateListener = null;
   }
+  currentRoomId = null;
+  inputHandlersRegistered = false;
+  localStorage.removeItem('currentGameId');
 }
-
 
 export function drawFrame(state: GameState): void {
   if (
@@ -151,7 +172,7 @@ export function drawFrame(state: GameState): void {
   );
 }
 
-export function setupInputHandlers(): void {
+export function setupInputHandlers(): () => void {
   let moveInterval: number | null = null;
 
   function getDirection(): 'up' | 'down' | null {
@@ -162,38 +183,33 @@ export function setupInputHandlers(): void {
 
   function sendMovement(active: boolean): void {
     if (!currentRoomId || !userId) return;
-    const direction = getDirection();
     send({
       type: 'movePaddle',
       payload: {
         roomId: currentRoomId,
         userId,
-        direction: active ? direction : 'stop',
+        direction: active ? getDirection() : 'stop',
         active
       }
     });
   }
 
-  window.addEventListener('keydown', (e) => {
+  const onKeyDown = (e: KeyboardEvent) => {
     if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && userId && currentRoomId) {
       if (!keysPressed[e.key]) {
         keysPressed[e.key] = true;
         sendMovement(true);
         if (moveInterval == null) {
-          moveInterval = window.setInterval(() => {
-            sendMovement(true);
-          }, 1000 / 60);
+          moveInterval = window.setInterval(() => sendMovement(true), 1000 / 60);
         }
       }
       e.preventDefault();
     }
-  });
+  };
 
-  window.addEventListener('keyup', (e) => {
+  const onKeyUp = (e: KeyboardEvent) => {
     if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && userId && currentRoomId) {
-      if (keysPressed[e.key]) {
-        keysPressed[e.key] = false;
-      }
+      keysPressed[e.key] = false;
       if (!keysPressed['ArrowUp'] && !keysPressed['ArrowDown'] && moveInterval !== null) {
         clearInterval(moveInterval);
         moveInterval = null;
@@ -201,5 +217,15 @@ export function setupInputHandlers(): void {
       }
       e.preventDefault();
     }
-  });
+  };
+
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keyup', onKeyUp);
+
+
+  return () => {
+    window.removeEventListener('keydown', onKeyDown);
+    window.removeEventListener('keyup', onKeyUp);
+    if (moveInterval !== null) clearInterval(moveInterval);
+  };
 }

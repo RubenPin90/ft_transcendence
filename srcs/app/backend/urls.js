@@ -3,7 +3,6 @@ import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import fastifyPlugin from 'fastify-plugin';
 import * as utils from './utils.js';
-
 import * as views from './views.js';
 import * as mimes from './mimes.js';
 import * as send from './responses.js';
@@ -35,6 +34,7 @@ export default fastifyPlugin(async function routes(fastify) {
     if (file.endsWith('.svg')) {
       mime = 'image/svg+xml';
     } else {
+      reply.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'SVG not found'});
       return reply.callNotFound();
     }
     
@@ -43,7 +43,8 @@ export default fastifyPlugin(async function routes(fastify) {
       const data = await fs.readFile(filePath);
       reply.type(mime).send(data);
     } catch (err) {
-      reply.code(404).send('File not found');
+      reply.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'File not found'});
+      return reply.callNotFound();
     }
   });
   
@@ -75,12 +76,17 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.post('/reject_friend', (req, reply) => views.reject_friend(req, reply));
   // Block done
 
+  fastify.get('/play', (req, reply) => views.play(req, reply));
+
   fastify.post('/delete_account', (req, reply) => views.delete_account(req, reply));
   fastify.post('/mfa_setup', (req, reply) => views.set_up_mfa_buttons(req, reply));
   fastify.post('/mfa', (req, reply) => views.mfa(req, reply));
-  fastify.post("/get_data", async (request, reply) => utils.get_data(request, reply));
+  fastify.post('/get_data', utils.get_data);  
   fastify.post("/check_preferred_mfa", async (request, reply) => views.check_preferred_mfa(request, reply));
 
+  fastify.post("/check_expire", (request, reply) => utils.check_expired_token(request, reply));
+  // Block done
+  fastify.get('/game/*', (req, reply) => views.home(req, reply));
   // --- 404 fallback ---
   fastify.setNotFoundHandler((req, reply) => {
     return send.send_error_page('404.html', reply, 404);

@@ -73,8 +73,8 @@ async function register(request, response) {
         const token = await modules.create_jwt(settings.self, '1h');
         const lang = await modules.create_jwt('en', '1h');
         
-        modules.set_cookie(response, 'token', token, 3600);
-        modules.set_cookie(response, 'lang', lang, 3600);
+        modules.set_cookie(response, 'token', token, 3600); //todo change back to 3600
+        modules.set_cookie(response, 'lang', lang, 3600); //todo change back to 3600
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": null });
         return true;
     }
@@ -264,12 +264,16 @@ async function profile(request, response) {
         }
         const userid = valid_token.userid;
         var inner = request.body.innervalue;
+
+        // if (await friends_request.get_friend_request_value(userid) === null){
+        //     await friends_request.create_friend_request_value(-1, 0);
+        // }
         
         inner = inner.replace('{{username}}', user.username);
         inner = inner.replace('{{email}}', settings.email);
         inner = inner.replace('{{picture}}', settings.pfp);
         inner = inner.replace('{{status}}', ()=> {if (user.status === 1) return 'online'; else return 'offline'});
-        if (await friends_request.get_friend_request_value('self', userid) != undefined)
+        if (await friends_request.get_friend_request_value('receiver_id', userid) != undefined)
             inner = inner.replace('{{Friends}}', await friends_request.show_accepted_friends(userid))
         else
             inner = inner.replace('{{Friends}}', '<span>No friends currenlty :\'( you lonely MF</span>');
@@ -416,6 +420,7 @@ async function friends(request, response){
         const userid = valid_token.userid;
         var inner = request.body.innervalue;
         // inner = await translator.cycle_translations(inner, decoded_lang);
+        // if (await friends_request.get_friend_request_value('self', userid) != undefined)
         inner = inner.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": inner});
         return true;
@@ -480,7 +485,8 @@ async function add_friends(request, response){
     }
 
     const result = await friends_request.create_friend_request_value(userid, receiver_db.self);
-    if (!result || result === undefined){
+    if (!result || result === undefined || result < 0){
+        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "Error" });
         console.error("create_friend_request_value caught an error");
         return null;
     }
@@ -559,23 +565,27 @@ async function delete_account(request, response) {
 
 async function play(request, response) {
     console.log("play page requested");
-    const [keys, values] = modules.get_cookies(request.headers.cookie);
+    const [keys, values] = modules.get_cookies(request);
+    await utils.check_for_invalid_token(request, response, keys, values); 
     if (!keys?.includes('token')) {
-        return send.redirect(response, '/login', 302);
+        return await login(request, response);
     }
 
-    const tokenIndex = keys.findIndex((key) => key === 'token');
-    const token = values[tokenIndex];
+    // const tokenIndex = keys.findIndex((key) => key === 'token');
+    // const token = values[tokenIndex];
+    const token = values[keys.indexOf('token')];
     let decoded;
     try {
         decoded = await modules.get_jwt(token);
     } catch (err) {
-        return send.redirect(response, '/login', 302);
+        response.code(400).headers(response, {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded' });
+        return true;
     }
 
     const user = await users_db.get_users_value('self', decoded.userid);
     if (!user || user === undefined){
-        return send.send_error_page('404.html', response, 404);
+        response.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'fail', "Content": "No user or user undefined" });
+        return true;
     }
 
     const status = await send.send_html('index.html', response, 200, async(data) => {
