@@ -1,20 +1,11 @@
-// matchMaking.js – matchmaking helpers for ft_transcendence server
-// -------------------------------------------------------------
-// Exports a small set of pure functions that operate on a single
-// *instance* of matchManager, so there is no accidental shadowing
-// of the exported matchManager *class* and its static fields.
-// -------------------------------------------------------------
-
 import { GAME_MODES } from './matchManager.js';
 import { v4 as uuidv4 } from 'uuid'
-// import BotClient from './bot.js';
 
 
 
 
 export function createGameAI(matchManager, userId, ws) {
   const botId = `bot_${uuidv4()}`;
-  // pass botId into createRoom
   const room  = matchManager.createRoom({
     mode:       GAME_MODES.PVE,
     maxPlayers: 2,
@@ -39,7 +30,6 @@ export function joinQueueTournament(userId, ws) {
   const REQUIRED_PLAYERS = 4
 
   waitingTournamentPlayers.push({ userId, ws })
-  //console.log(`${userId} queued for a Tournament. Currently: ${waitingTournamentPlayers.length} waiting.`)
 
   if (waitingTournamentPlayers.length >= REQUIRED_PLAYERS) {
     const group = waitingTournamentPlayers.splice(0, REQUIRED_PLAYERS)
@@ -65,7 +55,6 @@ export function joinQueueTournament(userId, ws) {
         },
       }))
     })
-
     //console.log(`Tournament started with ${REQUIRED_PLAYERS} players (roomId = ${room.roomId})`)
   }
 }
@@ -73,11 +62,10 @@ export function joinQueueTournament(userId, ws) {
 export function joinQueue1v1(matchManager, userId, ws) {
   const queue = matchManager.queues[GAME_MODES.PVP];
 
-  // already waiting?  do nothing
   if (queue.some(e => e.userId === userId)) return null;
 
   if (queue.length > 0) {
-    const rival = queue.shift();                 // first waiting player
+    const rival = queue.shift();
 
     const room = matchManager.createRoom({
       mode:       GAME_MODES.PVP,
@@ -105,7 +93,6 @@ export function joinQueue1v1(matchManager, userId, ws) {
     return room;
   }
 
-  // no rival yet → enqueue and wait
   queue.push({ userId, ws });
   //console.log(`${userId} is now waiting for a 1‑v‑1 opponent…`);
   return null;

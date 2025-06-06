@@ -20,21 +20,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PORT = 8080;
 
-// ───── create managers ─────
 const socketRegistry = new SocketRegistry();
 const matchManager = new MatchManager(socketRegistry);
 const tournamentManager = new TournamentManager(socketRegistry, matchManager);
 tournamentManager.matchManager = matchManager;
 matchManager.tournamentManager = tournamentManager;
 
-// ───── create tournaments ─────
 setInterval(() => tournamentManager.broadcastTournamentUpdate(), 3000);
 for (let i = 0; i < 3; i++) tournamentManager.createTournament(null, 'SERVER');
 
-// ───── initialize fastify ─────
 const fastify = Fastify({ logger: false });
 
-// ───── plugins ─────
 await fastify.register(urlsPlugin);
 await fastify.register(fastifyCookie);
 await fastify.register(websocket);
@@ -56,7 +52,6 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
   console.log('🔑 ws token verified:', userId);
 
 
-  /* 3. attach bookkeeping props */
   ws.userId        = userId;
   ws.inGame        = false;
   ws.currentGameId = null;
@@ -65,7 +60,6 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
   console.log('🔌 ws authenticated:', userId);
   ws.send(JSON.stringify({ type: 'welcome', payload: { userId } }));
 
-  /* 4. wire managers */
   socketRegistry.add(userId, ws);
   matchManager.registerSocket(userId, ws);
 

@@ -40,6 +40,7 @@ export function setOnGameEnd(cb: (winnerId: string) => void): void {
 
 export function initGameCanvas(): void {
   const canvas = document.getElementById('game') as HTMLCanvasElement | null;
+  console.log('here');
   if (!canvas) {
     alert("GAME CANVAS NOT FOUND");
     return;
@@ -56,17 +57,13 @@ export function startGame(mode: GameMode): void {
   if (!userId) {
     userId = localStorage.getItem('playerId');
   }
-  console.log('here1');
   if (!currentRoomId) {
     currentRoomId = localStorage.getItem('currentGameId');
   }
-  console.log('here2');
 
   if (mode === 'pve') {
-    console.log('here3');
     if (searchingForMatch) return;
     searchingForMatch = true;
-    console.log('here4');
     const sendJoinQueue = () =>{
       console.log('[startGame] sending joinQueue for mode:', mode);
       send({ type: 'joinQueue', payload: { mode } });

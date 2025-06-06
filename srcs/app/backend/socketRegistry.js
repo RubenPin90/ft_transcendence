@@ -1,4 +1,3 @@
-// SocketRegistry.js
 import { EventEmitter } from 'events';
 
 export class SocketRegistry extends EventEmitter {

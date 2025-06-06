@@ -1,20 +1,13 @@
-// tournamentManager.js (refactored to work with the new SocketRegistry)
 import { v4 as uuidv4 } from 'uuid';
 import { MatchManager }   from './matchManager.js';
 import * as db from '../../database/db_matches_tournaments.js';
 
-/**
- * Helper utilities ----------------------------------------------------------
- */
 const WS_OPEN = 1;
 const getPlayerId = p => (typeof p === 'string' ? p : p.id);
 const hasUser    = (players, uid) => players.some(p => getPlayerId(p) === uid);
 const removeUser = (players, uid) => players.filter(p => getPlayerId(p) !== uid);
 const nextPow2 = n => Math.max(2, 2 ** Math.ceil(Math.log2(n)));
 
-/**
- * TournamentManager ---------------------------------------------------------
- */
 export class TournamentManager {
   /**
    * @param {SocketRegistry} socketRegistry – our centralised registry
@@ -26,41 +19,37 @@ export class TournamentManager {
       this.tournaments = {};
       this.rooms       = {};
 
-      // Use the shared instance – don’t create a new one
       this.matchManager = matchManager;
 
-      // Now the event really comes from this instance
       this.matchManager.on('matchFinished', ({ roomId, winnerId, reason, tournamentId }) => {
-    // If no tournamentId => it was just a casual match. Bail out.
-    if (!tournamentId) {
-      return;
-    }
+      if (!tournamentId) {
+        return;
+      }
 
-    console.log('tournament matchFinished:', { roomId, winnerId, tournamentId });
-    const lobby = this.rooms[roomId];
-    if (!lobby) return;
+      console.log('tournament matchFinished:', { roomId, winnerId, tournamentId });
+      const lobby = this.rooms[roomId];
+      if (!lobby) return;
 
-    // …your existing logic for finding losers, sending “eliminated”, etc.…
-    const losers = lobby.players
-      .filter(p => getPlayerId(p) !== winnerId)
-      .map(p => getPlayerId(p));
+      const losers = lobby.players
+        .filter(p => getPlayerId(p) !== winnerId)
+        .map(p => getPlayerId(p));
 
-    losers.forEach(uid => {
-      this.#sendToUser(uid, {
-        type: 'eliminated',
-        payload: {
-          tournamentId : lobby.tournamentId,
-          matchId      : roomId,
-          winnerId,
-          reason       : 'lostMatch'
-        }
+      losers.forEach(uid => {
+        this.#sendToUser(uid, {
+          type: 'eliminated',
+          payload: {
+            tournamentId : lobby.tournamentId,
+            matchId      : roomId,
+            winnerId,
+            reason       : 'lostMatch'
+          }
+        });
+        const t = this.tournaments[lobby.tournamentId];
+        if (t) t.eliminated.add(uid);
       });
-      const t = this.tournaments[lobby.tournamentId];
-      if (t) t.eliminated.add(uid);
-    });
 
-    this.reportMatchResult(lobby.tournamentId, roomId, winnerId);
-  });
+      this.reportMatchResult(lobby.tournamentId, roomId, winnerId);
+    });
   }
 
   #activeIds(tournament) {
@@ -68,16 +57,11 @@ export class TournamentManager {
       .map(getPlayerId)
       .filter(id => !tournament.eliminated.has(id));
   }
-  // -------------------------------------------------------------------------
-  // Convenience wrappers around the registry
-  // -------------------------------------------------------------------------
-  /** Send a JSON-serialisable payload to a single user */
   #sendToUser(userId, data) {
     const ws = this.socketRegistry.get(userId);
     if (ws?.readyState === WS_OPEN) ws.send(JSON.stringify(data));
   }
 
-  /** Broadcast a message to a specific list of users */
   #broadcastToUsers(userIds, data) {
     const msg = JSON.stringify(data);
     for (const id of userIds) {
@@ -86,14 +70,10 @@ export class TournamentManager {
     }
   }
 
-  /** Broadcast to *everyone* currently connected */
   #broadcastAll(type, payload) {
-    this.socketRegistry.broadcast(type, payload); // registry handles stringify
+    this.socketRegistry.broadcast(type, payload);
   }
 
-  // -------------------------------------------------------------------------
-  // Public API
-  // -------------------------------------------------------------------------
   userAlreadyInTournament(userId) {
     return Object.values(this.tournaments)
       .some(t => t.host === userId || hasUser(t.players, userId));
@@ -193,7 +173,6 @@ export class TournamentManager {
 
     this.#ensureHostReady(tournament);
 
-    // 1. Confirm to the joining client ------------------------------------------------
     this.#sendToUser(userId, {
       type   : 'joinedTLobby',
       payload: {
@@ -208,15 +187,10 @@ export class TournamentManager {
         },
       },
     });
-
-    // 2. Broadcast lobby + tournament list updates ------------------------------------
     this.broadcastTLobby(tournament);
     this.broadcastTournamentUpdate();
   }
 
-  // -------------------------------------------------------------------------
-  // Lobby & Bracket updates
-  // -------------------------------------------------------------------------
   broadcastTLobby(tournament) {
     const lobbyPayload = {
       type   : 'tLobbyState',
@@ -241,7 +215,6 @@ export class TournamentManager {
     const tourney = this.tournaments[tournamentId];
     if (!tourney) return;
   
-    /* ───────────────────── 1. locate match object in memory ───────────────────── */
     let roundIdx = -1;
     let matchObj = null;
   
@@ -253,14 +226,12 @@ export class TournamentManager {
   
     matchObj.winner = winnerId;
   
-    /* ───────────────────── 1-bis.  persist winner in the DB  ───────────────────── */
     try {
       await db.update_match('winner', winnerId, matchId);
     } catch (err) {
       console.error('DB-update failed:', err);
     }
   
-    /* ───────────────────── 2. last round?  declare champion ───────────────────── */
     if (roundIdx + 1 >= tourney.rounds.length) {
       tourney.winner = winnerId;
   
@@ -277,15 +248,14 @@ export class TournamentManager {
           payload: { tournamentId, winnerId }
         }
       );
-      return; // nothing else to do
+      return;
     }
   
-    /* ───────────────────── 3. propagate winner to next round ───────────────────── */
     const nextRound   = tourney.rounds[roundIdx + 1];
     const placeholder = nextRound.find(m =>
       m.players.some(p => p && p.pendingMatchId === matchId)
     );
-    if (!placeholder) return;        // should never happen
+    if (!placeholder) return;
   
     const winnerName =
       tourney.players.find(p => getPlayerId(p) === winnerId)?.name ??
@@ -298,7 +268,6 @@ export class TournamentManager {
         : p
     );
   
-    /* 3-bis. broadcast updated bracket */
     this.#broadcastToUsers(
       this.#activeIds(tourney),
       {
@@ -307,13 +276,11 @@ export class TournamentManager {
       }
     );
   
-    /* ───────────────────── 4. spawn next room if ready ───────────────────── */
     const [p1, p2] = placeholder.players;
     if (p1 && !p1.pendingMatchId && p2 && !p2.pendingMatchId) {
       this.createMatchRoom(tournamentId, placeholder.matchId, p1, p2);
     }
   
-    /* ───────────────────── 5. if whole round is ready, begin it ───────────── */
     const nextRoundFilled =
       roundIdx + 1 < tourney.rounds.length &&
       tourney.rounds[roundIdx + 1].every(m =>
@@ -348,19 +315,12 @@ export class TournamentManager {
     this.#broadcastAll('tournamentList', list);
   }
 
-  // -------------------------------------------------------------------------
-  // Ready-state helpers
-  // -------------------------------------------------------------------------
   #ensureHostReady(tournament) {
     const hostPlayer = tournament.players.find(p => getPlayerId(p) === tournament.host);
     if (hostPlayer) hostPlayer.ready = true;
   }
   
 
-  // -------------------------------------------------------------------------
-  // Match handling
-  // -------------------------------------------------------------------------
-  // 1. Called when the host clicks “Start tournament” — just shows the bracket
   generateBracket(tournamentId) {
     const tourney = this.tournaments[tournamentId];
     if (!tourney) return;
@@ -443,9 +403,6 @@ export class TournamentManager {
     };
     this.rooms[matchId] = lobbyRoom;
   
-    // ------------------------------------------------------------------
-    // 1.  Build the room and pre-seat the creator
-    // ------------------------------------------------------------------
     const creatorId  = getPlayerId(player1);
     const opponentId = getPlayerId(player2);
     this.matchManager.createRoom({
@@ -455,13 +412,11 @@ export class TournamentManager {
       tournamentId: tournamentId
     });
   
-     // 2.  Notify the participants
      this.#notifyPlayers(lobbyRoom, tournamentId);
   }
   
   
   #notifyPlayers(room, tournamentId) {
-    // Look up round and slot info
     const tourney = this.tournaments[tournamentId];
     const match = tourney.rounds?.flat().find(m => m.matchId === room.matchId);
   

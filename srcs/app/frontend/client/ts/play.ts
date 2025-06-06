@@ -29,26 +29,15 @@ import { setupMatchmakingHandlers } from './matchmaking.js';
 import { on, send, getSocket } from './socket.js';
 import { where_am_i, toggle_divs } from './redirect.js';
 
-/*
- * ────────────────────────────────────────────────────────────
- *  Module‑level state
- * ────────────────────────────────────────────────────────────
- */
 let currentRoomId: string | null       = null;
 let currentMatch: string | null        = null;
 let teardownInput: (() => void) | null = null;
 
 
 
-let currentTournamentId: string | null = null;  // <‑‑ remember active tournament
+let currentTournamentId: string | null = null;
 let isFirstRound                       = true;
-// let wasInGame = false;
 
-/*
- * ────────────────────────────────────────────────────────────
- *  1.  Guarantee we have a socket right away and recover userId
- * ────────────────────────────────────────────────────────────
- */
 
 console.log('[play.ts] Initializing play module...');
 
@@ -66,12 +55,6 @@ on('error', (msg) => {
   banner.style.display  = 'block';
 });
 
-/*
- * ────────────────────────────────────────────────────────────
- *  2.  TLobby and tournament events – unchanged API except for
- *      new round‑start flow
- * ────────────────────────────────────────────────────────────
- */
 
 on('joinedTLobby', (msg) => {
   const { playerId, TLobby } = msg.payload;
@@ -94,7 +77,7 @@ on<'matchAssigned'>('matchAssigned', (msg) => {
   console.log('[matchAssigned] navigating to game:', matchId, players);
   localStorage.setItem('currentGameId', matchId);
   currentRoomId        = matchId;
-  currentTournamentId  = tournamentId;   // remember for later beginRound
+  currentTournamentId  = tournamentId;
 
   setTimeout(() => {
     send({ type: 'joinMatchRoom', payload: { tournamentId, matchId } });
@@ -103,21 +86,13 @@ on<'matchAssigned'>('matchAssigned', (msg) => {
 });
 
 on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
-  /*
-   * After *every* round the server broadcasts the updated bracket. We now start
-   * *only* the very first round automatically. For later rounds we wait for
-   * each match winner to acknowledge the alert and then – if they actually
-   * *won* – fire a beginRound after a 2 s grace period.
-   */
   const { tournamentId, rounds } = msg.payload as {
     tournamentId: string;
     rounds: MatchStub[][] | MatchStub[];
   };
 
-  // Store for later beginRound use in setOnGameEnd
   currentTournamentId = tournamentId;
 
-  /* Bracket overlay rendering – unchanged */
   const normalized: MatchStub[][] = Array.isArray(rounds[0])
     ? rounds as MatchStub[][]
     : [rounds as MatchStub[]];
@@ -139,10 +114,6 @@ on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
     await showVersusOverlay(A.name, B.name);
   }
 
-  /*
-   * Only auto‑start the *very first* round. Later rounds are started from
-   * setOnGameEnd once winners acknowledge.
-   */
   if (isFirstRound) {
     send({ type: 'beginRound', payload: { tournamentId } });
     isFirstRound = false;
@@ -173,21 +144,17 @@ on('tournamentList', (msg) => {
 on<'tournamentFinished'>('tournamentFinished', (msg) => {
   const { winnerId } = msg.payload;
 
-  // stop any running game loop
   stopGame();
-  teardownInput?.();               // remove key listeners
+  teardownInput?.();               
   teardownInput = null;
 
-  // hide the bracket overlay and other pages
   hideAllPages();
 
-  // optional: clear local tournament state if you store it
   setCurrentTLobby(null);
   localStorage.removeItem('currentGameId');
   currentTournamentId = null;
   isFirstRound        = true;
 
-  // notify the user
   const myId = localStorage.getItem('playerId') ??
                (getSocket() as any).userId;
 
@@ -197,7 +164,6 @@ on<'tournamentFinished'>('tournamentFinished', (msg) => {
     alert('Tournament finished.');
   }
 
-  // return to main menu
   toggle_divs('home_div');
   window.location.href = '/';
 });
@@ -215,7 +181,6 @@ on<'eliminated'>('eliminated', (msg) => {
 
   alert('You have been eliminated from the tournament 🏳️');
 
-  // Prevent stale state inside the SPA
   localStorage.removeItem('currentGameId');
   setCurrentTLobby(null as any);
   teardownInput?.();
@@ -230,11 +195,6 @@ on<'roundStarted'>('roundStarted', msg => {
   navigate(`/tournament/round${roundNumber}`);
 });
 
-/*
- * ────────────────────────────────────────────────────────────
- *  3.  Generic matchmaking & game‑page transitions
- * ────────────────────────────────────────────────────────────
- */
 
 on('matchFound', (msg) => {
   const { gameId, mode, userId } = msg.payload;
@@ -245,11 +205,6 @@ on('matchFound', (msg) => {
   navigate(`/game/${mode === 'PVP' || mode === '1v1' ? '1v1' : 'pve'}`);
 });
 
-/*
- * ────────────────────────────────────────────────────────────
- *  4.  UI helpers & routing
- * ────────────────────────────────────────────────────────────
- */
 
 let markQueued: ((v: boolean) => void) | null = null;
 let currentMode: string | null = null;
@@ -305,7 +260,6 @@ function joinByCodeWithSocket(code?: string) {
 setOnGameEnd((winnerId: string) => {
   console.log('[play.ts] Game ended – winner:', winnerId);
 
-  // stop arrow‑key listeners, mark state clean
   teardownInput?.();
   teardownInput = null;
   markQueued?.(false);
@@ -326,7 +280,6 @@ setOnGameEnd((winnerId: string) => {
   }
 });
 
-/* ───────────────────────────────────────── Route handling ── */
 
 const navigate = (path: string) => {
   if (path === window.location.pathname) return;
@@ -350,6 +303,8 @@ function route() {
     window.history.replaceState(null, '', '/play');
     return route();
   }
+  if (lastPath === '/matchmaking' && lastPath != path)
+    leaveMatchmaking();
 
 
   teardownInput?.();
@@ -403,7 +358,6 @@ function route() {
     return;
   }
 
-  // ───────────── Game page ─────────────
   if (GAME_RE.test(path)) {
     document.getElementById('game-container')!.style.display = 'block';
     const mode = path.split('/')[2] || 'pve';
@@ -424,13 +378,11 @@ function route() {
     return;
   }
 
-  // ───────────── TLobby ─────────────
   if (path.startsWith('/tournament/')) {
     document.getElementById('t-lobby-page')!.style.display = 'block';
     return;
   }
 
-  // ───────────── Static pages ─────────────
   const mapping: Record<string, string> = {
     '/profile': 'profile-page',
     '/settings': 'settings-page'
@@ -441,14 +393,12 @@ function route() {
     return;
   }
 
-  // ───────────── Main menu (по умолчанию) ─────────────
   const mainMenuEl = document.getElementById('main-menu');
   if (mainMenuEl) {
     mainMenuEl.style.display = 'block';
   }
 }
 
-// Повесьте на popstate, чтобы ловить “назад/вперёд”:
 window.addEventListener('popstate', () => {
   route();
 });
@@ -467,8 +417,8 @@ function showGameContainerAndStart(): void {
   if (!cont) return;
 
   cont.style.display = 'block';
-  initGameCanvas();                // from game.js
-  startGame('1v1');                // from game.js
+  initGameCanvas();   
+  startGame('1v1');        
   teardownInput = setupInputHandlers();
 }
 
@@ -485,9 +435,6 @@ export function check() {
 
 window.addEventListener('popstate', check);
 
-/* ─────────────────────────────────────────
- *  Matchmaking helpers – unchanged
- * ───────────────────────────────────────── */
 
 function enterMatchmaking() {
   if (queued) return;

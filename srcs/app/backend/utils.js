@@ -979,7 +979,7 @@ async function replace_all_templates(request, response, state, override) {
 
 
 
-		play_main +=	'<div id="game-container" class="hidden">';
+		play_main +=	'<div id="game-container" class="">';
 		play_main +=		'<h2 id="game-mode-title"></h2>';
 		play_main +=		'<canvas id="game" width="800" height="600"></canvas>';
 		play_main +=	'</div>';

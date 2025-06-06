@@ -5,7 +5,6 @@ async function _db () {
   return open({ filename: './database/db.sqlite', driver: sqlite3.Database });
 }
 
-/* ────────────────────────── match (matches) ────────────────────────── */
 
 export async function get_matches () {
   const db = await _db();
@@ -65,9 +64,6 @@ export async function update_match (field, value, match_id) {
   }
 }
 
-/**
- * DELETE a match by match_id
- */
 export async function delete_match (match_id) {
   const db = await _db();
   try {
@@ -77,11 +73,6 @@ export async function delete_match (match_id) {
   }
 }
 
-/* ────────────────────────── tournament ────────────────────────── */
-
-/**
- * Get every row of every tournament, or just one tournament if id provided.
- */
 export async function get_tourney_rows (tournament_id = null) {
   const db = await _db();
   try {
