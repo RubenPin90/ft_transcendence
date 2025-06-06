@@ -49,19 +49,16 @@ async function create_friend_request_value(sender_id, receiver_id) {
     });
 
     try {
-        console.log("wwwwww");
         const sender = await db.get(`
             SELECT * FROM settings
             WHERE self = ?`, [sender_id]);
         if (!sender)
             return -1;
-        console.log("wwwwww");
         const receiver = await db.get(`
             SELECT * FROM settings
             WHERE self = ?`, [receiver_id]);
         if (!receiver)
             return -2;
-        console.log("wwwwww");
 		const existing_request = await db.get(
             `SELECT * FROM friend_request
             WHERE sender_id = ? AND receiver_id = ?`,
@@ -69,7 +66,6 @@ async function create_friend_request_value(sender_id, receiver_id) {
         );
         if (existing_request)
             return -3;
-        console.log("wwwwww");
         var row = await db.run(`
             INSERT INTO friend_request (sender_id, receiver_id)
             VALUES (?, ?)`, [sender.self, receiver.self]);

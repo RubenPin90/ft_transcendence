@@ -17,27 +17,3 @@ async function remove_mfa(what : string){
     };
 
 }
-
-async function change_preffered_mfa(preferred: string){
-
-    const response = await fetch('/change_preferred_mfa', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({"Value": preferred}),
-    });
-    
-}
-
-async function get_preferred_mfa(){
-    const button = document.getElementById("mfa_update_btn") as HTMLButtonElement;
-    if (button){
-        const selected = document.getElementById("select_mfa") as HTMLSelectElement;
-        if (!selected){
-            return;
-        }
-        const value = selected.value;
-        await change_preffered_mfa(value);
-    }
-}

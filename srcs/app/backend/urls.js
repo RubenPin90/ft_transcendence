@@ -3,7 +3,6 @@ import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import fastifyPlugin from 'fastify-plugin';
 import * as utils from './utils.js';
-
 import * as views from './views.js';
 import * as mimes from './mimes.js';
 import * as send from './responses.js';
@@ -61,9 +60,6 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.post('/settings', (req, reply) => views.settings(req, reply));
   fastify.get('/settings/*', (req, reply) => views.settings(req, reply));
   fastify.post('/settings/*', (req, reply) => views.settings(req, reply));
-  fastify.post('/verify_email', (req, reply) => views.verify_email(req, reply));
-  fastify.post('/verify_2fa', (req, reply) => views.verify_2fa(req, reply));
-  fastify.post('/verify_custom', (req, reply) => views.verify_custom(req, reply));
   // Block done
 
   fastify.get('/profile', (req, reply) => views.profile(req, reply)); // Done
@@ -78,18 +74,15 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.post('/add_friends', (req, reply) => views.add_friends(req, reply));
   fastify.post('/accept_friends', (req, reply) => views.accept_friends(req, reply));
   fastify.post('/reject_friend', (req, reply) => views.reject_friend(req, reply));
-  fastify.post('/block_friend', (req, reply) => views.block_friend(req, reply));
   // Block done
 
   fastify.get('/play', (req, reply) => views.play(req, reply));
 
-  
   fastify.post('/delete_account', (req, reply) => views.delete_account(req, reply));
   fastify.post('/mfa_setup', (req, reply) => views.set_up_mfa_buttons(req, reply));
   fastify.post('/mfa', (req, reply) => views.mfa(req, reply));
   fastify.post('/get_data', utils.get_data);  
   fastify.post("/check_preferred_mfa", async (request, reply) => views.check_preferred_mfa(request, reply));
-  fastify.post("/change_preferred_mfa", async (request, reply) => views.change_preferred_mfa(request, reply));
 
   fastify.post("/check_expire", (request, reply) => utils.check_expired_token(request, reply));
   // Block done

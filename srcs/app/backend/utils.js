@@ -265,10 +265,6 @@ function otc_secret(base32_secret) {
 
 // replace_data: {'Function': 'verify', 'Code': ${code}}
 async function verify_otc(request, response, replace_data, userid) {
-	if (!userid || userid === undefined)
-		userid = await get_decrypted_userid(request);
-	if (userid < 0)
-		return -1;
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
 	var secret;
 	if (check_mfa.otc.endsWith('_temp')) {
@@ -446,7 +442,6 @@ async function clear_settings_mfa(userid, search_value, response) {
 	for (const option of fallback_options) {
 		if (search_value == option)
 			continue;
-		//console.log(check_mfa[option]);
 		if (!check_mfa[option].endsWith('_temp') && check_mfa[option].length !== 0) {
 			await mfa_db.update_mfa_value('prefered', fallback_options.indexOf(option) + 1, userid);
 			found = true;
@@ -1307,25 +1302,25 @@ function retrieve_trash_icon_mfa(method, enable) {
 
 async function check_for_invalid_token(request, response, keys, values) {
 	if (keys.length == 0)
-		return false;
+		return {"return": false, "userid": null, 'lang': null};
 	const token_decrypted = await modules.get_jwt(values[keys.indexOf('token')]);
 	const lang_decrypted = await modules.get_jwt(values[keys.indexOf('lang')]);
 	if (token_decrypted < 0 || lang_decrypted < 0) {
 		await views.logout(request, response, true);
-		return true;
+		return {"return": true, "userid": null, 'lang': null};
 	}
 	const token = token_decrypted.userid;
 	const lang = lang_decrypted.userid;
 	if (!token || token == undefined || token < 0 || !lang || lang == undefined || lang < 0) {
 		await views.logout(request, response, true);
-		return true;
+		return {"return": true, "userid": null, 'lang': null};
 	}
 	const check_settings = await settings_db.get_settings_value('self', token);
 	if (check_settings == undefined) {
 		await views.logout(request, response, true);
-		return true;
+		return {"return": true, "userid": null, 'lang': null};
 	}
-	return false;
+	return {"return": false, "userid": token, 'lang': lang};
 }
 
 async function check_expired_token(request, response){

@@ -7,18 +7,15 @@ import fastifyStatic from '@fastify/static';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import urlsPlugin from './urls.js';
-
 import { SocketRegistry } from './socketRegistry.js';
 import { MatchManager } from './game/matchManager.js';
 import { TournamentManager } from './game/tournamentManager.js';
-import { handleClientMessage } from './game/messageHandler.js';
-import * as modules from './modules.js';
-import * as utils from './utils.js';
-import { login } from './views.js';
+import handleShutdown from './signals.js';
+import urlsPlugin from './urls.js';
 
+const PORT = 8080;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const PORT = 8080;
 
 // ───── create managers ─────
 const socketRegistry = new SocketRegistry();
@@ -83,8 +80,9 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
   });
 });
 
-await fastify.listen({ port: PORT, host: '0.0.0.0' });
 
+await fastify.listen({ port: PORT, host: '0.0.0.0' });
+handleShutdown({ fastify, wss });
 
 export {
   fastify
