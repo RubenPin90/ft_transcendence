@@ -13,6 +13,7 @@ import { promises as fs, utimes } from 'fs';
 import { encrypt_google } from './utils.js';
 import http from 'http';
 import { parse } from 'path';
+import { log } from 'console';
 
 async function login(request, response) {
     var [keys, values] = modules.get_cookies(request);
@@ -264,16 +265,11 @@ async function profile(request, response) {
             return true;
         }
         const userid = valid_token.userid;
-        var inner = request.body.innervalue;
-
-        // if (await friends_request.get_friend_request_value(userid) === null){
-        //     await friends_request.create_friend_request_value(-1, 0);
-        // }
-        
-        inner = inner.replace('{{username}}', userid.username);
+        var inner = await fs.readFile("./backend/templates/profile.html", 'utf8');
+        inner = inner.replace('{{username}}', user.username);
         inner = inner.replace('{{email}}', settings.email);
         inner = inner.replace('{{picture}}', settings.pfp);
-        inner = inner.replace('{{status}}', ()=> {if (user.status === 1) return 'online'; else return 'offline'});
+        // inner = inner.replace('{{status}}', ()=> {if (user.status === 1) return 'online'; else return 'offline'});
         if (await friends_request.get_friend_request_value('receiver_id', userid) != undefined)
             inner = inner.replace('{{Friends}}', await friends_request.show_accepted_friends(userid))
         else
@@ -398,7 +394,7 @@ async function update_user(request, response) {
 
     const userid = decoded.userid;
     try {
-        const result = await users_db.update_users_value('username', data, userid);
+        const result = await users_db.update_users_value('username', data.usernameValue, userid);
         if (result) {
             return response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'Successfully updated Username'});
         }
