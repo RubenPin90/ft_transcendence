@@ -608,17 +608,22 @@ async function set_up_mfa_buttons(request, response) {
     const encrypted_userid = values[keys.indexOf('token')];
     var userid
     try {
-        userid = await modules.get_jwt(encrypted_userid).userid;
+        userid = await modules.get_jwt(encrypted_userid);
     } catch (err) {
         response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
         return true;
     }
     var set = 0;
     var options = '';
+    var userid = userid.userid;
     var parsed = await mfa_db.get_mfa_value('self', userid);
     if (parsed == undefined)
         await mfa_db.create_mfa_value('', '', '', 0, userid);
     else {
+        if (parsed.email.length !== 0 && !parsed.email.endsWith('_temp')) {
+            set++;
+            options += "<option value=\"1\">Email</option>";
+        }
         if (parsed.otc.length !== 0 && !parsed.otc.endsWith('_temp')) {
             set++;
             options += "<option value=\"2\">OTC</option>";
@@ -626,10 +631,6 @@ async function set_up_mfa_buttons(request, response) {
         if (parsed.custom.length !== 0 && !parsed.custom.endsWith('_temp')) {
             set++;
             options += "<option value=\"3\">Custom</option>";
-        }
-        if (parsed.email.length !== 0 && !parsed.email.endsWith('_temp')) {
-            set++;
-            options += "<option value=\"1\">Email</option>";
         }
     }
 
@@ -647,7 +648,7 @@ async function set_up_mfa_buttons(request, response) {
         settings_html_mfa_string +='</select></form>'
         
         settings_html_mfa_string +='<div class="flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl cursor-pointer">'
-        settings_html_mfa_string +='<button onclick="get_preferred_mfa()" id="mfa_update_btn">'
+        settings_html_mfa_string +='<button onclick="change_preferred_mfa()" id="mfa_update_btn">'
         settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">'
         settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />'
         settings_html_mfa_string +='</svg></button></div></div>'
@@ -738,7 +739,8 @@ async function change_preferred_mfa(request, response){
 
     const token = values[keys.indexOf('token')];
 
-    const userid = await modules.get_jwt(token).userid;
+    const userid_token = await modules.get_jwt(token);
+    const userid = userid_token.userid;
     const data = request.body.Value;
     const status = await mfa_db.update_mfa_value('prefered', data, userid);
     if (!status || status == undefined){
