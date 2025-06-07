@@ -136,7 +136,7 @@
 
 /* Bracked */
 .bracket-overlay {
-    @apply fixed inset-0 z-[9999] flex gap-8 p-8 overflow-auto bg-[#000000e6] text-whit font-sans
+    @apply fixed inset-0 z-[9999] flex gap-8 p-8 overflow-auto bg-[#000000e6] text-white font-sans
 }
 
 .round-col {
@@ -155,7 +155,7 @@
 /* STYLE */
 
 .full-btn {
-    @apply border-2 border-black bg-whit cursor-pointer hover:bg-[#f1f1f1]
+    @apply border-2 border-black bg-white cursor-pointer hover:bg-[#f1f1f1]
 }
 
 .square-btn {
