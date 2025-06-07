@@ -124,6 +124,8 @@ export class TournamentManager {
       },
     }));
 
+    console.log('Tournament created:', tourney);
+
     this.broadcastTournamentUpdate();
     return tourney;
   }

@@ -24,8 +24,10 @@ const tournamentManager = new TournamentManager(socketRegistry, matchManager);
 tournamentManager.matchManager = matchManager;
 matchManager.tournamentManager = tournamentManager;
 
-setInterval(() => tournamentManager.broadcastTournamentUpdate(), 3000);
+
 for (let i = 0; i < 3; i++) tournamentManager.createTournament(null, 'SERVER');
+
+setInterval(() => tournamentManager.broadcastTournamentUpdate(), 3000);
 
 const fastify = Fastify({ logger: false });
 
@@ -51,7 +53,8 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
   console.log('🔑 ws token verified:', userId);
 
 
-  ws.userId        = string(userId);
+  ws.userId        = userId;
+  console.log('here');
   ws.inGame        = false;
   ws.currentGameId = null;
   //db_userId_status(userId, online)

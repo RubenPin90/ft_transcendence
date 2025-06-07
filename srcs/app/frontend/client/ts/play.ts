@@ -294,6 +294,7 @@ let wasInGame = false;
 export let lastPath: string | null = null;
 
 function route() {
+  const TLobbySocket = getSocket();
   const path = window.location.pathname;
   console.log('[route] current path:', path);
   console.log('lastPath:', lastPath);
@@ -305,10 +306,37 @@ function route() {
   }
   if (lastPath === '/matchmaking' && lastPath != path)
     leaveMatchmaking();
+  // if (path.startsWith('/tournament/')) {
 
-  //TODO check if path game/1v1 if it is last path should be /matchmaking
-  // if (path )
+  if ((path === '/tournament' && lastPath !== '/play') || (path === '/tournament' && lastPath?.startsWith('/tournament/'))) {
+    const TLobby = getCurrentTLobby();
+    if (TLobby) {
+      TLobbySocket.send(JSON.stringify({
+        type: 'leaveTournament',
+        payload: TLobby ? { tournamentId: TLobby.id } : {}
+      }));
+      setCurrentTLobby(null);
+    }
+    if (lastPath?.startsWith('/tournament/')) {
+      document.getElementById('tournament-page')!.style.display = 'block';
+      renderTournamentList(tournaments, joinByCodeWithSocket);
+      return;
+    }
+    else{
+      console.log('[route] blocked direct /tournament; redirecting to /play');
+      window.history.replaceState(null, '', '/play');
+    }
+    return route();
+  }
 
+  if (GAME_RE.test(path)) {
+    const mode = path.split('/')[2];
+    if (mode === '1v1' && lastPath !== '/matchmaking') {
+      console.log('[route] blocked direct /game/1v1; redirecting to /play');
+      window.history.replaceState(null, '', '/play');
+      return route();
+    }
+  }
 
   teardownInput?.();
   teardownInput = null;
@@ -426,6 +454,7 @@ function showGameContainerAndStart(): void {
 }
 
 export function check() {
+  console.log('in check()');
   const path = window.location.pathname;
   if (path === '/play') {
     lastPath = path;
