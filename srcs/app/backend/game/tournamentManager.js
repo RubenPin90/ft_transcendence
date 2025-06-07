@@ -465,7 +465,7 @@ export class TournamentManager {
 
     if (tournament.players.length === 0) delete this.tournaments[tournament.id];
 
-    console.log(db.show_tournaments());
+    // console.log(db.show_tournaments());
     this.broadcastTLobby(tournament);
     this.broadcastTournamentUpdate();
   }
