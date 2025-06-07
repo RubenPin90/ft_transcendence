@@ -100,7 +100,7 @@ async function home(request, response) {
         modules.set_cookie(response, 'token', google_return.token, 3600);
         modules.set_cookie(response, 'lang', google_return.lang, 3600);
         response.redirect("https://localhost/");
-    } else if (request.url !== '/') {
+    } else if (request.url !== '/' && request.url !== '/login' && request.url !== '/register') {
         console.log("-------------------------")
         const github_return = await utils.encrypt_github(request, response);
         if (github_return < 0)

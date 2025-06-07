@@ -159,10 +159,13 @@ async function create_account() {
       return ;
     // current_file.innerHTML = content2value;
     current_file.innerHTML = content2[1];
-    window.history.pushState({}, '', '/');
+    // window.history.pushState({}, '', '/');
+    window.location.replace('/');
     await connect();
   } catch (err) {
     console.error(`Error with redirect Signup: ${err}`);
     return;
   }
 }
+
+(window as any).create_account = create_account;
