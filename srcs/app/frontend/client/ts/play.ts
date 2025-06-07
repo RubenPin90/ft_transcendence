@@ -306,13 +306,16 @@ function route() {
   if (lastPath === '/matchmaking' && lastPath != path)
     leaveMatchmaking();
 
+  //TODO check if path game/1v1 if it is last path should be /matchmaking
+  // if (path )
+
 
   teardownInput?.();
   teardownInput = null;
   markQueued?.(false);
 
   hideAllPages();
-
+  lastPath = path;
   if (wasInGame && !GAME_RE.test(path)) {
     const roomId = localStorage.getItem('currentGameId');
     const userId = localStorage.getItem('playerId');
@@ -374,7 +377,7 @@ function route() {
       teardownInput = () => {
       };
     }
-    lastPath = path;
+
     return;
   }
 

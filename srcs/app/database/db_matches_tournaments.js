@@ -51,8 +51,8 @@ export async function create_match (points, player1, player2, match_id, tourname
 }
 
 
-export async function update_match (field, value, match_id) {
-  const cols = ['points', 'player1', 'player2'];
+export async function update_match(field, value, match_id) {
+  const cols = ['points', 'player1', 'player2', 'winner'];
   if (!cols.includes(field)) return null;
 
   const db = await _db();

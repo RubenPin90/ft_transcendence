@@ -9,9 +9,6 @@ const removeUser = (players, uid) => players.filter(p => getPlayerId(p) !== uid)
 const nextPow2 = n => Math.max(2, 2 ** Math.ceil(Math.log2(n)));
 
 export class TournamentManager {
-  /**
-   * @param {SocketRegistry} socketRegistry – our centralised registry
-   */
     constructor(socketRegistry, matchManager) {
       this.socketRegistry = socketRegistry;
 
@@ -163,10 +160,14 @@ export class TournamentManager {
         type   : 'error',
         payload: { message: 'Tournament is full' },
       }));
-      return;
+    return;
     }
-
-    const newPlayer = { id: userId, name: `Player ${userId.slice(0, 4)}`, ready: false };
+    const uid = getPlayerId(userId);
+    const newPlayer = {
+      id: String(userId),
+      name: `Player ${String(userId).slice(0, 4)}`,
+      ready: false,
+    };
     tournament.players.push(newPlayer);
 
     if (tournament.host === 'SERVER') tournament.host = userId;
