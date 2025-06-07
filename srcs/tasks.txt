@@ -1,5 +1,0 @@
-bot - should be removed(?)
-
-Players that lost should leave tournament (but in db reinschreiben)
-
-check nach merge, dass PVE und 1v1 wenigstens functionieren

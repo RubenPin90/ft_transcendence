@@ -419,7 +419,7 @@ async function verify_email_code(userid, response, data) {
 	const decrypted_email_value = await modules.check_encrypted_password(data.Code, email_value);
 	if (decrypted_email_value === false) {
 		response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "failed", "Content": null });
-		return false;
+		return true;
 	}
 	await mfa_db.update_mfa_value('email', email_value, userid);
 	if (check_mfa.prefered === 0)

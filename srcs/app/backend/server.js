@@ -81,8 +81,7 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
 
 
 await fastify.listen({ port: PORT, host: '0.0.0.0' });
-handleShutdown({ fastify});
-
+handleShutdown({ fastify });
 export {
   fastify
 }

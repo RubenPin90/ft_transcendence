@@ -13,5 +13,3 @@ export default function handleShutdown({ fastify }) {
     process.on('SIGINT', gracefulShutdown);
     process.on('SIGTERM', gracefulShutdown);
   }
-
-
