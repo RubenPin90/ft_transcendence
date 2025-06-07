@@ -270,7 +270,7 @@ async function profile(request, response) {
         //     await friends_request.create_friend_request_value(-1, 0);
         // }
         
-        inner = inner.replace('{{username}}', user.username);
+        inner = inner.replace('{{username}}', userid.username);
         inner = inner.replace('{{email}}', settings.email);
         inner = inner.replace('{{picture}}', settings.pfp);
         inner = inner.replace('{{status}}', ()=> {if (user.status === 1) return 'online'; else return 'offline'});
