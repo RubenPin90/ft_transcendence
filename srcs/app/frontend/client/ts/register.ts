@@ -159,7 +159,8 @@ export async function create_account() {
       return ;
     // current_file.innerHTML = content2value;
     current_file.innerHTML = content2[1];
-    window.history.pushState({}, '', '/');
+    window.location.replace('/');
+    // window.history.pushState({}, '', '/');
     try {
       await connect();           // waits until WS is OPEN
       // console.log('WebSocket connected after sign UP ✅');
