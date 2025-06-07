@@ -134,12 +134,13 @@ async function change_user(){
             alert("please enter a username"); //TODO MAKE IT MORE APPEALING WITH CSS
             return;
         }
+        alert(`VALUE:::${usernameValue}`);
         const response = await fetch('/update_user', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(usernameValue),
+            body: JSON.stringify({usernameValue}),
         });
         const result = await response.json();
         if (response.ok){
@@ -245,57 +246,6 @@ async function change_avatar(){
         console.error("Read file failed");
     }
 }
-
-
-
-
-
-
-// document.addEventListener('DOMContentLoaded', ()=>{
-//     let field = document.getElementById("user_field");
-//     if (!field)
-//         return;
-
-//     const update = (pathname : string) => {
-//         switch (pathname){
-//             case "/settings/user/profile_settings":
-//                 field.innerHTML = return_main_settings();
-//                 break;
-//             case "/settings/user/change_avatar":
-//                 field.innerHTML = return_change_avatar();
-//                 break;
-//             case "/settings/user/change_login":
-//                 field.innerHTML = return_change_credential();
-//                 break;
-//             case "/settings/user/change_user":
-//                 field.innerHTML = return_change_uname();
-//             default:
-//                 break;
-//         }
-//         attachButtonListeners();
-//     };
-    
-//     const attachButtonListeners = () => {
-        
-//         document.querySelectorAll('.buttons').forEach((button) => {
-//             button.addEventListener('click', (event) => {
-//                 event.preventDefault();
-//                 const target = event.currentTarget as HTMLElement;
-//                 const path = target.getAttribute('href');
-//                 if (path){
-//                     window.history.pushState({}, '', path);
-//                     update(path);
-//                 }
-//             });
-//         });
-//     };
-//     update(window.location.pathname);
-
-
-//     window.addEventListener('popstate', ()=> {
-//         update(window.location.pathname);
-//     });
-// });
 
 
 (window as any).change_logindata = change_logindata;
