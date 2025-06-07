@@ -78,7 +78,7 @@ function check_fields(email : string, username : string, password : string, repe
   }
 }
 
-async function create_account() {
+export async function create_account() {
   const email = GetInput('email_SignUp')?.value ?? '';
   const username = GetInput('username_SignUp')?.value ?? '';
   const password = GetInput('password-input_SignUp')?.value ?? '';
@@ -159,9 +159,14 @@ async function create_account() {
       return ;
     // current_file.innerHTML = content2value;
     current_file.innerHTML = content2[1];
-    // window.history.pushState({}, '', '/');
     window.location.replace('/');
-    await connect();
+    // window.history.pushState({}, '', '/');
+    try {
+      await connect();           // waits until WS is OPEN
+      // console.log('WebSocket connected after sign UP ✅');
+    } catch (err) {
+      console.error('WS failed to connect', err);
+    }
   } catch (err) {
     console.error(`Error with redirect Signup: ${err}`);
     return;
