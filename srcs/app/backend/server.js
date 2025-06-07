@@ -41,20 +41,19 @@ await fastify.register(fastifyStatic, {
 
 
 fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
-  console.log('→ Incoming WS handshake on /ws/game from', req.ip);
+  // console.log('→ Incoming WS handshake on /ws/game from', req.ip);
   const ws = conn;
 
   const [keys, values] = modules.get_cookies(req);
-  console.log('keys and values', keys, values);
+  // console.log('keys and values', keys, values);
   const user_encrypted = values[keys.indexOf("token")];
-  const userIdd = await modules.get_jwt(user_encrypted);
-  const userId = userIdd.userid;
-  console.log('userId.userId:', userId);
-  console.log('🔑 ws token verified:', userId);
+  const temp = await modules.get_jwt(user_encrypted);
+  const userId = String(temp.userid);
+  // console.log('userId.userId:', userId);
+  // console.log('🔑 ws token verified:', userId);
 
 
   ws.userId        = userId;
-  console.log('here');
   ws.inGame        = false;
   ws.currentGameId = null;
   //db_userId_status(userId, online)

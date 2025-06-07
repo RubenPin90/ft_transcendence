@@ -133,10 +133,6 @@ export class MatchManager extends EventEmitter {
     this.queues[MatchManager.GAME_MODES.PVP] =
     q.filter(entry => entry.userId !== userId);
     const after  = this.queues[MatchManager.GAME_MODES.PVP].length;
-    console.log(
-      `Removed user ${userId} from queue. ` +
-      `Queue size: ${before} → ${after}`
-    );
   }
 
   leaveRoom (roomId, playerId) {
@@ -209,7 +205,7 @@ export class MatchManager extends EventEmitter {
       status: 'finished'
     });
   
-    console.log(`[${roomId}] Match finished. Winner: ${winnerId}, Reason: ${reason}`);
+    // console.log(`[${roomId}] Match finished. Winner: ${winnerId}, Reason: ${reason}`);
   
     this.emit('matchFinished', {
       roomId,
