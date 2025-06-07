@@ -10,7 +10,9 @@ import { SocketRegistry } from './socketRegistry.js';
 import { MatchManager } from './game/matchManager.js';
 import { TournamentManager } from './game/tournamentManager.js';
 import handleShutdown from './signals.js';
-import urlsPlugin from './urls.js';
+import * as urlsPlugin from './urls.js';
+import * as modules from './modules.js';
+import {handleClientMessage} from './game/messageHandler.js'
 
 const PORT = 8080;
 const __filename = fileURLToPath(import.meta.url);
@@ -22,8 +24,10 @@ const tournamentManager = new TournamentManager(socketRegistry, matchManager);
 tournamentManager.matchManager = matchManager;
 matchManager.tournamentManager = tournamentManager;
 
-setInterval(() => tournamentManager.broadcastTournamentUpdate(), 3000);
+
 for (let i = 0; i < 3; i++) tournamentManager.createTournament(null, 'SERVER');
+
+setInterval(() => tournamentManager.broadcastTournamentUpdate(), 3000);
 
 const fastify = Fastify({ logger: false });
 
@@ -37,6 +41,7 @@ await fastify.register(fastifyStatic, {
 
 
 fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
+  console.log('→ Incoming WS handshake on /ws/game from', req.ip);
   const ws = conn;
 
   const [keys, values] = modules.get_cookies(req);
@@ -49,6 +54,7 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
 
 
   ws.userId        = userId;
+  console.log('here');
   ws.inGame        = false;
   ws.currentGameId = null;
   //db_userId_status(userId, online)
@@ -76,7 +82,6 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
 
 await fastify.listen({ port: PORT, host: '0.0.0.0' });
 handleShutdown({ fastify });
-
 export {
   fastify
 }

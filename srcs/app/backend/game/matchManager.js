@@ -219,6 +219,7 @@ export class MatchManager extends EventEmitter {
     });
   
     await update_match('winner', winnerId, roomId);
+    // console.log(await show_matches())
   
     setTimeout(() => this.removeRoom(roomId), 500);
   }

@@ -1,4 +1,6 @@
 // helpers --------------------------------------------------------------
+import {connect} from './socket.js'
+
 
 function parse_emaiL(email : string) : boolean {
     const regex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
@@ -158,6 +160,7 @@ async function create_account() {
     // current_file.innerHTML = content2value;
     current_file.innerHTML = content2[1];
     window.history.pushState({}, '', '/');
+    await connect();
   } catch (err) {
     console.error(`Error with redirect Signup: ${err}`);
     return;

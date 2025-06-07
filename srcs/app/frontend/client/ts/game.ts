@@ -46,6 +46,9 @@ export function initGameCanvas(): void {
     return;
   }
   ctx = canvas.getContext('2d');
+  setInterval(() => {
+    return ;
+  }, 5000);
 }
 
 
