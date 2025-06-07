@@ -33,7 +33,7 @@ async function create_db() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             role_id INTEGER,
             username TEXT,
-            status INTEGER DEFAULT 1,
+            status TEXT DEFAULT online,
             self TEXT UNIQUE NOT NULL,
             FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
@@ -91,7 +91,7 @@ async function create_db() {
             
 
 
-
+        //FRIEND_REQUEST
         await db.run(`
         CREATE TABLE friend_request (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -104,6 +104,7 @@ async function create_db() {
             UNIQUE (sender_id, receiver_id)
         );`);
 
+        //FRIENDS
         await db.run(`
         CREATE TABLE IF NOT EXISTS friends (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

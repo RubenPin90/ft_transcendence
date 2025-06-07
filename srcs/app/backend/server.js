@@ -13,6 +13,7 @@ import handleShutdown from './signals.js';
 import * as urlsPlugin from './urls.js';
 import * as modules from './modules.js';
 import {handleClientMessage} from './game/messageHandler.js'
+import * as users_db from '../database/db_users_functions.js';
 
 const PORT = 8080;
 const __filename = fileURLToPath(import.meta.url);
@@ -56,6 +57,7 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
   ws.userId        = userId;
   ws.inGame        = false;
   ws.currentGameId = null;
+  await users_db.update_users_value('status', 'online', userId);
   //db_userId_status(userId, online)
 
   console.log('🔌 ws authenticated:', userId);
@@ -68,9 +70,9 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
     handleClientMessage(ws, raw, matchManager, tournamentManager)
   });
 
-  ws.on('close', () => {
+  ws.on('close', async () => {
     console.log('❌ ws closed:', userId);
-    //db_userId_status(userId, offline)
+    await users_db.update_users_value('status', 'offline', userId);
     tournamentManager.leaveTournament(userId);
     matchManager.unregisterSocket(userId);
     socketRegistry.remove(userId);

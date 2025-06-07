@@ -210,7 +210,7 @@ async function show_accepted_friends(userid){
                 SELECT * FROM users WHERE id = ?
                 `, [sender_settings.id]);
             const name = sender_user.username || 'unknown';
-            if (sender_user.status === 1){
+            if (sender_user.status === 'online'){
                 html += `
                 <div class="relative flex-shrink-0">
                 <img class="w-24 h-24 rounded-full border-4 border-green-600" src="${sender_settings.pfp}">
