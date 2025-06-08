@@ -9,7 +9,7 @@ export async function create_otc() {
             },
             body: JSON.stringify({"Function": "create_otc"}),
         });
-        
+
         if (!response.ok) {
             throw new Error(`HTTP Fehler! Status: ${response.status}`);
         }
@@ -92,15 +92,6 @@ async function verify_otc() {
     }
     //console.log(data);
 }
-
-// async function verify_custom_code() {
-//     //console.log('hi');
-//     const qrcodeButtonDiv = document.getElementById('mfa-button');
-//     if (qrcodeButtonDiv) {
-//         qrcodeButtonDiv.innerHTML = '<input id="Code" name="Code" placeholder="Code"><br>\
-//         <button onclick="create_custom_code()">Next</button> <button onclick="window.location.reload()">Back</button>';
-//     }
-// }
 
 
 // THIS IS COPIED FROM CHATGPT. CREATE OWN FRONTEND UI
@@ -406,7 +397,6 @@ async function change_language() {
 
 // async function logout() {
 //     delete_cookie("token");
-//     location.reload();
 // }
 
 // async function delete_cookie(name : string) {

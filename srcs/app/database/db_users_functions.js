@@ -94,16 +94,21 @@ async function update_users_value(search_value, value, self) {
         `);
         if (!check)
             return null;
+        const exists = await db.get(`
+            SELECT * FROM users
+            WHERE username = ?`, [value]);
+        if (exists)
+            return -1
         var row = await db.run(`
             UPDATE users
             SET ${search_value} = '${value}'
             WHERE self = '${self}'`);
+        return row;
     } catch (err) {
         console.error(`Error in update_settings_value: ${err}`);
         return null;
     } finally {
         await db.close();
-        return row;
     }
 }
 

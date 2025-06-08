@@ -395,6 +395,8 @@ async function update_user(request, response) {
     const userid = decoded.userid;
     try {
         const result = await users_db.update_users_value('username', data.usernameValue, userid);
+        if (result == -1)
+            return response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'User already exists'});
         if (result) {
             return response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'Successfully updated Username'});
         }

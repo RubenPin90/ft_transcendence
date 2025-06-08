@@ -37,7 +37,6 @@ async function Log_out() {
     // window.location.replace('/login');
     // history.pushState(null, document.title, location.href);
     history.replaceState(null, '', '/login');
-    // location.reload();
 }
 
 async function Delete_cookie(name : string) {
