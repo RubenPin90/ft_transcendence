@@ -19,8 +19,6 @@
       return;
     }
   
-    console.log('Rendering tournament bracket overlay with rounds:', rounds);
-  
     // Clear out any existing children (no begin button)
     overlay.replaceChildren();
   
@@ -144,7 +142,6 @@
       nameSpan.textContent = isFilled ? displayName(p!) : '— empty —';
       row.appendChild(nameSpan);
 
-      //console.log(`Player ${p?.name} ready: ${p?.ready}`);
       const dot = document.createElement('span');
       dot.className = 't-status';
       if (isFilled) dot.classList.add(p!.ready ? 'green-dot' : 'red-dot');

@@ -174,9 +174,7 @@ async function change_avatar(){
             },
             body: JSON.stringify(value_struct)
         });
-        if (response.ok){
-            //console.log("success");
-        }else{
+        if (!response.ok){
             alert("error updating avatar");
         }
     }
