@@ -535,7 +535,6 @@ async function replace_all_templates(request, response, state, override) {
 	const google_login = await google_input_handler();
 
 	const friends_html_raw = await fs.readFile("./backend/templates/friends.html", 'utf8');
-	// const friends_html = friends_html_raw.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
 	const home_html_raw = await fs.readFile("./backend/templates/home.html", 'utf8');
 	const login_html_raw = await fs.readFile("./backend/templates/login.html", 'utf8');
 	var login_html = login_html_raw.replace("{{google_login}}", google_login);

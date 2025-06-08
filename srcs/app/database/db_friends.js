@@ -75,6 +75,61 @@ async function create_friends_value(user1, user2) {
 	}
 }
 
+async function show_accepted_friends(userid){
+	const db = await open({
+		filename: './database/db.sqlite',
+		driver: sqlite3.Database
+	});
+	if (!db){
+		return;
+	}
+	var html = '';
+	try {
+		var rows = await db.all(`
+			SELECT * FROM friends
+			WHERE (user1 = ? OR user2 = ?)`, [userid, userid]);
+		for (var single of rows){
+			var correctId;
+			if (single.user1 == userid){
+				correctId = single.user2;
+			}else{
+				correctId = single.user1;
+			}
+			const sender_settings = await db.get(`
+				SELECT * FROM settings WHERE self = ?
+				`, [correctId]);
+			const sender_user = await db.get(`
+				SELECT * FROM users WHERE self = ?
+				`, [correctId]);
+			const name = sender_user.username;
+			if (sender_user.status === 'online'){
+				html += `
+				<div class="relative flex-shrink-0">
+					<img class="w-24 h-24 rounded-full border-4 border-green-600" src="${sender_settings.pfp}">
+					<span class="absolute text-center w-full">${name}</span><br>
+				</div> 
+				`;
+			} else{
+				html += `
+				<div class="relative flex-shrink-0">
+					<img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="${sender_settings.pfp}">
+					<span class="absolute text-center w-full">${name}</span><br>
+				</div> 
+				`;
+			}
+		}
+	} catch (err) {
+		console.error(`Error in show_accepted_friends: ${err}`);
+		return null;
+	} finally {
+		await db.close();
+		if (html == ''){
+			return `<span>No friends currenlty :'( you lonely MF</span>`;
+		}
+		return html;
+	}
+}
+
 // // Not tested: But working propperly so far
 // async function create_friends_value(user1, user2) {
 //     if (user1 === user2){
@@ -134,5 +189,6 @@ export {
     get_friends,
     get_friends_value,
     create_friends_value,
-    delete_friends_value
+    delete_friends_value,
+	show_accepted_friends
 }

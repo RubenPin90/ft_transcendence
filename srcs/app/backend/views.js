@@ -6,6 +6,7 @@ import * as settings_db from '../database/db_settings_functions.js';
 import * as users_db from '../database/db_users_functions.js';
 import * as mfa_db from '../database/db_mfa_functions.js';
 import * as friends_request from '../database/db_friend_request.js'
+import * as friends_db from '../database/db_friends.js'
 import qrcode from 'qrcode';
 import { json } from 'stream/consumers';
 import { response } from 'express';
@@ -270,10 +271,10 @@ async function profile(request, response) {
         inner = inner.replace('{{email}}', settings.email);
         inner = inner.replace('{{picture}}', settings.pfp);
         // inner = inner.replace('{{status}}', ()=> {if (user.status === 1) return 'online'; else return 'offline'});
-        if (await friends_request.get_friend_request_value('receiver_id', userid) != undefined)
-            inner = inner.replace('{{Friends}}', await friends_request.show_accepted_friends(userid))
-        else
-            inner = inner.replace('{{Friends}}', '<span>No friends currenlty :\'( you lonely MF</span>');
+        // if (await friends_request.get_friend_request_value('receiver_id', userid) != undefined)
+            inner = inner.replace('{{Friends}}', await friends_db.show_accepted_friends(userid))
+        // else
+            // inner = inner.replace('{{Friends}}', '<span>No friends currenlty :\'( you lonely MF</span>');
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": inner});
         return true;
     }
@@ -418,7 +419,7 @@ async function friends(request, response){
         var inner = request.body.innervalue;
         // inner = await translator.cycle_translations(inner, decoded_lang);
         // if (await friends_request.get_friend_request_value('self', userid) != undefined)
-        inner = inner.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
+        inner = await friends_request.show_pending_requests(userid);
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": inner});
         return true;
     }
@@ -507,8 +508,8 @@ async function accept_friends(request, response){
         return true;
     }
 
-    const receiver = data.userid;
-    const result = await friends_request.update_friend_request_value(receiver, 'accepted');
+    const receiver = data.row_id;
+    const result = await friends_request.update_friend_request_value(receiver, decoded.userid);
     if (!result || result === undefined){
         console.error("error in deleting accepted friend request");
         return null;

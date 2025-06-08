@@ -95,7 +95,6 @@ async function create_db() {
         await db.run(`
         CREATE TABLE friend_request (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            status TEXT DEFAULT 'pending',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             sender_id TEXT NOT NULL,
             receiver_id TEXT NOT NULL,

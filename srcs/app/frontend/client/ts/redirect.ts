@@ -83,7 +83,6 @@ async function show_friends_page() : Promise<string>{
         return 'home_div';
     }
     var innervalue = innervalueID.innerHTML;
-    alert(`innervalue:: ${innervalue}`);
     const response = await fetch ('/friends', {
         method: 'POST',
         headers: {
@@ -210,7 +209,7 @@ export async function where_am_i(path : string) : Promise<string> {
             return 'play_div';
         case '/profile': 
             if (await check_cookies_expire() == true){
-                alert("expired cookies");
+                // alert("expired cookies");
                 await show_login();
                 history.pushState({}, '', '/');
                 return 'login_div';
@@ -219,6 +218,7 @@ export async function where_am_i(path : string) : Promise<string> {
                 history.pushState({}, '', '/');
                 return 'login_div';
             }
+            await connect();
             return await show_profile_page();
         case '/register':
             if (await check_cookie_fe()) {
@@ -238,15 +238,16 @@ export async function where_am_i(path : string) : Promise<string> {
                 return 'login_div';
             }
             if (await check_cookies_expire() == true){
-                alert("expired cookies");
+                // alert("expired cookies");
                 await show_login();
                 history.pushState({}, '', '/');
                 return 'login_div';
             }
+            await connect();
             return 'home_div';
         case '/settings':
             if (await check_cookies_expire() == true){
-                alert("expired cookies");
+                // alert("expired cookies");
                 await show_login();
                 history.pushState({}, '', '/');
                 return 'login_div';
@@ -255,10 +256,11 @@ export async function where_am_i(path : string) : Promise<string> {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
+            await connect();
             return 'settings_main_div';
         case '/settings/user':
             if (await check_cookies_expire() == true){
-                alert("expired cookies");
+                // alert("expired cookies");
                 await show_login();
                 history.pushState({}, '', '/');
                 return 'login_div';
@@ -267,10 +269,11 @@ export async function where_am_i(path : string) : Promise<string> {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
+            await connect();
             return 'user_prof_div';
         case '/settings/language': 
             if (await check_cookies_expire() == true){
-                alert("expired cookies");
+                // alert("expired cookies");
                 await show_login();
                 history.pushState({}, '', '/');
                 return 'login_div';
@@ -279,10 +282,11 @@ export async function where_am_i(path : string) : Promise<string> {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
+            await connect();
             return 'lang_div';
         case '/settings/mfa':
             if (await check_cookies_expire() == true){
-                alert("expired cookies");
+                // alert("expired cookies");
                 await show_login();
                 history.pushState({}, '', '/');
                 return 'login_div';
@@ -291,10 +295,11 @@ export async function where_am_i(path : string) : Promise<string> {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
+            await connect();
             return await render_mfa();
         case '/settings/user/change_user':
             if (await check_cookies_expire() == true){
-                alert("expired cookies");
+                // alert("expired cookies");
                 await show_login();
                 history.pushState({}, '', '/');
                 return 'login_div';
@@ -303,10 +308,11 @@ export async function where_am_i(path : string) : Promise<string> {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
+            await connect();
             return 'username_div';
         case '/settings/user/change_login':
             if (await check_cookies_expire() == true){
-                alert("expired cookies");
+                // alert("expired cookies");
                 await show_login();
                 history.pushState({}, '', '/');
                 return 'login_div';
@@ -315,10 +321,11 @@ export async function where_am_i(path : string) : Promise<string> {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
+            await connect();
             return 'userpass_div';
         case '/settings/user/change_avatar':
             if (await check_cookies_expire() == true){
-                alert("expired cookies");
+                // alert("expired cookies");
                 await show_login();
                 history.pushState({}, '', '/');
                 return 'login_div';
@@ -327,10 +334,11 @@ export async function where_am_i(path : string) : Promise<string> {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
+            await connect();
             return 'useravatar_div';
         case '/friends' :
             if (await check_cookies_expire() == true){
-                alert("expired cookies");
+                // alert("expired cookies");
                 await show_login();
                 history.pushState({}, '', '/');
                 return 'login_div';
@@ -339,6 +347,7 @@ export async function where_am_i(path : string) : Promise<string> {
                 history.pushState({}, '', '/login');
                 return 'login_div';
             }
+            await connect();
             return await show_friends_page();
         default: return 'home_div';
     }
@@ -369,19 +378,18 @@ document.body.addEventListener('click', (event) => {
 window.addEventListener('popstate', handleRouteChange)
 
 
-// setInterval(async () => {
-    // handleRouteChange();
-    // const path = window.location.pathname;
-    // if (path === '/' || path === '/login' || path === '/register'){
-    //     return;
-    // }
-    // if (path === '/profile'){
-        // toggle_divs(await show_profile_page());
-    // }
-    // if (path === '/friends'){
-        // toggle_divs(await show_friends_page());
-    // }
-// }, 5000);
+setInterval(async () => {
+    const path = window.location.pathname;
+    if (path === '/' || path === '/login' || path === '/register'){
+        return;
+    }
+    if (path === '/profile'){
+        toggle_divs(await show_profile_page());
+    }
+    if (path === '/friends'){
+        toggle_divs(await show_friends_page());
+    }
+}, 5000);
 
 handleRouteChange();
 
