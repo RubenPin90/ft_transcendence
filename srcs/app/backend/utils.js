@@ -89,21 +89,30 @@ async function encrypt_github(request) {
 		return -7;
 	username = username.replace(/\./g, '-');
 	const db_return = await settings_db.create_settings_value('', pfp, 0, user_email, 'en', 0, userid);
-	const userid_encode = await modules.create_jwt(userid, '1h');
 	if (db_return.self === undefined || db_return.return === undefined) {
 		const lang_check = await settings_db.get_settings_value('self', userid);
-		const lang_encode = await modules.create_jwt(lang_check.lang, '1h');
-		return {"response": "success", "token": userid_encode, "lang": lang_encode};
+		if (lang_check === undefined) {
+			const check_user = await settings_db.get_settings_value("github", userid);
+			const userid_encode = await modules.create_jwt(check_user.self, '1h');
+			const lang_encode = await modules.create_jwt(check_user.lang, '1h');
+			return {"response": "success", "token": userid_encode, "lang": lang_encode};
+		} else {	
+			const userid_encode = await modules.create_jwt(lang_check.self, '1h');
+			const lang_encode = await modules.create_jwt(lang_check.lang, '1h');
+			return {"response": "success", "token": userid_encode, "lang": lang_encode};
+		}
 	}
 	if (db_return < 0)
 		return -8;
-	const check_setting = await settings_db.get_settings_value(userid);
+	const check_setting = await settings_db.get_settings_value("self", userid);
 	if (!check_setting)
 		return -9;
 	const check_username = await users_db.create_users_value(0, username, userid);
 	if (check_username < 0)
 		return -10;
 	const lang_encode = await modules.create_jwt('en', '1h');
+	const lang_check = await settings_db.get_settings_value('self', userid);
+	const userid_encode = await modules.create_jwt(lang_check.self, '1h');
 	return {"response": "success", "token": userid_encode, "lang": lang_encode};
 }
 
@@ -133,11 +142,19 @@ async function encrypt_google(request) {
 		if (username < 0)
 			return -8;
 		const db_return = await settings_db.create_settings_value('', pfp, 0, email, 'en', userid, 0);
-		const userid_encode = await modules.create_jwt(userid, '1h');
 		if (db_return.self === undefined || db_return.return === undefined) {
 			const lang_check = await settings_db.get_settings_value('self', userid);
-			const lang_encode = await modules.create_jwt(lang_check.lang, '1h');
-			return {"response": "success", "token": userid_encode, "lang": lang_encode};
+			if (lang_check === undefined) {
+				const check_user = await settings_db.get_settings_value("google", userid);
+				console.log(check_user);
+				const userid_encode = await modules.create_jwt(check_user.self, '1h');
+				const lang_encode = await modules.create_jwt(check_user.lang, '1h');
+				return {"response": "success", "token": userid_encode, "lang": lang_encode};
+			} else {
+				const userid_encode = await modules.create_jwt(lang_check.self, '1h');
+				const lang_encode = await modules.create_jwt(lang_check.lang, '1h');
+				return {"response": "success", "token": userid_encode, "lang": lang_encode};
+			}
 		}
 		if (db_return < 0)
 			return -9;
@@ -147,6 +164,8 @@ async function encrypt_google(request) {
 		const check_username = await users_db.create_users_value(0, username, userid);
 		if (!check_username || check_username === undefined || check_username < 0)
 			return -11;
+		const lang_check = await settings_db.get_settings_value('self', userid);
+		const userid_encode = await modules.create_jwt(lang_check.self, '1h');
 		const lang_encode = await modules.create_jwt('en', '1h');
 		return {"response": "success", "token": userid_encode, "lang": lang_encode};
 	} catch (error) {

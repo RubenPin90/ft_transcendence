@@ -111,6 +111,10 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
                 await update_settings_value('github', github, user_id);
             }
             if (id.google == '0') {
+<<<<<<< HEAD
+=======
+                await update_settings_value('google', google, user_id);
+>>>>>>> 0750149cc7d4abe9ba9853068239a0c6fb294423
             }
             const ret = await get_settings_value('email', email);
             self = ret.self;

@@ -100,16 +100,14 @@ async function home(request, response) {
             return `1_${google_return}`;
         modules.set_cookie(response, 'token', google_return.token, 3600);
         modules.set_cookie(response, 'lang', google_return.lang, 3600);
-        response.redirect("https://localhost/");
-    } else if (request.url !== '/' && request.url !== '/login' && request.url !== '/register') {
-        console.log("-------------------------")
+        response.redirect("https://localhost/login");
+    } else if (request.url !== '/' && request.url !== '/login') {
         const github_return = await utils.encrypt_github(request, response);
         if (github_return < 0)
             return `2_${github_return}`;
         modules.set_cookie(response, 'token', github_return.token, 3600);
         modules.set_cookie(response, 'lang', github_return.lang, 3600);
-        console.log("-------------------------")
-        response.redirect("https://localhost/");
+        response.redirect("https://localhost/login");
     }
     const check = await send.send_html('index.html', response, 200, async (data) => {
         data = await utils.replace_all_templates(request, response);
