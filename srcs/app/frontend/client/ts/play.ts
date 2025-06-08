@@ -50,7 +50,8 @@ on('welcome', (msg) => {
 on('error', (msg) => {
   const banner          = document.getElementById('error-banner')!;
   banner.textContent    = msg.payload.message;
-  banner.style.display  = 'block';
+  banner.classList.add('block');
+  // banner.style.display  = 'block';
 });
 
 
@@ -239,21 +240,24 @@ function showVersusOverlay(left: string, right: string): Promise<void> {
     if (!el) {
       el = document.createElement('div');
       el.id = 'vs-overlay';
-      el.style.cssText = `
-        position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-        background:rgba(0,0,0,.8); color:#fff; font:700 3rem/1 sans-serif; z-index:9999;
-        text-align:center; opacity:0; transition:opacity .4s;`;
+      el.className = `fixed inset-0 flex items-center justify-center bg-black/80 text-white font-bold text-3xl leading-none z-[9999] text-center opacity-0 transition-opacity duration-[400ms]`
       document.body.appendChild(el);
     }
 
     el.textContent = `${left}  vs  ${right}`;
-    requestAnimationFrame(() => (el!.style.opacity = '1'));
+    requestAnimationFrame(() => {
+      // el!.style.opacity = '1'
+      el!.classList.remove('opacity-100');
+      el!.classList.add('opacity-0');
+    });
 
     const SHOW_MS = 2500;
     const HIDE_MS = 400;
 
     const hideTimer = setTimeout(() => {
-      el!.style.opacity = '0';
+      // el!.style.opacity = '0';
+      el!.classList.remove('opacity-100');
+      el!.classList.add('opacity-0');
     }, SHOW_MS);
 
     const onEnd = () => {
@@ -338,7 +342,8 @@ function route() {
       setCurrentTLobby(null);
     }
     if (lastPath?.startsWith('/tournament/')) {
-      document.getElementById('tournament-page')!.style.display = 'block';
+      const tournament_page = document.getElementById('tournament-page') as HTMLElement//!.style.display = 'block';
+      tournament_page?.classList.add('block');
       renderTournamentList(tournaments, joinByCodeWithSocket);
       return;
     }
@@ -384,7 +389,10 @@ function route() {
     const roundNo      = Number(roundStr);
 
     const overlay = document.getElementById('bracket-overlay');
-    if (overlay) overlay.style.display = 'block';
+    if (overlay) {
+      overlay.classList.add('block');
+      // overlay.style.display = 'block';
+    }
 
     let hdr = document.getElementById('round-header') as HTMLElement | null;
     if (!hdr) {
@@ -397,7 +405,7 @@ function route() {
   }
 
   if (path === '/tournament') {
-    document.getElementById('tournament-page')!.style.display = 'block';
+    (document.getElementById('tournament-page') as HTMLElement)!.classList.add('block');
     renderTournamentList(tournaments, joinByCodeWithSocket);
     return;
   }
@@ -405,12 +413,12 @@ function route() {
   if (path === '/matchmaking') {
     enterMatchmaking();
     markQueued?.(true);
-    document.getElementById('matchmaking-page')!.style.display = 'block';
+    (document.getElementById('matchmaking-page') as HTMLElement)!.classList.add('block');
     return;
   }
 
   if (GAME_RE.test(path)) {
-    document.getElementById('game-container')!.style.display = 'block';
+    (document.getElementById('game-container') as HTMLElement)!.classList.add('block');
     const mode = path.split('/')[2] || 'pve';
     // console.log(`[play.ts] Entering game mode: ${mode}`);
 
@@ -430,7 +438,7 @@ function route() {
   }
 
   if (path.startsWith('/tournament/')) {
-    document.getElementById('t-lobby-page')!.style.display = 'block';
+    (document.getElementById('t-lobby-page') as HTMLElement)!.classList.add('block');
     return;
   }
 
@@ -440,13 +448,14 @@ function route() {
   };
   const pageId = mapping[path];
   if (pageId) {
-    document.getElementById(pageId)!.style.display = 'block';
+    (document.getElementById(pageId) as HTMLElement)!.classList.add('block');
     return;
   }
 
   const mainMenuEl = document.getElementById('main-menu');
   if (mainMenuEl) {
-    mainMenuEl.style.display = 'block';
+    mainMenuEl.classList.add('block');
+    // mainMenuEl.style.display = 'block';
   }
 }
 
@@ -468,7 +477,8 @@ function showGameContainerAndStart(): void {
   const cont = document.getElementById('game-container');
   if (!cont) return;
 
-  cont.style.display = 'block';
+  cont.classList.add('block');
+  // cont.style.display = 'block';
   initGameCanvas();   
   startGame('1v1');        
   teardownInput = setupInputHandlers();

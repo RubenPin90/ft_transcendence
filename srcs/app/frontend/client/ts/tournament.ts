@@ -125,7 +125,8 @@
     };
 
     hideAllPages();
-    document.getElementById('t-lobby-page')!.style.display = 'block';
+    // document.getElementById('t-lobby-page')!.style.display = 'block';
+    (document.getElementById('t-lobby-page') as HTMLElement)?.classList.remove('hidden');
 
     const table = document.getElementById('t-lobby-table')!;
     table.innerHTML = '';
@@ -169,10 +170,19 @@
     const allReady =
       players.length === totalSlots && players.every(p => p.ready);
 
-    (document.getElementById('host-controls')   as HTMLElement).style.display =
-      amHost ? 'block' : 'none';
-    (document.getElementById('player-controls') as HTMLElement).style.display =
-      amHost ? 'none'  : 'block';
+    const hostControls = document.getElementById('host-controls') as HTMLElement;
+    const playerControls = document.getElementById('host-controls') as HTMLElement;
+    if (amHost) {
+      hostControls.classList.remove('hidden');
+      playerControls.classList.add('hidden');
+    } else {
+      hostControls.classList.add('hidden');
+      playerControls.classList.remove('hidden');
+    }
+    // (document.getElementById('host-controls')   as HTMLElement).style.display =
+    //   amHost ? 'block' : 'none';
+    // (document.getElementById('player-controls') as HTMLElement).style.display =
+    //   amHost ? 'none'  : 'block';
 
     (document.getElementById('t-start-btn') as HTMLButtonElement).disabled = !allReady;
 
