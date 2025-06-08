@@ -49,8 +49,8 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
   const user_encrypted = values[keys.indexOf("token")];
   const temp = await modules.get_jwt(user_encrypted);
   const userId = String(temp.userid);
-  // console.log('userId.userId:', userId);
-  // console.log('🔑 ws token verified:', userId);
+  console.log('userId.userId:', userId);
+  console.log('🔑 ws token verified:', userId);
 
 
   ws.userId        = userId;

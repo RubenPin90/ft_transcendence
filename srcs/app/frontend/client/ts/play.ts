@@ -163,9 +163,7 @@ on<'tournamentFinished'>('tournamentFinished', (msg) => {
   } else {
     alert('Tournament finished.');
   }
-
-  toggle_divs('home_div');
-  window.location.href = '/';
+  navigate('/play');
 });
 
 on('tLobbyState', (msg) => {
@@ -178,15 +176,23 @@ on('tLobbyState', (msg) => {
 
 on<'eliminated'>('eliminated', (msg) => {
   const { reason } = msg.payload;
-
   alert('You have been eliminated from the tournament 🏳️');
-
+  const TLobbySocket = getSocket();
+  const TLobby = getCurrentTLobby();
   localStorage.removeItem('currentGameId');
+  if (TLobby) {
+    TLobbySocket.send(JSON.stringify({
+      type: 'leaveTournament',
+      payload: TLobby ? { tournamentId: TLobby.id } : {}
+    }));
+    setCurrentTLobby(null);
+  }
   setCurrentTLobby(null as any);
+  
   teardownInput?.();
   teardownInput = null;
   toggle_divs('home_div');
-  window.location.href = '/';
+  navigate('/tournament');
 });
 
 on<'roundStarted'>('roundStarted', msg => {
