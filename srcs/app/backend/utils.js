@@ -146,7 +146,6 @@ async function encrypt_google(request) {
 			const lang_check = await settings_db.get_settings_value('self', userid);
 			if (lang_check === undefined) {
 				const check_user = await settings_db.get_settings_value("google", userid);
-				console.log(check_user);
 				const userid_encode = await modules.create_jwt(check_user.self, '1h');
 				const lang_encode = await modules.create_jwt(check_user.lang, '1h');
 				return {"response": "success", "token": userid_encode, "lang": lang_encode};
