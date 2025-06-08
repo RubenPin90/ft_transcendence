@@ -48,6 +48,11 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
   // console.log('keys and values', keys, values);
   const user_encrypted = values[keys.indexOf("token")];
   const temp = await modules.get_jwt(user_encrypted);
+  if (!temp || !temp.userid) {
+    console.error('❌ Invalid or missing token:', user_encrypted);
+    ws.close(1008, 'Invalid token');
+    return;
+  } 
   const userId = String(temp.userid);
   console.log('userId.userId:', userId);
   console.log('🔑 ws token verified:', userId);
@@ -71,10 +76,10 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
   ws.on('close', () => {
     console.log('❌ ws closed:', userId);
     //db_userId_status(userId, offline)
+    if (ws.inGame) matchManager.leaveRoom(ws.currentGameId, userId);
     tournamentManager.leaveTournament(userId);
     matchManager.unregisterSocket(userId);
     socketRegistry.remove(userId);
-    if (ws.inGame) matchManager.leaveRoom(ws.currentGameId, userId);
   });
 });
 

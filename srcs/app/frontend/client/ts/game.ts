@@ -111,7 +111,7 @@ export function startGame(mode: GameMode): void {
 
 export function stopGame(): void {
   searchingForMatch = false;
-  if (ws && ws.readyState === WebSocket.OPEN) {
+  if (ws && ws.readyState === WebSocket.OPEN && currentRoomId !== null) {
     send({ type: 'leaveGame', payload: { roomId: currentRoomId, userId } });
   }
 

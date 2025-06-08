@@ -32,14 +32,12 @@ import { where_am_i, toggle_divs } from './redirect.js';
 let currentRoomId: string | null       = null;
 let currentMatch: string | null        = null;
 let teardownInput: (() => void) | null = null;
+let startedTournament: boolean = false;
 
 
 
 let currentTournamentId: string | null = null;
 let isFirstRound                       = true;
-
-
-// console.log('[play.ts] Initializing play module...');
 
 on('welcome', (msg) => {
   const id   = msg.payload.userId;
@@ -74,7 +72,7 @@ on<'matchAssigned'>('matchAssigned', (msg) => {
   const rival        = players.find(p => p.id !== myId);
   if (!me || !rival) return;
 
-  // console.log('[matchAssigned] navigating to game:', matchId, players);
+  console.log('[matchAssigned] navigating to game:', matchId, players);
   localStorage.setItem('currentGameId', matchId);
   currentRoomId        = matchId;
   currentTournamentId  = tournamentId;
@@ -85,6 +83,9 @@ on<'matchAssigned'>('matchAssigned', (msg) => {
   }, 3000);
 });
 
+
+
+
 on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
   const { tournamentId, rounds } = msg.payload as {
     tournamentId: string;
@@ -92,33 +93,41 @@ on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
   };
 
   currentTournamentId = tournamentId;
-
-  const normalized: MatchStub[][] = Array.isArray(rounds[0])
+  const normalized = Array.isArray(rounds[0])
     ? rounds as MatchStub[][]
     : [rounds as MatchStub[]];
 
-  if (!Array.isArray(rounds[0])) {
-    location.href = '/tournament/round2';
-  }
   renderBracketOverlay(normalized);
-
   await new Promise(r => setTimeout(r, 700));
 
-  const firstRound = normalized[0];
-  const firstReal  = firstRound.find(
+  // pick the upcoming match (in the last round):
+  const lastRound  = normalized[0];
+  const nextMatch = lastRound.find(
     m => m.players.filter(p => p && !('pendingMatchId' in p)).length === 2
   );
 
-  if (firstReal) {
-    const [A, B] = firstReal.players as PlayerStub[];
+  if (nextMatch) {
+    const [A, B] = nextMatch.players as PlayerStub[];
     await showVersusOverlay(A.name, B.name);
+
+    send({
+      type   : 'waitForNextMatch',
+      payload: {
+        tournamentId,
+        matchId     : nextMatch.matchId
+      }
+    });
   }
 
+  // your existing “first round” logic
   if (isFirstRound) {
     send({ type: 'beginRound', payload: { tournamentId } });
     isFirstRound = false;
+    startedTournament = true;
   }
 });
+
+
 
 on('tournamentCreated', (msg) => {
   const TLobby: TLobbyState = msg.payload;
@@ -129,6 +138,7 @@ on('tournamentCreated', (msg) => {
 });
 
 on('tournamentUpdated', (msg) => {
+  if (isInGame()) return;
   renderTLobby(msg.payload as TLobbyState, getSocket());
 });
 
@@ -150,6 +160,12 @@ on<'tournamentFinished'>('tournamentFinished', (msg) => {
 
   hideAllPages();
 
+  const TLobbySocket = getSocket();
+  const TLobby = getCurrentTLobby();
+  TLobbySocket.send(JSON.stringify({
+    type: 'leaveTournament',
+    payload: TLobby ? { tournamentId: TLobby.id } : {}
+  }));
   setCurrentTLobby(null);
   localStorage.removeItem('currentGameId');
   currentTournamentId = null;
@@ -167,6 +183,7 @@ on<'tournamentFinished'>('tournamentFinished', (msg) => {
 });
 
 on('tLobbyState', (msg) => {
+  if (isInGame()) return;
   const lobby   = msg.payload as TLobbyState;
   const current = getCurrentTLobby();
   if (current && current.id !== lobby.id) return;
@@ -179,7 +196,7 @@ on<'eliminated'>('eliminated', (msg) => {
   alert('You have been eliminated from the tournament 🏳️');
   const TLobbySocket = getSocket();
   const TLobby = getCurrentTLobby();
-  localStorage.removeItem('currentGameId');
+  console.log('Leaving tournament in eliminated:', TLobby?.id);
   if (TLobby) {
     TLobbySocket.send(JSON.stringify({
       type: 'leaveTournament',
@@ -187,12 +204,12 @@ on<'eliminated'>('eliminated', (msg) => {
     }));
     setCurrentTLobby(null);
   }
+  localStorage.removeItem('currentGameId');
   setCurrentTLobby(null as any);
   
   teardownInput?.();
   teardownInput = null;
-  toggle_divs('home_div');
-  navigate('/tournament');
+  navigate('/play');
 });
 
 on<'roundStarted'>('roundStarted', msg => {
@@ -264,7 +281,7 @@ function joinByCodeWithSocket(code?: string) {
 }
 
 setOnGameEnd((winnerId: string) => {
-  // console.log('[play.ts] Game ended – winner:', winnerId);
+  console.log('[play.ts] Game ended – winner:', winnerId);
 
   teardownInput?.();
   teardownInput = null;
@@ -273,15 +290,13 @@ setOnGameEnd((winnerId: string) => {
 
   const myId = localStorage.getItem('playerId') ?? (getSocket() as any).userId;
 
-  alert(`Player ${winnerId} wins!`);
-
-  if (myId === winnerId && currentTournamentId) {
-    setTimeout(() => {
-      send({
-        type   : 'beginRound',
-        payload: { tournamentId: currentTournamentId }
-      });
-    }, 2000);
+  if (myId === winnerId)  
+  {
+    alert('🎉 You won the game! 🎉');
+  } 
+  else {
+    alert('Game over.');
+    return;
   }
 });
 
@@ -314,6 +329,7 @@ function route() {
 
   if ((path === '/tournament' && lastPath !== '/play') || (path === '/tournament' && lastPath?.startsWith('/tournament/'))) {
     const TLobby = getCurrentTLobby();
+    console.log('Leaving tournament in buttons:', TLobby?.id);
     if (TLobby) {
       TLobbySocket.send(JSON.stringify({
         type: 'leaveTournament',
@@ -434,20 +450,21 @@ function route() {
   }
 }
 
+function isInGame(): boolean {
+  if (GAME_RE.test(window.location.pathname))
+  {
+    return true;
+  }
+  else
+    return false;
+}
+
 window.addEventListener('popstate', () => {
   route();
 });
 
-window.addEventListener('beforeunload', () => {
-  if (localStorage.getItem('currentGameId')) {
-    const roomId = localStorage.getItem('currentGameId')!;
-    const userId = localStorage.getItem('playerId')!;
-    // console.log('[beforeunload] sending leaveGame');
-    send({ type: 'leaveGame', payload: { roomId, userId } });
-  }
-});
-
 function showGameContainerAndStart(): void {
+  hideAllPages();
   const cont = document.getElementById('game-container');
   if (!cont) return;
 

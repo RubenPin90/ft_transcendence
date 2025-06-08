@@ -32,9 +32,7 @@ interface CustomWebSocket extends WebSocket {
 
 let socket: CustomWebSocket | null = null;
 
-// You can replace this with actual token logic if needed
 declare const authToken: string | null;
-// declare function getJwt(): string | null;
 
 
 function isLoggedIn(): boolean {
@@ -54,7 +52,7 @@ function createSocket(): WebSocket {
 
   ws.addEventListener('message', ev => {
     const data: ServerMessage = JSON.parse(ev.data);
-    if (data.type !== 'tournamentList' && data.type !== 'state')
+    if (data.type !== 'tournamentList' && data.type !== 'state' && data.type !== 'tLobbyState')
       console.log(`[socket] ← ${data.type}`, data);
     listeners[data.type]?.forEach(cb => cb(data as any));
   });

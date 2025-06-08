@@ -22,7 +22,8 @@ export class TournamentManager {
       this.MAX_PLAYERS = 4;
       this.tournaments = {};
       this.rooms       = {};
-
+      this.waiters = {};
+      this.readyForMatch = {};
       this.matchManager = matchManager;
 
       this.matchManager.on('matchFinished', ({ roomId, winnerId, reason, tournamentId }) => {
@@ -55,6 +56,74 @@ export class TournamentManager {
       this.reportMatchResult(lobby.tournamentId, roomId, winnerId);
     });
   }
+
+  playerReady(userId, tournamentId, matchId) {
+    const tourney = this.tournaments[tournamentId];
+    if (!tourney) {
+      console.error(`playerReady: tournament ${tournamentId} not found`);
+      return;
+    }
+    if (!Array.isArray(tourney.rounds)) {
+      console.error(`playerReady: rounds for tournament ${tournamentId} not initialized`);
+      return;
+    }
+  
+    const matchInfo = tourney.rounds.flat().find(m => m.matchId === matchId);
+    if (!matchInfo) {
+      console.error(`playerReady: match ${matchId} not found in tournament ${tournamentId}`);
+      return;
+    }
+    if (!this.readyForMatch[matchId]) {
+      this.readyForMatch[matchId] = new Set();
+    }
+    this.readyForMatch[matchId].add(userId);
+
+    if (!matchInfo) return;
+    const playersIds = matchInfo.players.map(p => getPlayerId(p));
+
+    if (playersIds.every(id => this.readyForMatch[matchId].has(id))) {
+      const [p1, p2] = matchInfo.players;
+      this.createMatchRoom(tournamentId, matchId, p1, p2);
+      delete this.readyForMatch[matchId];
+    }
+  }
+
+  waitForNextMatch(userId, tournamentId, ws) {
+    if (!this.waiters[tournamentId]) {
+      this.waiters[tournamentId] = new Map();
+    }
+    this.waiters[tournamentId].set(userId, ws);
+
+  }
+
+  _notifySinglePlayer(room, userId, tournamentId) {
+    const tourney = this.tournaments[tournamentId];
+    if (!tourney) return;
+
+    const matchInfo = tourney.rounds
+      .flat()
+      .find(m => m.matchId === room.matchId);
+
+    const payload = {
+      type: 'matchAssigned',
+      payload: {
+        tournamentId,
+        matchId: room.matchId,
+        round: matchInfo?.round ?? null,
+        slot:  matchInfo?.slot  ?? null,
+        players: room.players.map(p => ({
+          id:   getPlayerId(p),
+          name: p.name,
+        })),
+      },
+    };
+
+    const waiterWs = this.waiters[tournamentId]?.get(userId);
+    if (waiterWs?.readyState === WS_OPEN) {
+      waiterWs.send(JSON.stringify(payload));
+    }
+  }
+
 
   #activeIds(tournament) {
     return tournament.players
@@ -288,9 +357,9 @@ export class TournamentManager {
     );
   
     const [p1, p2] = placeholder.players;
-    if (p1 && !p1.pendingMatchId && p2 && !p2.pendingMatchId) {
-      this.createMatchRoom(tournamentId, placeholder.matchId, p1, p2);
-    }
+    // if (p1 && !p1.pendingMatchId && p2 && !p2.pendingMatchId) {
+    //   this.createMatchRoom(tournamentId, placeholder.matchId, p1, p2);
+    // }
   
     const nextRoundFilled =
       roundIdx + 1 < tourney.rounds.length &&
@@ -424,6 +493,17 @@ export class TournamentManager {
     });
   
      this.#notifyPlayers(lobbyRoom, tournamentId);
+
+     const waitMap = this.waiters[tournamentId];
+     if (waitMap) {
+       for (const p of [player1, player2]) {
+         const uid = getPlayerId(p);
+         if (waitMap.has(uid)) {
+           this._notifySinglePlayer(lobbyRoom, uid, tournamentId);
+           waitMap.delete(uid);
+         }
+       }
+     }
   }
   
   
@@ -448,7 +528,7 @@ export class TournamentManager {
     for (const player of room.players)
       this.#sendToUser(getPlayerId(player), payload);
     
-    // console.log(`Room created: ${room.matchId} with players ${room.players[0].id} vs ${room.players[1].id}`);
+    console.log(`Room created: ${room.matchId} with players ${room.players[0].id} vs ${room.players[1].id}`);
   }
 
 
@@ -469,7 +549,8 @@ export class TournamentManager {
     if (!tournament) return console.error(`leaveTournament: user ${userId} not found`);
 
     tournament.players = removeUser(tournament.players, userId);
-    if (tournament.host === userId && tournament.players.length) tournament.host = getPlayerId(tournament.players[0]);
+    if (tournament.host === userId && tournament.players.length)
+      tournament.host = getPlayerId(tournament.players[0]);
 
     if (tournament.players.length === 0) delete this.tournaments[tournament.id];
 
