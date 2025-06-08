@@ -159,7 +159,7 @@ export async function create_account() {
       return ;
     // current_file.innerHTML = content2value;
     current_file.innerHTML = content2[1];
-    window.location.replace('/');
+    history.replaceState({}, '', '/');
     // window.history.pushState({}, '', '/');
     try {
       await connect();           // waits until WS is OPEN

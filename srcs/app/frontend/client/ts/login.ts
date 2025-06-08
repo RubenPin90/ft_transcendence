@@ -231,7 +231,8 @@ async function login() {
             return;
         current_file.innerHTML = content2value;
         // window.history.pushState({}, '', '/');
-        window.location.replace('/');
+        // window.location.replace('/');
+        history.replaceState({}, '', '/');
         try {
             await openSocket();           // waits until WS is OPEN
             console.log('WebSocket connected after login ✅');
