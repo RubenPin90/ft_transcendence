@@ -72,60 +72,6 @@ async function delete_account() {
     }
 }
 
-// function return_main_settings() : string {
-//     return `
-//     <div class="flex flex-col mt-8 gap-6">
-//         <a href="/settings/user/change_user" class="buttons" data-link>
-//             <button class="block w-full mb-4 mt-6">
-//                 <span class="button_text">Change Username</span>
-//             </button>
-//         </a>
-//         <a href="/settings/user/change_login" class="buttons" data-link>
-//             <button class="block w-full mb-4 mt-6">
-//                 <span class="button_text">change login data</span>
-//             </button>
-//         </a>
-//         <a href="/settings/user/change_avatar" class="buttons" data-link>
-//             <button class="block w-full mb-4 mt-6">
-//                 <span class="button_text">change avatar</span>
-//             </button>
-//         </a>
-//     </div>
-//     <div class="flex mt-12 w-1/2">
-//         <a href="/" class="flex-1" data-link>
-//             <button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
-//                 <span class="font-bold text-lg">Main Page</span>
-//             </button>
-//         </a>
-//     </div>
-//     `;
-// }
-
-// function return_change_uname() : string {
-//     return `
-//     <div id="user_field" class="relative input_total">
-//         <div class="input_svg">
-//             <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
-//                 <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd" />
-//                 </svg>
-//         </div>
-//         <input type="text" id="username" placeholder="Username" required class="input_field" />
-//     </div>
-//     <div class="flex mt-12 gap-4 w-full">
-//         <a class="flex-1">
-//             <button onclick="change_user()" class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
-//                 <span class="font-bold text-lg">Submit</span>
-//             </button>
-//         </a>
-//         <a href="/settings/user/profile_settings" class="flex-1" data-link>
-//             <button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
-//                 <span class="font-bold text-lg">Back</span>
-//             </button>
-//         </a>
-//     </div>
-//     `;
-// }
-
 async function change_user(){
     const usernameField = document.getElementById('username_sett') as HTMLInputElement;
     try{
@@ -134,7 +80,6 @@ async function change_user(){
             alert("please enter a username"); //TODO MAKE IT MORE APPEALING WITH CSS
             return;
         }
-        alert(`VALUE:::${usernameValue}`);
         const response = await fetch('/update_user', {
             method: 'POST',
             headers: {
@@ -146,7 +91,7 @@ async function change_user(){
         if (response.ok){
             alert("update was successfull");
         }else{
-            alert("Error: " + result.message);
+            alert("Error: " + result.Response);
         }
         var name_field = document.getElementById("welcome-user-field");
         var value = name_field?.innerHTML;
@@ -173,21 +118,18 @@ async function change_logindata(){
     const passValue = passField.value;
     const repValue = repField.value;
 
-    if (emailValue == '')
-        console.log("EMAILVALUE IS EMPTY");
-
     const value_struct = {
         email: emailValue,
         password: passValue,
         avatar: null
     }
-    
+
     if (passValue !== repValue){
-        alert("password is not equal to repeat password"); //todo add css visual
+        alert("password is not equal to repeat password");
         return;
     }
     if (emailValue && parse_email(emailValue) === false){
-        alert("EMAIL WRONG");
+        alert("Incorrect email");
         return;
     }
     

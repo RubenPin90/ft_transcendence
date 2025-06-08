@@ -8,15 +8,23 @@ function parse_emaiL(email : string) : boolean {
 }
 
 
-function GetInput(id: string): HTMLInputElement | null {
-  const input = document.getElementById(id) as HTMLInputElement;
-  if (!input)
-    return null;
-  return  input;
-}
+// function GetInput(id: string): HTMLInputElement | null {
+//   const input = document.getElementById(id) as HTMLInputElement;
+//   if (!input)
+//     return null;
+//   return  input;
+// }
 
-function GetElement(id: string): HTMLElement | null {
-    return document.getElementById(id);
+// function GetElement(id: string): HTMLElement | null {
+//     return document.getElementById(id);
+// }
+
+function getValue(id: string): string {
+  const element = document.getElementById(id) as HTMLInputElement;
+  if (element){
+    return element.value;
+  }
+  return '';
 }
   
 function triggerAnimation(field: HTMLElement | null) {
@@ -26,22 +34,26 @@ function triggerAnimation(field: HTMLElement | null) {
   void field.offsetWidth;
   field.classList.add('animate-wrong_input');
 }
-  
-  
+
+
 function wrong_input(error : string) {
-  const header   = GetElement('error_header');
-  header && (header.innerHTML = `There was an error with your credentials<br>${error}`);
+  const header = document.getElementById('error_header');
+  if (header){
+    header.innerHTML = `There was an error with your credentials<br>${error}`;
+  }
 }
-  
+
 function check_fields(email : string, username : string, password : string, repeat : string) {
-  const userField  = GetElement('user_field');
-  const userInput  = GetInput('username_SignUp');
-  const emailField = GetElement('email_field');
-  const emailInput = GetInput('email_SignUp');
-  const passField  = GetElement('password_field');
-  const passInput  = GetInput('password-input_SignUp');
-  const repField   = GetElement('repeat_field');
-  const repInput   = GetInput('password-input2_SignUp');
+  //for animations
+  const userField  = document.getElementById('user_field');
+  const emailField = document.getElementById('email_field');
+  const passField  = document.getElementById('password_field');
+  const repField   = document.getElementById('repeat_field');
+  //for CSS
+  const userInput  = document.getElementById('username_SignUp') as HTMLInputElement;
+  const emailInput = document.getElementById('email_SignUp') as HTMLInputElement;
+  const passInput  = document.getElementById('password-input_SignUp') as HTMLInputElement;
+  const repInput   = document.getElementById('password-input2_SignUp') as HTMLInputElement;
 
   if (!userField || !userInput || !emailField || !emailInput || !passField || !passInput || !repField || !repInput){
     return;
@@ -79,10 +91,10 @@ function check_fields(email : string, username : string, password : string, repe
 }
 
 export async function create_account() {
-  const email = GetInput('email_SignUp')?.value ?? '';
-  const username = GetInput('username_SignUp')?.value ?? '';
-  const password = GetInput('password-input_SignUp')?.value ?? '';
-  const repeat = GetInput('password-input2_SignUp')?.value ?? '';
+  const email = getValue('email_SignUp');
+  const username = getValue('username_SignUp');
+  const password = getValue('password-input_SignUp');
+  const repeat = getValue('password-input2_SignUp');
 
   if (!email || !username || !password || !repeat) {
     check_fields(email, username, password, repeat);
@@ -121,21 +133,18 @@ export async function create_account() {
     body   : JSON.stringify({email, username, password, pfp})
   });
 
-  if (!response.ok) {
-    alert('Server error');
-    return;
-  }
+  // if (!response.ok) {
+  //   alert('Server error');
+  //   return;
+  // }
   try {
     const data = await response.json();
-    if (data.Response === 'reload') 
-      window.location.reload();
-    else if (data.Response !== 'success'){
+    if (data.Response !== 'success'){
       wrong_input(data.Response);
       return;
     }
   } catch (err) {
       console.error(`error with register: ${err}`);
-      alert(`error with register: ${err}`);
       return;
   }
 
@@ -153,17 +162,13 @@ export async function create_account() {
     const content = data2.Content;
 
     const content2 = content.match(/<body class="background" id="main_body">([\s\S]*?)<\/body>/);
-    // const content2value = content2[1].trim();
     var current_file = document.getElementById("main_body");
     if (!current_file)
       return ;
-    // current_file.innerHTML = content2value;
     current_file.innerHTML = content2[1];
     history.replaceState({}, '', '/');
-    // window.history.pushState({}, '', '/');
     try {
-      await connect();           // waits until WS is OPEN
-      // console.log('WebSocket connected after sign UP ✅');
+      await connect();
     } catch (err) {
       console.error('WS failed to connect', err);
     }
