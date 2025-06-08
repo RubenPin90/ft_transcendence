@@ -30,7 +30,6 @@ export class TournamentManager {
         return;
       }
 
-      // console.log('tournament matchFinished:', { roomId, winnerId, tournamentId });
       const lobby = this.rooms[roomId];
       if (!lobby) return;
 
@@ -131,7 +130,6 @@ export class TournamentManager {
       },
     }));
 
-    // console.log('Tournament created:', tourney);
 
     this.broadcastTournamentUpdate();
     return tourney;
@@ -178,7 +176,6 @@ export class TournamentManager {
       ready: false,
     };
     tournament.players.push(newPlayer);
-    // console.log(`User ${uid} joined tournament ${tournament.id} (${tournament.code})`);
 
     if (tournament.host === 'SERVER') tournament.host = userId;
 
@@ -448,7 +445,6 @@ export class TournamentManager {
     for (const player of room.players)
       this.#sendToUser(getPlayerId(player), payload);
     
-    // console.log(`Room created: ${room.matchId} with players ${room.players[0].id} vs ${room.players[1].id}`);
   }
 
 
@@ -459,7 +455,6 @@ export class TournamentManager {
     const player = tournament.players.find(p => getPlayerId(p) == userId);
     if (!player) return console.error(`toggleReady: user ${userId} not in tournament ${tournamentId}`);
     player.ready = !player.ready;
-    // console.log('Current player ready state:', player.ready);
     this.broadcastTLobby(tournament);
     this.broadcastTournamentUpdate();
   }
@@ -473,7 +468,6 @@ export class TournamentManager {
 
     if (tournament.players.length === 0) delete this.tournaments[tournament.id];
 
-    // console.log(db.show_tournaments());
     this.broadcastTLobby(tournament);
     this.broadcastTournamentUpdate();
   }

@@ -188,72 +188,6 @@ async function show_pending_requests(userid){
         return html;
     }
 }
-// <div class="absolute right-3 top-1/2 -translate-y-1/2 flex space-x-2 text-gray-600">
-//     <button onclick="block_friend('${single.id}')">
-//         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-//             stroke-width="1.5" stroke="currentColor" class="size-6 cursor-pointer text-red-700">
-//             <path stroke-linecap="round" stroke-linejoin="round"
-//                 d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
-//         </svg>
-//     </button>
-// </div>
-
-// async function show_accepted_friends(userid){
-//     const db = await open({
-//         filename: './database/db.sqlite',
-//         driver: sqlite3.Database
-//     });
-//     if (!db){
-//         return;
-//     }
-//     var html = '';
-//     try {
-//         var rows = await db.all(`
-//             SELECT * FROM friend_request
-//             WHERE (receiver_id = ? OR sender_id = ?) AND status = 'accepted'
-//             `, [userid, userid]);
-//         for (var single of rows){
-//             var correctId;
-//             if (single.receiver_id === userid){
-//                 correctId = single.sender_id;
-//             }else{
-//                 correctId = single.receiver_id;
-//             }
-//             console.log("correctID::", correctId);
-//             const sender_settings = await db.get(`
-//                 SELECT * FROM settings WHERE self = ?
-//                 `, [correctId]);
-//             const sender_user = await db.get(`
-//                 SELECT * FROM users WHERE id = ?
-//                 `, [sender_settings.id]);
-//             const name = sender_user.username || 'unknown';
-//             if (sender_user.status === 'online'){
-//                 html += `
-//                 <div class="relative flex-shrink-0">
-//                 <img class="w-24 h-24 rounded-full border-4 border-green-600" src="${sender_settings.pfp}">
-//                 <span class="absolute text-center w-full">${name}</span><br>
-//                 </div> 
-//                 `;
-//             } else{
-//                 html += `
-//                 <div class="relative flex-shrink-0">
-//                 <img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="${sender_settings.pfp}">
-//                 <span class="absolute text-center w-full">${name}</span><br>
-//                 </div> 
-//                 `;
-//             }
-//         }
-//     } catch (err) {
-//         console.error(`Error in show_accepted_friends: ${err}`);
-//         return null;
-//     } finally {
-//         await db.close();
-//         if (html == ''){
-//             return `<span>No friends currenlty :'( you lonely MF</span>`;
-//         }
-//         return html;
-//     }
-// }
 
 export {
     get_friend_request,
@@ -262,5 +196,4 @@ export {
     update_friend_request_value,
     delete_friend_request_value,
     show_pending_requests
-    // show_accepted_friends
 }

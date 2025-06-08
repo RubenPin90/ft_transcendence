@@ -137,13 +137,11 @@ async function mfa(request, response) {
             return `1_${userid}`;
         if (data.Function == 'create_otc') {
             const otc_return = await utils.create_otc(userid, response);
-            console.log(otc_return);
             if (!otc_return || otc_return === undefined || otc_return < 0)
                 return `2_${otc_return}`;
             return true;
         } else if (data.Function == 'verify_otc') {
             var verified = await utils.verify_otc(request, response, data, userid);
-            console.log(verified);
             if (verified && verified !== undefined && !(verified < 0)) {
                 const check_mfa = await mfa_db.get_mfa_value('self', userid);
                 var new_otc_str = check_mfa.otc;
@@ -563,7 +561,6 @@ async function delete_account(request, response) {
 }
 
 async function play(request, response) {
-    console.log("play page requested");
     const [keys, values] = modules.get_cookies(request);
     await utils.check_for_invalid_token(request, response, keys, values); 
     if (!keys?.includes('token')) {
@@ -705,10 +702,7 @@ async function check_preferred_mfa(request, response){
     if (!userid || userid === undefined || userid < 0)
         return `1_${userid}`;
     if (data.Function == 'verify_otc') {
-        console.log("verify OTC");
         var verified = await utils.verify_otc(request, response, data, userid);
-        console.log("verified OTC");
-        console.log(verified);
         if (verified && verified !== undefined && !(verified < 0)) {
             const check_mfa = await mfa_db.get_mfa_value('self', userid);
             var new_otc_str = check_mfa.otc;
@@ -727,7 +721,6 @@ async function check_preferred_mfa(request, response){
         return await utils.verify_custom_code(userid, response, data);
     }
     else if (data.Function == 'verify_email') {
-        console.log("/////////////////////////////////");
         return await utils.verify_email_code(userid, response, data);
     }
     return true;

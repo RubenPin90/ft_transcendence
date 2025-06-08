@@ -8,12 +8,8 @@ async function create_db() {
     });
 
     try {
-        // Fremdschlüssel aktivieren
         await db.run(`PRAGMA foreign_keys = ON;`);
-        //console.log("Fremdschlüssel aktiviert!");
 
-        // Tabellen in richtiger Reihenfolge erstellen
-        // SETTINGS
         await db.run(`
         CREATE TABLE IF NOT EXISTS settings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -115,12 +111,10 @@ async function create_db() {
         );`);
 
 
-        //console.log("Alle Tabellen erfolgreich erstellt oder existieren bereits.");
     } catch (err) {
         console.error(`Error creating db: ${err}`);
         return -1;
     } finally {
-        //console.log('Database setup abgeschlossen');
         db.close();
         return 0;
     }

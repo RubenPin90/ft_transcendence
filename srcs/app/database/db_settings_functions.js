@@ -83,7 +83,6 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
         else {
             var check;
             var random_self = Math.floor(Math.random() * 1000000000);
-            // //console.log(random_self);
             var it = 0
             while (it < 2000000000) {
                 check = await db.get(`
@@ -98,7 +97,6 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
                 console.error(`Error in create_settings_value: ${err}`);
                 return null;
             }
-            //console.log(`Random: ${random_self}`);
             self = random_self;
         }
         var check_email = await db.get(
@@ -113,10 +111,8 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
                 await update_settings_value('github', github, user_id);
             }
             if (id.google == '0') {
-                //console.log(await update_settings_value('google', google, user_id));
             }
             const ret = await get_settings_value('email', email);
-            // //console.log("Here");
             self = ret.self;
             return {"return": row, "self": ret.self};
         }
@@ -124,7 +120,6 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
 			`INSERT INTO settings (password, pfp, mfa, email, lang, google, github, self) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 			[password, pfp, mfa, email, lang, google, github, self]
 		);
-		// //console.log(`New user created with ID: ${row.lastID}`);
         return {"return": row, "self": self};
     } catch (err) {
         console.error(`Error in create_settings_value: ${err}`);
