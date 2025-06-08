@@ -545,17 +545,53 @@ export class TournamentManager {
   }
 
   leaveTournament(userId, tournamentId = null) {
-    const tournament = tournamentId ? this.tournaments[tournamentId] : Object.values(this.tournaments).find(t => hasUser(t.players, userId));
-    if (!tournament) return console.error(`leaveTournament: user ${userId} not found`);
-
+    const tournament = tournamentId
+      ? this.tournaments[tournamentId]
+      : Object.values(this.tournaments).find(t => hasUser(t.players, userId));
+  
+    if (!tournament) {
+      console.error(`leaveTournament: user ${userId} not found`);
+      return;
+    }
+  
+    if (tournament.status !== 'waiting' && Array.isArray(tournament.rounds)) {
+      tournament.eliminated.add(userId);
+  
+      for (const round of tournament.rounds) {
+        for (const match of round) {
+          const ids = match.players.map(p => getPlayerId(p));
+          const idx = ids.indexOf(userId);
+          if (idx !== -1 && !match.winner) {
+            const opp = match.players[1 - idx];
+            if (opp) {
+              this.reportMatchResult(
+                tournament.id,
+                match.matchId,
+                getPlayerId(opp)
+              );
+            }
+            break;
+          }
+        }
+      }
+    }
+  
     tournament.players = removeUser(tournament.players, userId);
-    if (tournament.host === userId && tournament.players.length)
+  
+    if (tournament.host === userId && tournament.players.length > 0) {
       tournament.host = getPlayerId(tournament.players[0]);
-
-    if (tournament.players.length === 0) delete this.tournaments[tournament.id];
-
-    // console.log(db.show_tournaments());
-    this.broadcastTLobby(tournament);
-    this.broadcastTournamentUpdate();
+    }
+  
+    if (tournament.players.length === 0) {
+      delete this.tournaments[tournament.id];
+      return;
+    }
+  
+    if (tournament.status === 'waiting') {
+      this.broadcastTLobby(tournament);
+      this.broadcastTournamentUpdate();
+    }
   }
+  
+  
 }

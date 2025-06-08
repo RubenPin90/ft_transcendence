@@ -101,7 +101,7 @@ on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
   await new Promise(r => setTimeout(r, 700));
 
   // pick the upcoming match (in the last round):
-  const lastRound  = normalized[0];
+  const lastRound  = normalized[normalized.length - 1];
   const nextMatch = lastRound.find(
     m => m.players.filter(p => p && !('pendingMatchId' in p)).length === 2
   );
