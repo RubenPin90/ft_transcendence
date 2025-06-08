@@ -116,18 +116,8 @@ export async function login2(){
         alert("NO THIS");
         return;
     }
-    
-    
-    
-    // 1: email und passwort holen -> check ob user
     const email = email2.value;
     const password = password2.value;
-
-
-
-    // 2: Wenn das passt, dann: mfa methode holen -> an frontend methode
-    // 3: input code sourcen und mit der mfa methode ans backend -> success oder fail
-    // 4: an login ins backend schicken
 
     const check_user = await fetch('/get_data', {
         method: 'POST',

@@ -120,7 +120,6 @@ async function easyfetch(url, method, header, body) {
 		});
 	}
 	if (!raw_data.ok) {
-		//console.log(`Easyfetch error with url ${url}`);
 		return -2;
 	}
 	var token_data;

@@ -247,7 +247,6 @@ async function change_avatar(){
     }
 }
 
-
 (window as any).change_logindata = change_logindata;
 (window as any).delete_account = delete_account;
 (window as any).change_avatar = change_avatar;

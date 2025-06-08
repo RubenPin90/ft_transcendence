@@ -216,13 +216,7 @@ async function get_decrypted_userid(request, response) {
 		var self_decoded = await modules.get_jwt(values[keys.indexOf('token')]);
 	} catch (err) {
 		const err_string = String(err);
-		//console.log(err_string);
 		if (err_string.includes("jwt expired")) {
-			// response.raw.writeHead(302, {
-			// 	'Set-Cookie': 'token=; HttpOnly; Secure; SameSite=Strict; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
-			// 	'Location': '/login'
-			// });
-			// response.raw.end();
 			return -2;
 		}
 	}
@@ -1197,7 +1191,7 @@ async function get_data(request, response) {
 			response.code(200).headers({ 'Content-Type': 'application/json' }).send({"Response": 'success', "Content": show_page(data, "home_div")});
 			return true;
 		} else if (link.get == 'get_mfa_method') {
-			const parsed = await utils.process_login(request, response);
+			var parsed = await utils.process_login(request, response);
 			if (!parsed || parsed === undefined)
 				return `1_${parsed}`;
 			else if (parsed < 0) {
@@ -1207,6 +1201,7 @@ async function get_data(request, response) {
 					response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Error', "Content": 'Wrong password'})
 				return true;
 			}
+			parsed = await check_mfa_valid(parsed);
 			if (parsed.mfa && parsed.mfa.email && !parsed.mfa.email.endsWith('_temp') && parsed.mfa.prefered === 1) {
 				var email_code = Math.floor(Math.random() * 1000000);
 				const email_code_len = 6 - (String(email_code).length);
@@ -1318,6 +1313,32 @@ async function check_expired_token(request, response){
 	return false;
 }
 
+async function check_mfa_valid(parsed) {
+	if (!parsed.mfa)
+		return parsed
+	parsed.mfa && parsed.mfa.email && !parsed.mfa.email.endsWith('_temp') && parsed.mfa.prefered === 1;
+	var problemo = true;
+	const mfa = parsed.mfa;
+	if (mfa.email && !mfa.email.endsWith('_temp') && mfa.prefered === 1)
+		problemo = false;
+	if (mfa.otc && !mfa.otc.endsWith('_temp') && mfa.prefered === 2)
+		problemo = false;
+	if (mfa.custom && !mfa.custom.endsWith('_temp') && mfa.custom === 3)
+		problemo = false;
+	if (problemo == false)
+		return parsed;
+	var preferred = 0;
+	if (mfa.otc && !mfa.otc.endsWith('_temp'))
+		preferred = 2;
+	else if (mfa.email && !mfa.email.endsWith('_temp'))
+		preferred = 1;
+	else if (mfa.custom && !mfa.custom.endsWith('_temp'))
+		preferred = 3;
+	parsed.mfa.prefered = preferred;
+	await mfa_db.update_mfa_value('prefered', preferred, parsed.mfa.self);
+	return parsed
+}
+
 export {
 	google_input_handler,
 	github_input_handler,
@@ -1342,5 +1363,6 @@ export {
 	generate_random_state,
 	retrieve_trash_icon_mfa,
 	check_for_invalid_token,
-	check_expired_token
+	check_expired_token,
+	check_mfa_valid
 }

@@ -391,11 +391,11 @@ async function change_language() {
             body: JSON.stringify({'Function': 'change_language', 'Lang': lang, 'Page': full_page.innerHTML}),
         });
         var lang_data = await response.json();
+        console.log(lang_data.Content);
         if (!lang_data)
             return;
         if (lang_data.Response == 'success') {
             full_page.innerHTML = lang_data.Content;
-            
         }
     }
     catch (err){
