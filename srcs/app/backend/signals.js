@@ -2,7 +2,6 @@ export default function handleShutdown({ fastify }) {
     async function gracefulShutdown() {
       fastify.close()
         .then(() => {
-          console.log('Fastify server closed');
           process.exit(0);
         })
         .catch(closeErr => {

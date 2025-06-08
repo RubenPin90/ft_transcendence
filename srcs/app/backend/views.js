@@ -194,8 +194,8 @@ async function mfa(request, response) {
 
 
 async function user(request, response, userid, lang) {
-    const data = request.body;
     if (request.method == 'POST') {
+        const data = request.body;
         if (data.Function == "change_language") {
             const new_lang = data.Lang;
             const old_lang = lang;
@@ -234,7 +234,6 @@ async function settings(request, response) {
     }
     if (request_url.startsWith("/mfa"))
         return await mfa(request, response);
-    console.log(request_url);
     if (request_url == "/user")
         return await user(request, response, valid_token.userid, valid_token.lang);
 
