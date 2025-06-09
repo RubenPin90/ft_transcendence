@@ -32,14 +32,14 @@ async function add_friend(){
     }
 }
 
-async function accept_friend(row_id : string){
+async function accept_friend(sendername : string){
     try{
         const response = await fetch('/accept_friends',{
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({row_id}),
+            body: JSON.stringify({sendername}),
         });
         if (!response.ok){
             alert("response is not ok in accept_friend");
@@ -48,7 +48,7 @@ async function accept_friend(row_id : string){
     } catch (err){
         console.error("Error on accept_friend:", err);
     }
-    var block = document.getElementById(`request-${row_id}`);
+    var block = document.getElementById(`request-${sendername}`);
     block?.remove();
 }
 

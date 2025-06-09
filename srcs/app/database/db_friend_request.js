@@ -88,7 +88,7 @@ async function update_friend_request_value(id, userid) {
         //check if request truly exists for the user
         var request = await db.get(`
             SELECT * FROM friend_request
-            WHERE id = ? AND receiver_id = ?
+            WHERE sender_id = ? AND receiver_id = ?
             `, [id, userid]);
         if (!request){
             return -1;
@@ -107,7 +107,7 @@ async function update_friend_request_value(id, userid) {
         // lastly delete the row of friends_request
         var row_req = await db.run(`
             DELETE FROM friend_request
-            WHERE id = ?`, [id]);
+            WHERE sender_id = ? AND receiver_id`, [id, userid]);
         
         return row;
     } catch (err) {
@@ -159,11 +159,11 @@ async function show_pending_requests(userid){
                     `, [sender_settings.self]);
                 const name = sender_user.username || 'unknown';
                 html += `
-                <div id="request-${single.id}" class="flex bg-gray-200 rounded-lg relative">
+                <div id="request-${name}" class="flex bg-gray-200 rounded-lg relative">
                     <img src="${sender_settings.pfp}" alt="" class="w-10 h-10">
                     <div class="flex pl-2 items-center text-lg">${name}</div>
                     <div class="absolute right-10 top-1/2 -translate-y-1/2 flex space-x-2 text-gray-600">
-                        <button onclick="accept_friend('${single.id}')">
+                        <button onclick="accept_friend('${name}')">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                 stroke-width="2" stroke="currentColor" class="size-6 cursor-pointer text-green-700 font-bold">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -171,7 +171,7 @@ async function show_pending_requests(userid){
                         </button>
                     </div>
                     <div class="absolute right-3 top-1/2 -translate-y-1/2 flex space-x-2 text-gray-600">
-                        <button onclick="reject_friend('${single.id}')">
+                        <button onclick="reject_friend('${name}')">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                 stroke-width="1.5" stroke="currentColor" class="size-6 cursor-pointer text-red-700 font-bold">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14" />
