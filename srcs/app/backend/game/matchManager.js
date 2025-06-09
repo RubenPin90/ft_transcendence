@@ -171,7 +171,7 @@ export class MatchManager extends EventEmitter {
     if (rc === -1) {
       console.warn(`[${room.roomId}] DB: player not in settings - skipping create_match`);
     }
-    // console.log(await show_matches());
+    // (await show_matches());
   }
 
   async _recordMatchUpdate(room) {
@@ -205,7 +205,6 @@ export class MatchManager extends EventEmitter {
       status: 'finished'
     });
   
-    // console.log(`[${roomId}] Match finished. Winner: ${winnerId}, Reason: ${reason}`);
   
     this.emit('matchFinished', {
       roomId,
@@ -215,7 +214,6 @@ export class MatchManager extends EventEmitter {
     });
   
     await update_match('winner', winnerId, roomId);
-    // console.log(await show_matches())
   
     setTimeout(() => this.removeRoom(roomId), 500);
   }

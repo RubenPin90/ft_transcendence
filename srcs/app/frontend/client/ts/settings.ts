@@ -299,7 +299,6 @@ async function create_email() {
     } catch (jsonError) {
         console.error(`Fehler beim Parsen der JSON-Antwort`);
     }
-    // //console.log(data);
 }
 
 async function remove_custom_code() {
@@ -308,7 +307,6 @@ async function remove_custom_code() {
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({"Function": "remove_custom_code"})
     })
-    
     if (!response.ok)
         throw new Error(`HTTP Fehler! Status: ${response.status}`);
 

@@ -92,7 +92,7 @@ async function send_email(receiver, subject, text) {
 		from: SMTP_USER,
 		to: receiver,
 		subject: subject,
-		text: text
+		html: text
 	};
 
 	try {
