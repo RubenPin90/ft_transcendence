@@ -214,16 +214,16 @@ async function create_custom_code() {
 
 // Copied from a function that used chatgpt. Rebuild pls
 export async function verifyEmail() {
-    console.log("aaaaaaaAAaaaaaAAAAAAAAaaaAAAAAAAAAAAAAAAaaaAAAAaaaAAAAaaaAAAaaAAAaaaAaaaaAAaaaaAAAAaAAAaa");
+    // console.log("aaaaaaaAAaaaaaAAAAAAAAaaaAAAAAAAAAAAAAAAaaaAAAAaaaAAAAaaaAAAaaAAAaaaAaaaaAAaaaaAAAAaAAAaa");
     const code2 = document.getElementById('Code') as HTMLInputElement;
-    console.log(code2);
+    // console.log(code2);
     if (!code2){
         return;
     }
     const code = code2.value;
     //console.log("Verification code:", code);
     
-    console.log("LOL");
+    // console.log("LOL");
     try {
         const response = await fetch("/settings/mfa", {
             method: 'POST',
@@ -231,11 +231,11 @@ export async function verifyEmail() {
             body: JSON.stringify({ "Function": "verify_email", "Code": code })
         });
         
-        console.log("LOL");
+        // console.log("LOL");
         if (!response.ok) {
             throw new Error(`HTTP Fehler! Status: ${response.status}`);
         }
-        console.log("LOL");
+        // console.log("LOL");
 
         const data = await response.json();
         if (data.Response === "success") {

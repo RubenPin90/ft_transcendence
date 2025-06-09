@@ -199,7 +199,7 @@ async function show_login(){
 
 //TODO change window.location.href since it force refreshes the webpage
 export async function where_am_i(path : string) : Promise<string> {
-    console.log("where_am_i called with path:", path);
+    // console.log("where_am_i called with path:", path);
     if (path.startsWith('/tournament') || path.startsWith('/game') || path.startsWith('/matchmaking'))
     {
         if (await check_cookies_expire()) {

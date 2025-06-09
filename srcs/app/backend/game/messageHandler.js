@@ -16,8 +16,6 @@ export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager)
     console.error('Invalid JSON message from client:', err);
     return;
   }
-  if (data.type != 'movePaddle')
-    console.log('Received message:', data);
   switch (data.type) {
 
     case 'waitForNextMatch': {

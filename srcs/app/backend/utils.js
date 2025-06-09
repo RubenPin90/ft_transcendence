@@ -15,6 +15,8 @@ import * as translator from './translate.js';
 import { fastify } from './server.js';
 import * as views from './views.js';
 import * as utils from './utils.js';
+import { socketRegistry } from './server.js';
+
 
 dotenv.config();
 
@@ -221,6 +223,11 @@ async function process_login(request, response) {
 		response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Password incorrect', "Content": null});
 		return -2;
 	}
+	// if (socketRegistry.has(check_settings.self))
+	// {
+	// 	response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'User already logged in', "Content": null});
+	// 	return -3;
+	// }
 	const mfa = await mfa_db.get_mfa_value('self', check_settings.self);
 	if (!mfa || mfa === undefined || mfa < 0 || ((mfa.otc && mfa.otc.endsWith('_temp')) && (mfa.email && mfa.email.endsWith('_temp')) && (mfa.custom && mfa.custom.endsWith('_temp')) ))
 		return {'settings': check_settings, 'mfa': null};
@@ -978,7 +985,6 @@ async function replace_all_templates(request, response, state, override) {
 	play_main +=     '<div id="game-main-container" class="field">';
 
 	play_main +=     '<div id="main-menu">';
-	play_main +=       '<h1 class="text-white font-bold text-2xl">Welcome, <span id="username">{{uname}}</span>!</h1>';
 	play_main +=       '<div class="flex flex-col gap-6 mt-6">';
 	play_main +=         '<a class="buttons"><button class="block w-full mb-6 mt-6" id="sp-vs-pve-btn"><span class="button_text pointer-events-none">PVE</span></button></a>';
 	play_main +=         '<a class="buttons"><button class="block w-full mb-6 mt-6" id="one-vs-one-btn"><span class="button_text pointer-events-none">1v1</span></button></a>';
@@ -1171,9 +1177,14 @@ async function get_data(request, response) {
 				response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({'Response': 'wrong email', 'Content': null});
 				return true;
 			}
-			const pw = modules.check_encrypted_password(link.password, check_user.password);
+			const pw = await modules.check_encrypted_password(link.password, check_user.password);
 			if (!pw || pw === undefined || pw < 0) {
 				response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({'Response': 'wrong password', 'Content': null});
+				return true;
+			}
+			if (socketRegistry.has(check_user.self))
+			{
+				response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'User already logged in', "Content": null});
 				return true;
 			}
 			response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({'Response': 'success', 'Content': null});

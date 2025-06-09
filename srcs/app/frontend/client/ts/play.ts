@@ -10,8 +10,7 @@ import {
 import {
   renderTournamentList,
   joinByCode,
-  renderTLobby,
-  renderBracketOverlay
+  renderTLobby
 } from './tournament.js';
 import { setupButtonsDelegated } from './buttons.js';
 import type {
@@ -74,7 +73,7 @@ on<'matchAssigned'>('matchAssigned', (msg) => {
   const rival        = players.find(p => p.id !== myId);
   if (!me || !rival) return;
 
-  console.log('[matchAssigned] navigating to game:', matchId, players);
+  // console.log('[matchAssigned] navigating to game:', matchId, players);
   localStorage.setItem('currentGameId', matchId);
   currentRoomId        = matchId;
   currentTournamentId  = tournamentId;
@@ -99,7 +98,6 @@ on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
     ? rounds as MatchStub[][]
     : [rounds as MatchStub[]];
 
-  // renderBracketOverlay(normalized);
   await new Promise(r => setTimeout(r, 700));
 
   // pick the upcoming match (in the last round):
@@ -198,7 +196,7 @@ on<'eliminated'>('eliminated', (msg) => {
   alert('You have been eliminated from the tournament 🏳️');
   const TLobbySocket = getSocket();
   const TLobby = getCurrentTLobby();
-  console.log('Leaving tournament in eliminated:', TLobby?.id);
+  // console.log('Leaving tournament in eliminated:', TLobby?.id);
   if (TLobby) {
     TLobbySocket.send(JSON.stringify({
       type: 'leaveTournament',
@@ -286,7 +284,7 @@ function joinByCodeWithSocket(code?: string) {
 }
 
 setOnGameEnd((winnerId: string) => {
-  console.log('[play.ts] Game ended – winner:', winnerId);
+  // console.log('[play.ts] Game ended – winner:', winnerId);
 
   teardownInput?.();
   teardownInput = null;
@@ -304,7 +302,7 @@ setOnGameEnd((winnerId: string) => {
     return;
   }
   if (!currentTournamentId) {
-    console.log('[play.ts] No tournament active, stopping game');
+    // console.log('[play.ts] No tournament active, stopping game');
     navigate('/play');
     return;
   }
@@ -330,8 +328,8 @@ function route() {
   
   const TLobbySocket = getSocket();
   const path = window.location.pathname;
-  console.log('[route] current path:', path);
-  console.log('lastPath:', lastPath);
+  // console.log('[route] current path:', path);
+  // console.log('lastPath:', lastPath);
 
   if (path === '/matchmaking' && lastPath !== '/play') {
     // console.log('[route] blocked direct /matchmaking; redirecting to /play');
@@ -343,7 +341,7 @@ function route() {
 
   if ((path === '/tournament' && lastPath !== '/play') || (path === '/tournament' && lastPath?.startsWith('/tournament/'))) {
     const TLobby = getCurrentTLobby();
-    console.log('Leaving tournament in buttons:', TLobby?.id);
+    // console.log('Leaving tournament in buttons:', TLobby?.id);
     if (TLobby) {
       TLobbySocket.send(JSON.stringify({
         type: 'leaveTournament',

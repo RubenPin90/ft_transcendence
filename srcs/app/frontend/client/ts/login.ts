@@ -108,12 +108,9 @@ async function get_mfa_login(userid: string, method: string, email: string){
 document.getElementById('login-button')?.addEventListener('click', login2);
 
 export async function login2(){
-    console.log('login clicked');
-
     const email2 = document.getElementById("email-input_LogIn") as HTMLInputElement;
     const password2 = document.getElementById("password-input_LogIn") as HTMLInputElement;
     if (!email2 && !password2) {
-        alert("NO THIS");
         return;
     }
     const email = email2.value;
@@ -126,15 +123,15 @@ export async function login2(){
         },
         body: JSON.stringify({"get": "check_user", email, password}),
     });
-    if (!check_user.ok){
-        alert(`CHECK USER NOT OK`);
-        return;
-    }
+    // if (!check_user.ok){
+    //     alert(`CHECK USER NOT OK`);
+    //     return;
+    // }
 
     try{
         const data = await check_user.json();
         if (data.Response != "success"){
-            alert("NOT SUCCESS");
+            alert(`Error with login: ${data.Response}`);
             return;//add message
         }
     } catch(err) {
@@ -149,7 +146,7 @@ export async function login2(){
         body: JSON.stringify({"get": "get_mfa_method", email, password}),
     });
     if (!get_mfa_method.ok){
-        alert(`CHECK USER NOT OK`);
+        alert(`CHECK USER NOT OK MFA`);
         return;
     }
 
@@ -169,7 +166,6 @@ async function login() {
     const email2 = document.getElementById("email-input_LogIn") as HTMLInputElement;
     const password2 = document.getElementById("password-input_LogIn") as HTMLInputElement;
     if (!email2 || !password2) {
-        alert("NO THIS");
         return;
     }
     
@@ -225,7 +221,7 @@ async function login() {
         history.replaceState({}, '', '/');
         try {
             await openSocket();           // waits until WS is OPEN
-            console.log('WebSocket connected after login ✅');
+            // console.log('WebSocket connected after login ✅');
           } catch (err) {
             console.error('WS failed to connect', err);
           }

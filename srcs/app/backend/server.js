@@ -19,14 +19,14 @@ const PORT = 8080;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const socketRegistry = new SocketRegistry();
+export const socketRegistry = new SocketRegistry();
 const matchManager = new MatchManager(socketRegistry);
 const tournamentManager = new TournamentManager(socketRegistry, matchManager);
 tournamentManager.matchManager = matchManager;
 matchManager.tournamentManager = tournamentManager;
 
 
-for (let i = 0; i < 30; i++) tournamentManager.createTournament(null, 'SERVER');
+for (let i = 0; i < 3; i++) tournamentManager.createTournament(null, 'SERVER');
 
 setInterval(() => tournamentManager.broadcastTournamentUpdate(), 3000);
 
@@ -58,8 +58,9 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
   console.log('userId.userId:', userId);
   console.log('🔑 ws token verified:', userId);
 
-
+  const user_db = await users_db.get_users_value('self', userId);
   ws.userId        = userId;
+  ws.username = user_db.username;
   ws.inGame        = false;
   ws.currentGameId = null;
   await users_db.update_users_value('status', 'online', userId);
@@ -67,6 +68,14 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
 
   console.log('🔌 ws authenticated:', userId);
   ws.send(JSON.stringify({ type: 'welcome', payload: { userId } }));
+
+  if (socketRegistry.has(userId))
+  {
+    console.log('detected double connection');
+    ws.close(1000, 'detected double connection');
+    socketRegistry.remove(userId);
+    return;
+  }
 
   socketRegistry.add(userId, ws);
   matchManager.registerSocket(userId, ws);

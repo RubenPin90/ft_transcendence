@@ -58,6 +58,11 @@ function createSocket(): WebSocket {
   });
 
   ws.addEventListener('close', () => {
+    console.log('close socket arrived');
+    if(localStorage.getItem('playerId'))
+      localStorage.removeItem('playerId');
+    if(localStorage.getItem('currentRoomId'))
+      localStorage.removeItem('currentRoomId');
     socket = null;
   });
 

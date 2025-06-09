@@ -162,7 +162,7 @@ export class TournamentManager {
       }));
       return;
     }
-
+ 
     const id   = uuidv4();
     const code = uuidv4().slice(0, 6).toUpperCase();
 
@@ -172,7 +172,7 @@ export class TournamentManager {
       host   : userId,
       players: userId === 'SERVER' ? [] : [{
         id   : userId,
-        name : `Player ${userId.slice(0, 4)}`,
+        name : ws.username,
         ready: true,
       }],
       status       : 'waiting',
@@ -199,8 +199,6 @@ export class TournamentManager {
         players: tourney.players,
       },
     }));
-
-    console.log('Tournament created:', tourney);
 
     this.broadcastTournamentUpdate();
     return tourney;
@@ -243,7 +241,7 @@ export class TournamentManager {
     const uid = getPlayerId(userId);
     const newPlayer = {
       id: String(userId),
-      name: `Player ${String(userId).slice(0, 4)}`,
+      name: ws.username,
       ready: false,
     };
     tournament.players.push(newPlayer);
@@ -444,12 +442,6 @@ export class TournamentManager {
         current = nextQueue;
         roundNo++;
       }
-
-      console.log(`Generated bracket for tournament ${tournamentId}:`, rounds);
-      console.log('players in tournament:', players.length);
-      console.log('playerids in tournament:', players.map(getPlayerId));
-      
-
       return rounds;
     };
 
