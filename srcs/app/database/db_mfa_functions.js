@@ -92,7 +92,6 @@ async function update_mfa_value(search_value, value, self) {
             UPDATE mfa
             SET ${search_value} = ?
             WHERE self = ?`, [value, self]);
-        console.log(row);
     } catch (err) {
         console.error(`Error in update_settings_value: ${err}`);
         return -3;
