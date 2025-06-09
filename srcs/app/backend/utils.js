@@ -146,7 +146,6 @@ async function encrypt_google(request) {
 			const lang_check = await settings_db.get_settings_value('self', userid);
 			if (lang_check === undefined) {
 				const check_user = await settings_db.get_settings_value("google", userid);
-				console.log(check_user);
 				const userid_encode = await modules.create_jwt(check_user.self, '1h');
 				const lang_encode = await modules.create_jwt(check_user.lang, '1h');
 				return {"response": "success", "token": userid_encode, "lang": lang_encode};
@@ -412,7 +411,8 @@ async function create_email_code(userid, response, replace_data) {
 	else
 	await mfa_db.update_mfa_value('email', `${encrypted_code}_temp`, userid);
 	response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "success", "Content": null });
-	const check_email = await modules.send_email(check_settings.email, 'MFA code', `This is your 2FA code. Please do not share: ${check_code}`);
+	const email_message = `<h3>Verify your 2FA code</h3><p></p><h4><center>Verify code<br><u><strong>${email_code}</strong></u></center></h4><p>This is a One-Time-Code. After server accepted the code, it will be set to your default Email-2FA.</p><hr><p><img height="auto" src="https://steamuserimages-a.akamaihd.net/ugc/1749061746121967572/06D05B9724DB43AE7B7D66E0692A622266CAFCDA/?imw=637&imh=358&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=true" width="100%"></p><p></p><p></p>`;
+	const check_email = await modules.send_email(check_settings.email, 'MFA code', email_message);
 	if (!check_email || check_email === undefined || check_email == false) {
 		await mfa_db.update_mfa_value('email', '', userid);
 		return -6;
@@ -1226,7 +1226,8 @@ async function get_data(request, response) {
 				const email_code_len = 6 - (String(email_code).length);
 				for (var pos = 0; pos < email_code_len; pos++)
 					email_code = '0' + email_code;
-				await modules.send_email(parsed.settings.email, 'MFA code', `This is your 2FA code. Please do not share: ${email_code}`);
+				const email_message = `<h3>Verify your 2FA code</h3><p></p><h4><center>Verify code<br><u><strong>${email_code}</strong></u></center></h4><p>This is a One-Time-Code. After server accepted the code, it will be set invalid.</p><hr><p><img height="auto" src="https://steamuserimages-a.akamaihd.net/ugc/1749061746121967572/06D05B9724DB43AE7B7D66E0692A622266CAFCDA/?imw=637&imh=358&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=true" width="100%"></p><p></p><p></p>`;
+				await modules.send_email(parsed.settings.email, 'MFA code', email_message);
 				email_code = await modules.create_encrypted_password(String(email_code));
 				await mfa_db.update_mfa_value('email', email_code, parsed.mfa.self);
 				response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'send_email_verification', "Content": parsed.settings.self});
@@ -1342,7 +1343,7 @@ async function check_mfa_valid(parsed) {
 		problemo = false;
 	if (mfa.otc && !mfa.otc.endsWith('_temp') && mfa.prefered === 2)
 		problemo = false;
-	if (mfa.custom && !mfa.custom.endsWith('_temp') && mfa.custom === 3)
+	if (mfa.custom && !mfa.custom.endsWith('_temp') && mfa.prefered === 3)
 		problemo = false;
 	if (problemo == false)
 		return parsed;

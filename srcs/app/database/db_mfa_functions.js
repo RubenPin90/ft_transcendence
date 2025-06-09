@@ -73,7 +73,7 @@ async function create_mfa_value(mfa_email, otc, custom, prefered, self) {
 }
 
 async function update_mfa_value(search_value, value, self) {
-    const valid_values = ['email', 'otc', 'prefered', 'custom'];
+    const valid_values = ['email', 'otc', 'custom', 'prefered'];
     if (!valid_values.includes(search_value))
         return -1;
     const db = await open({
@@ -84,14 +84,14 @@ async function update_mfa_value(search_value, value, self) {
     try {
         const check = await db.get(`
             SELECT * FROM settings
-            WHERE self = '${self}'
-        `);
+            WHERE self = ?
+        `, [self]);
         if (!check)
             return -2;
         var row = await db.run(`
             UPDATE mfa
-            SET ${search_value} = '${value}'
-            WHERE self = '${self}'`);
+            SET ${search_value} = ?
+            WHERE self = ?`, [value, self]);
     } catch (err) {
         console.error(`Error in update_settings_value: ${err}`);
         return -3;

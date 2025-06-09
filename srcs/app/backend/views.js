@@ -729,13 +729,11 @@ async function change_preferred_mfa(request, response){
     if (!keys?.includes('token')) {
         return login(request, response);
     }
-
     const token = values[keys.indexOf('token')];
-
     const userid_token = await modules.get_jwt(token);
     const userid = userid_token.userid;
     const data = request.body.Value;
-    const status = await mfa_db.update_mfa_value('prefered', data, userid);
+    const status = await mfa_db.update_mfa_value('prefered', Number(data), userid);
     if (!status || status == undefined){
         response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "failed", "Content": null});
         return true;
