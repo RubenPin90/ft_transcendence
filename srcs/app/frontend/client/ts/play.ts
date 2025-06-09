@@ -50,6 +50,7 @@ on('welcome', (msg) => {
 on('error', (msg) => {
   const banner          = document.getElementById('error-banner')!;
   banner.textContent    = msg.payload.message;
+  banner.classList.remove('hidden');
   banner.classList.add('block');
   // banner.style.display  = 'block';
 });
@@ -344,6 +345,7 @@ function route() {
     if (lastPath?.startsWith('/tournament/')) {
       const tournament_page = document.getElementById('tournament-page') as HTMLElement//!.style.display = 'block';
       tournament_page?.classList.add('block');
+      tournament_page?.classList.remove('hidden');
       renderTournamentList(tournaments, joinByCodeWithSocket);
       return;
     }
@@ -391,6 +393,7 @@ function route() {
     const overlay = document.getElementById('bracket-overlay');
     if (overlay) {
       overlay.classList.add('block');
+      overlay.classList.remove('hidden');
       // overlay.style.display = 'block';
     }
 
@@ -406,6 +409,7 @@ function route() {
 
   if (path === '/tournament') {
     (document.getElementById('tournament-page') as HTMLElement)!.classList.add('block');
+    (document.getElementById('tournament-page') as HTMLElement)!.classList.remove('hidden');
     renderTournamentList(tournaments, joinByCodeWithSocket);
     return;
   }
@@ -414,11 +418,13 @@ function route() {
     enterMatchmaking();
     markQueued?.(true);
     (document.getElementById('matchmaking-page') as HTMLElement)!.classList.add('block');
+    (document.getElementById('matchmaking-page') as HTMLElement)!.classList.remove('hidden');
     return;
   }
 
   if (GAME_RE.test(path)) {
     (document.getElementById('game-container') as HTMLElement)!.classList.add('block');
+    (document.getElementById('game-container') as HTMLElement)!.classList.remove('hidden');
     const mode = path.split('/')[2] || 'pve';
     // console.log(`[play.ts] Entering game mode: ${mode}`);
 
@@ -439,6 +445,7 @@ function route() {
 
   if (path.startsWith('/tournament/')) {
     (document.getElementById('t-lobby-page') as HTMLElement)!.classList.add('block');
+    (document.getElementById('t-lobby-page') as HTMLElement)!.classList.remove('hidden');
     return;
   }
 
@@ -449,12 +456,14 @@ function route() {
   const pageId = mapping[path];
   if (pageId) {
     (document.getElementById(pageId) as HTMLElement)!.classList.add('block');
+    (document.getElementById(pageId) as HTMLElement)!.classList.remove('hidden');
     return;
   }
 
   const mainMenuEl = document.getElementById('main-menu');
   if (mainMenuEl) {
     mainMenuEl.classList.add('block');
+    mainMenuEl.classList.remove('hidden');
     // mainMenuEl.style.display = 'block';
   }
 }
@@ -478,6 +487,7 @@ function showGameContainerAndStart(): void {
   if (!cont) return;
 
   cont.classList.add('block');
+  cont.classList.remove('hidden');
   // cont.style.display = 'block';
   initGameCanvas();   
   startGame('1v1');        

@@ -127,6 +127,7 @@
     hideAllPages();
     // document.getElementById('t-lobby-page')!.style.display = 'block';
     (document.getElementById('t-lobby-page') as HTMLElement)?.classList.remove('hidden');
+    (document.getElementById('t-lobby-page') as HTMLElement)?.classList.add('block');
 
     const table = document.getElementById('t-lobby-table')!;
     table.innerHTML = '';

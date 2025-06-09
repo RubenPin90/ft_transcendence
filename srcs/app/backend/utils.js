@@ -1013,7 +1013,7 @@ async function replace_all_templates(request, response, state, override) {
 	play_main +=       '</div>';
 	play_main +=     '</div>';
 	
-	play_main +=     '<div id="t-lobby-page" hidden>';
+	play_main +=     '<div id="t-lobby-page">';
 	play_main +=       '<h2 id="t-lobby-status" class="text-center mb-6">Waiting for players…</h2>';
 	play_main +=       '<div id="t-lobby-table" class="TLobby-table"></div>';
 	play_main +=       '<div class="code-box">';
@@ -1033,7 +1033,7 @@ async function replace_all_templates(request, response, state, override) {
 	play_main +=       '</div>';
 	play_main +=     '</div>';
 	
-	play_main +=     '<div id="bracket-overlay" class="bracket-overlay" hidden></div>';
+	play_main +=     '<div id="bracket-overlay" class="bracket-overlay"></div>';
 	
 	play_main +=     '<template id="match-card-tpl">';
 	play_main +=       '<div class="match-card">';
