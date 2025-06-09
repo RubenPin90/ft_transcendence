@@ -2,7 +2,7 @@
 
 import type { GameState } from './game.js';
 import type { TLobbyState, TourneySummary } from './types.js';
-import { check_cookie_fe } from './redirect.js';
+import { check_cookie_fe, check_cookies_expire } from './redirect.js';
 
 export type ServerMessage =
   | { type: 'error';                payload: { message: string } }
@@ -91,16 +91,22 @@ export async function connect(): Promise<void> {
   const hasCookie = await check_cookie_fe();
   if (!hasCookie) throw new Error('User not authenticated – cookie missing');
 
+  const expiredCookie = await check_cookies_expire();
+  if (expiredCookie) {
+    history.pushState({}, '', '/');
+    throw new Error('User not authenticated – cookie expired');
+  } 
+  if (localStorage.getItem('playerId') != null) {
+    localStorage.removeItem('playerId');
+  }
+  if (localStorage.getItem('currentGameId') != null) {
+    localStorage.removeItem('currentGameId');
+  }
+
   if (socket && socket.readyState === WebSocket.OPEN) return;
 
   return new Promise<void>((resolve, reject) => {
     try {
-      if (localStorage.getItem('playerId') != null) {
-        localStorage.removeItem('playerId');
-      }
-      if (localStorage.getItem('currentGameId') != null) {
-        localStorage.removeItem('currentGameId');
-      }
       socket = createSocket() as CustomWebSocket;
     } catch (err) {
       reject(err);

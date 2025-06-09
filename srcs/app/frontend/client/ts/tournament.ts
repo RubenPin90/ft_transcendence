@@ -105,10 +105,22 @@
     });
   }
 
-  export function renderTLobby(TLobby: TLobbyState, sock: WebSocket) {
+  export async function renderTLobby(TLobby: TLobbyState, sock: WebSocket) {
     setCurrentTLobby(TLobby);
 
     const myId   = getMyId();
+    //key
+    const myName = await fetch('/get_data', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            "get": "keys",
+        }),
+    });
+    console.log (`myName: ${myName}: `, myName);
+  
     const amHost = TLobby.hostId === myId;
     const players = Array.isArray(TLobby.players) ? TLobby.players : [];
 

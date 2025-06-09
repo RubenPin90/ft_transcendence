@@ -173,7 +173,7 @@ export class TournamentManager {
       players: userId === 'SERVER' ? [] : [{
         id   : userId,
         name : `Player ${userId.slice(0, 4)}`,
-        ready: false,
+        ready: true,
       }],
       status       : 'waiting',
       rooms        : [],
@@ -200,7 +200,7 @@ export class TournamentManager {
       },
     }));
 
-    // console.log('Tournament created:', tourney);
+    console.log('Tournament created:', tourney);
 
     this.broadcastTournamentUpdate();
     return tourney;
@@ -328,6 +328,9 @@ export class TournamentManager {
           payload: { tournamentId, winnerId }
         }
       );
+      console.log(`Tournament ${tournamentId} finished, winner: ${winnerId}`);
+      delete this.tournaments[tournamentId];
+      // this.broadcastTournamentUpdate();
       return;
     }
   
@@ -442,6 +445,11 @@ export class TournamentManager {
         roundNo++;
       }
 
+      console.log(`Generated bracket for tournament ${tournamentId}:`, rounds);
+      console.log('players in tournament:', players.length);
+      console.log('playerids in tournament:', players.map(getPlayerId));
+      
+
       return rounds;
     };
 
@@ -545,17 +553,55 @@ export class TournamentManager {
   }
 
   leaveTournament(userId, tournamentId = null) {
-    const tournament = tournamentId ? this.tournaments[tournamentId] : Object.values(this.tournaments).find(t => hasUser(t.players, userId));
-    if (!tournament) return console.error(`leaveTournament: user ${userId} not found`);
-
+    const tournament = tournamentId
+      ? this.tournaments[tournamentId]
+      : Object.values(this.tournaments).find(t => hasUser(t.players, userId));
+  
+    if (!tournament) {
+      return;
+    }
+  
+    if (tournament.status !== 'waiting' && Array.isArray(tournament.rounds)) {
+      tournament.eliminated.add(userId);
+  
+      for (const round of tournament.rounds) {
+        for (const match of round) {
+          const ids = match.players.map(p => getPlayerId(p));
+          const idx = ids.indexOf(userId);
+          if (idx !== -1 && !match.winner) {
+            const opponent = match.players[1 - idx];
+            const matchId  = match.matchId;
+            if (opponent) {
+              this.reportMatchResult(
+                tournament.id,
+                matchId,
+                getPlayerId(opponent)
+              );
+            }
+            this.matchManager.leaveRoom(matchId, userId);
+            break;
+          }
+        }
+      }
+    }
+  
     tournament.players = removeUser(tournament.players, userId);
-    if (tournament.host === userId && tournament.players.length)
+  
+    if (tournament.host === userId && tournament.players.length > 0) {
       tournament.host = getPlayerId(tournament.players[0]);
-
-    if (tournament.players.length === 0) delete this.tournaments[tournament.id];
-
-    // console.log(db.show_tournaments());
-    this.broadcastTLobby(tournament);
-    this.broadcastTournamentUpdate();
+    }
+  
+    if (tournament.players.length === 0) {
+      delete this.tournaments[tournament.id];
+      return;
+    }
+  
+    if (tournament.status === 'waiting') {
+      this.broadcastTLobby(tournament);
+      this.broadcastTournamentUpdate();
+    }
   }
+  
+  
+  
 }
