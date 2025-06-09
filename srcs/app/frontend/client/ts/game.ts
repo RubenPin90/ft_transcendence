@@ -40,18 +40,20 @@ export function setOnGameEnd(cb: (winnerId: string) => void): void {
 
 export function initGameCanvas(): void {
   const canvas = document.getElementById('game') as HTMLCanvasElement | null;
-  console.log('here');
   if (!canvas) {
     alert("GAME CANVAS NOT FOUND");
     return;
   }
   ctx = canvas.getContext('2d');
+  setInterval(() => {
+    return ;
+  }, 5000);
 }
 
 
 export function startGame(mode: GameMode): void {
   ws = getSocket();
-  console.log('[startGame] called, ws readyState:', ws?.readyState, 'mode:', mode);
+  // console.log('[startGame] called, ws readyState:', ws?.readyState, 'mode:', mode);
   userId        = localStorage.getItem('playerId');
   currentRoomId = localStorage.getItem('currentGameId');
   if (!userId) {
@@ -65,7 +67,7 @@ export function startGame(mode: GameMode): void {
     if (searchingForMatch) return;
     searchingForMatch = true;
     const sendJoinQueue = () =>{
-      console.log('[startGame] sending joinQueue for mode:', mode);
+      // console.log('[startGame] sending joinQueue for mode:', mode);
       send({ type: 'joinQueue', payload: { mode } });
     }
   
@@ -83,7 +85,7 @@ export function startGame(mode: GameMode): void {
       currentRoomId = msg.payload.gameId;
       userId        = msg.payload.userId;
       localStorage.setItem('currentGameId', currentRoomId);
-      console.log(`Match ready: room=${currentRoomId}, user=${userId}`);
+      // console.log(`Match ready: room=${currentRoomId}, user=${userId}`);
     };
     on('matchFound', matchFoundListener);
   }

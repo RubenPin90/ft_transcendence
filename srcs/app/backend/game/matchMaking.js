@@ -55,7 +55,6 @@ export function joinQueueTournament(userId, ws) {
         },
       }))
     })
-    //console.log(`Tournament started with ${REQUIRED_PLAYERS} players (roomId = ${room.roomId})`)
   }
 }
 
@@ -79,8 +78,6 @@ export function joinQueue1v1(matchManager, userId, ws) {
       s.inGame        = true;
       s.currentGameId = room.roomId;
     });
-    //console.log(`1v1 game started (roomId = ${room.roomId})`);
-    //console.log(`Players: ${userId} vs ${rival.userId}`);
     const notify = (sock, selfId, oppId) =>
       sock.send(JSON.stringify({
         type: 'matchFound',
@@ -94,7 +91,6 @@ export function joinQueue1v1(matchManager, userId, ws) {
   }
 
   queue.push({ userId, ws });
-  //console.log(`${userId} is now waiting for a 1‑v‑1 opponent…`);
   return null;
 }
 

@@ -39,7 +39,7 @@ let currentTournamentId: string | null = null;
 let isFirstRound                       = true;
 
 
-console.log('[play.ts] Initializing play module...');
+// console.log('[play.ts] Initializing play module...');
 
 on('welcome', (msg) => {
   const id   = msg.payload.userId;
@@ -74,7 +74,7 @@ on<'matchAssigned'>('matchAssigned', (msg) => {
   const rival        = players.find(p => p.id !== myId);
   if (!me || !rival) return;
 
-  console.log('[matchAssigned] navigating to game:', matchId, players);
+  // console.log('[matchAssigned] navigating to game:', matchId, players);
   localStorage.setItem('currentGameId', matchId);
   currentRoomId        = matchId;
   currentTournamentId  = tournamentId;
@@ -191,7 +191,7 @@ on<'eliminated'>('eliminated', (msg) => {
 
 on<'roundStarted'>('roundStarted', msg => {
   const { roundNumber } = msg.payload;
-  console.log(`[play.ts] Round ${roundNumber} started.`);
+  // console.log(`[play.ts] Round ${roundNumber} started.`);
   navigate(`/tournament/round${roundNumber}`);
 });
 
@@ -258,7 +258,7 @@ function joinByCodeWithSocket(code?: string) {
 }
 
 setOnGameEnd((winnerId: string) => {
-  console.log('[play.ts] Game ended – winner:', winnerId);
+  // console.log('[play.ts] Game ended – winner:', winnerId);
 
   teardownInput?.();
   teardownInput = null;
@@ -271,7 +271,6 @@ setOnGameEnd((winnerId: string) => {
 
   if (myId === winnerId && currentTournamentId) {
     setTimeout(() => {
-      console.log('[play.ts] Winner acknowledged. Requesting next round…');
       send({
         type   : 'beginRound',
         payload: { tournamentId: currentTournamentId }
@@ -294,30 +293,60 @@ let wasInGame = false;
 export let lastPath: string | null = null;
 
 function route() {
+  const TLobbySocket = getSocket();
   const path = window.location.pathname;
-  console.log('[route] current path:', path);
-  console.log('lastPath:', lastPath);
+  // console.log('[route] current path:', path);
+  // console.log('lastPath:', lastPath);
 
   if (path === '/matchmaking' && lastPath !== '/play') {
-    console.log('[route] blocked direct /matchmaking; redirecting to /play');
+    // console.log('[route] blocked direct /matchmaking; redirecting to /play');
     window.history.replaceState(null, '', '/play');
     return route();
   }
   if (lastPath === '/matchmaking' && lastPath != path)
     leaveMatchmaking();
 
+  if ((path === '/tournament' && lastPath !== '/play') || (path === '/tournament' && lastPath?.startsWith('/tournament/'))) {
+    const TLobby = getCurrentTLobby();
+    if (TLobby) {
+      TLobbySocket.send(JSON.stringify({
+        type: 'leaveTournament',
+        payload: TLobby ? { tournamentId: TLobby.id } : {}
+      }));
+      setCurrentTLobby(null);
+    }
+    if (lastPath?.startsWith('/tournament/')) {
+      document.getElementById('tournament-page')!.style.display = 'block';
+      renderTournamentList(tournaments, joinByCodeWithSocket);
+      return;
+    }
+    else{
+      // console.log('[route] blocked direct /tournament; redirecting to /play');
+      window.history.replaceState(null, '', '/play');
+    }
+    return route();
+  }
+
+  if (GAME_RE.test(path)) {
+    const mode = path.split('/')[2];
+    if (mode === '1v1' && lastPath !== '/matchmaking') {
+      // console.log('[route] blocked direct /game/1v1; redirecting to /play');
+      window.history.replaceState(null, '', '/play');
+      return route();
+    }
+  }
 
   teardownInput?.();
   teardownInput = null;
   markQueued?.(false);
 
   hideAllPages();
-
+  lastPath = path;
   if (wasInGame && !GAME_RE.test(path)) {
     const roomId = localStorage.getItem('currentGameId');
     const userId = localStorage.getItem('playerId');
     if (roomId && userId) {
-      console.log('[route] Detected leaving /game, sending leaveGame');
+      // console.log('[route] Detected leaving /game, sending leaveGame');
       send({
         type: 'leaveGame',
         payload: { roomId, userId }
@@ -361,7 +390,7 @@ function route() {
   if (GAME_RE.test(path)) {
     document.getElementById('game-container')!.style.display = 'block';
     const mode = path.split('/')[2] || 'pve';
-    console.log(`[play.ts] Entering game mode: ${mode}`);
+    // console.log(`[play.ts] Entering game mode: ${mode}`);
 
     if (currentMode && currentMode !== mode) {
       stopGame(); 
@@ -374,7 +403,7 @@ function route() {
       teardownInput = () => {
       };
     }
-    lastPath = path;
+
     return;
   }
 
@@ -407,7 +436,7 @@ window.addEventListener('beforeunload', () => {
   if (localStorage.getItem('currentGameId')) {
     const roomId = localStorage.getItem('currentGameId')!;
     const userId = localStorage.getItem('playerId')!;
-    console.log('[beforeunload] sending leaveGame');
+    // console.log('[beforeunload] sending leaveGame');
     send({ type: 'leaveGame', payload: { roomId, userId } });
   }
 });

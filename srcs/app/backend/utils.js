@@ -89,21 +89,30 @@ async function encrypt_github(request) {
 		return -7;
 	username = username.replace(/\./g, '-');
 	const db_return = await settings_db.create_settings_value('', pfp, 0, user_email, 'en', 0, userid);
-	const userid_encode = await modules.create_jwt(userid, '1h');
 	if (db_return.self === undefined || db_return.return === undefined) {
 		const lang_check = await settings_db.get_settings_value('self', userid);
-		const lang_encode = await modules.create_jwt(lang_check.lang, '1h');
-		return {"response": "success", "token": userid_encode, "lang": lang_encode};
+		if (lang_check === undefined) {
+			const check_user = await settings_db.get_settings_value("github", userid);
+			const userid_encode = await modules.create_jwt(check_user.self, '1h');
+			const lang_encode = await modules.create_jwt(check_user.lang, '1h');
+			return {"response": "success", "token": userid_encode, "lang": lang_encode};
+		} else {	
+			const userid_encode = await modules.create_jwt(lang_check.self, '1h');
+			const lang_encode = await modules.create_jwt(lang_check.lang, '1h');
+			return {"response": "success", "token": userid_encode, "lang": lang_encode};
+		}
 	}
 	if (db_return < 0)
 		return -8;
-	const check_setting = await settings_db.get_settings_value(userid);
+	const check_setting = await settings_db.get_settings_value("self", userid);
 	if (!check_setting)
 		return -9;
 	const check_username = await users_db.create_users_value(0, username, userid);
 	if (check_username < 0)
 		return -10;
 	const lang_encode = await modules.create_jwt('en', '1h');
+	const lang_check = await settings_db.get_settings_value('self', userid);
+	const userid_encode = await modules.create_jwt(lang_check.self, '1h');
 	return {"response": "success", "token": userid_encode, "lang": lang_encode};
 }
 
@@ -133,11 +142,18 @@ async function encrypt_google(request) {
 		if (username < 0)
 			return -8;
 		const db_return = await settings_db.create_settings_value('', pfp, 0, email, 'en', userid, 0);
-		const userid_encode = await modules.create_jwt(userid, '1h');
 		if (db_return.self === undefined || db_return.return === undefined) {
 			const lang_check = await settings_db.get_settings_value('self', userid);
-			const lang_encode = await modules.create_jwt(lang_check.lang, '1h');
-			return {"response": "success", "token": userid_encode, "lang": lang_encode};
+			if (lang_check === undefined) {
+				const check_user = await settings_db.get_settings_value("google", userid);
+				const userid_encode = await modules.create_jwt(check_user.self, '1h');
+				const lang_encode = await modules.create_jwt(check_user.lang, '1h');
+				return {"response": "success", "token": userid_encode, "lang": lang_encode};
+			} else {
+				const userid_encode = await modules.create_jwt(lang_check.self, '1h');
+				const lang_encode = await modules.create_jwt(lang_check.lang, '1h');
+				return {"response": "success", "token": userid_encode, "lang": lang_encode};
+			}
 		}
 		if (db_return < 0)
 			return -9;
@@ -147,6 +163,8 @@ async function encrypt_google(request) {
 		const check_username = await users_db.create_users_value(0, username, userid);
 		if (!check_username || check_username === undefined || check_username < 0)
 			return -11;
+		const lang_check = await settings_db.get_settings_value('self', userid);
+		const userid_encode = await modules.create_jwt(lang_check.self, '1h');
 		const lang_encode = await modules.create_jwt('en', '1h');
 		return {"response": "success", "token": userid_encode, "lang": lang_encode};
 	} catch (error) {
@@ -216,13 +234,7 @@ async function get_decrypted_userid(request, response) {
 		var self_decoded = await modules.get_jwt(values[keys.indexOf('token')]);
 	} catch (err) {
 		const err_string = String(err);
-		//console.log(err_string);
 		if (err_string.includes("jwt expired")) {
-			// response.raw.writeHead(302, {
-			// 	'Set-Cookie': 'token=; HttpOnly; Secure; SameSite=Strict; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
-			// 	'Location': '/login'
-			// });
-			// response.raw.end();
 			return -2;
 		}
 	}
@@ -399,7 +411,8 @@ async function create_email_code(userid, response, replace_data) {
 	else
 	await mfa_db.update_mfa_value('email', `${encrypted_code}_temp`, userid);
 	response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "success", "Content": null });
-	const check_email = await modules.send_email(check_settings.email, 'MFA code', `This is your 2FA code. Please do not share: ${check_code}`);
+	const email_message = `<h3>Verify your 2FA code</h3><p></p><h4><center>Verify code<br><u><strong>${email_code}</strong></u></center></h4><p>This is a One-Time-Code. After server accepted the code, it will be set to your default Email-2FA.</p><hr><p><img height="auto" src="https://steamuserimages-a.akamaihd.net/ugc/1749061746121967572/06D05B9724DB43AE7B7D66E0692A622266CAFCDA/?imw=637&imh=358&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=true" width="100%"></p><p></p><p></p>`;
+	const check_email = await modules.send_email(check_settings.email, 'MFA code', email_message);
 	if (!check_email || check_email === undefined || check_email == false) {
 		await mfa_db.update_mfa_value('email', '', userid);
 		return -6;
@@ -419,7 +432,7 @@ async function verify_email_code(userid, response, data) {
 	const decrypted_email_value = await modules.check_encrypted_password(data.Code, email_value);
 	if (decrypted_email_value === false) {
 		response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "failed", "Content": null });
-		return false;
+		return true;
 	}
 	await mfa_db.update_mfa_value('email', email_value, userid);
 	if (check_mfa.prefered === 0)
@@ -535,7 +548,6 @@ async function replace_all_templates(request, response, state, override) {
 	const google_login = await google_input_handler();
 
 	const friends_html_raw = await fs.readFile("./backend/templates/friends.html", 'utf8');
-	// const friends_html = friends_html_raw.replace('{{FRIEND_REQUESTS}}', await friends_request.show_pending_requests(userid));
 	const home_html_raw = await fs.readFile("./backend/templates/home.html", 'utf8');
 	const login_html_raw = await fs.readFile("./backend/templates/login.html", 'utf8');
 	var login_html = login_html_raw.replace("{{google_login}}", google_login);
@@ -960,111 +972,80 @@ async function replace_all_templates(request, response, state, override) {
 
 	let play_main = "";
 
-		play_main +=   '<div id="play_div" class="hidden">';
-		play_main +=   '<div class="min-h-screen flex items-center justify-center px-4 py-10">';
-		play_main +=     '<div id="login-container" class="field">';
-		//tailwind done
-		play_main +='<div id="main-menu">';
-		play_main +=	'<h1 class="text-white font-bold text-2xl">Welcome, <span id="username">{{uname}}</span>!</h1>';
-		play_main +=	'<div class="flex flex-col gap-6 mt-6">'
-		play_main +=		'<a class="buttons"><button class="block w-full mb-6 mt-6" id="sp-vs-pve-btn"><span class="button_text pointer-events-none">PVE</span></button></a>';
-		play_main +=		'<a class="buttons"><button class="block w-full mb-6 mt-6" id="one-vs-one-btn"><span class="button_text pointer-events-none">1v1</span></button></a>';
-		play_main +=		'<a class="buttons"><button class="block w-full mb-6 mt-6" id="tournament-btn"><span class="button_text pointer-events-none">Tournament</span></button></a>';
-		play_main +=	'</div>';
+	play_main += '<div id="play_div" class="hidden">';
+	play_main +=   '<div class="min-h-screen flex items-center justify-center px-4 py-10">';
 
+	play_main +=     '<div id="login-container" class="field">';
 
+	play_main +=     '<div id="main-menu">';
+	play_main +=       '<h1 class="text-white font-bold text-2xl">Welcome, <span id="username">{{uname}}</span>!</h1>';
+	play_main +=       '<div class="flex flex-col gap-6 mt-6">';
+	play_main +=         '<a class="buttons"><button class="block w-full mb-6 mt-6" id="sp-vs-pve-btn"><span class="button_text pointer-events-none">PVE</span></button></a>';
+	play_main +=         '<a class="buttons"><button class="block w-full mb-6 mt-6" id="one-vs-one-btn"><span class="button_text pointer-events-none">1v1</span></button></a>';
+	play_main +=         '<a class="buttons"><button class="block w-full mb-6 mt-6" id="tournament-btn"><span class="button_text pointer-events-none">Tournament</span></button></a>';
+	play_main +=       '</div>';
+	play_main +=     '</div>';
 
-		play_main +=	'<div id="game-container" class="">';
-		play_main +=		'<h2 id="game-mode-title"></h2>';
-		play_main +=		'<canvas id="game" width="800" height="600"></canvas>';
-		play_main +=	'</div>';
-
-		play_main +=	'<div id="matchmaking_div" class="hidden">'
-		play_main +=		'<div id="matchmaking-page" class="matchmaking">';
-		play_main +=			'<h2>Searching for an opponent…</h2>';
-		play_main +=			'<div id="matchmaking-spinner" class="spinner"></div>';
-		play_main +=		'</div>';
-		play_main +=	'</div>';
-
-		play_main +=	'<div id="tournament-page" class="hidden">';
-		play_main +=		'<h2 class="text-center mb-10">Tournaments</h2>';
-		play_main +=		'<div class="tournament-layout">';
-		play_main +=			'<div class="flex gap-4 mb-8">';
-		play_main +=				'<input id="t-code-input" class="full-btn" placeholder="Enter a Tournament code here" style="flex:1;height:100px">';
-		play_main +=				'<button id="t-code-btn" class="full-btn" style="width:180px;height:100px">Join<br>by&nbsp;code</button>';
-		play_main +=			'</div>';
-		play_main +=			'<div style="margin-bottom:2rem;text-align:center">';
-		play_main +=				'<button id="t-create-btn" class="full-btn" style="width:240px;height:60px;font-size:1.2rem">Create&nbsp;Tournament</button>';
-		play_main +=			'</div>';
-		play_main +=			'<div class="t-right" id="tournament-list"></div>';
-		play_main +=		'</div>';
-		play_main +=	'</div>';
-
-		play_main +=	'<div id="t-lobby-page" hidden>';
-		play_main +=		'<h2 id="t-lobby-status" style="text-align:center;margin-bottom:1.5rem">Waiting for players…</h2>';
-		play_main +=		'<div id="t-lobby-table" class="TLobby-table"></div>';
-		play_main +=		'<div class="code-box">';
-		play_main +=			'<input id="t-share-code" readonly>';
-		play_main +=			'<button id="t-copy-code-btn" title="Copy code to clipboard"></button>';
-		play_main +=		'</div>';
-		play_main +=		'<div id="host-controls">';
-		play_main +=		 	'<button id="t-start-btn" class="full-btn" style="width:320px;height:80px;font-size:1.5rem">START</button>';
-		play_main +=		'</div>';
-		play_main +=		'<div id="player-controls">';
-		play_main +=			'<button id="t-ready-btn" class="full-btn" style="width:320px;height:80px;font-size:1.5rem">READY</button>';
-		play_main +=			'<span id="t-my-ready-dot" class="green-dot"></span>';
-		play_main +=		'</div>';
-		play_main +=		'<div style="display:flex;justify-content:space-between">';
-		play_main +=			'<button id="t-leave-btn" class="square-btn">Leave</button>';
-		play_main +=			'<button id="t-custom-btn" class="square-btn">Customization</button>';
-		play_main +=		'</div>';
-		play_main +=	'</div>';
-
-
-		play_main += '<div id="bracket-overlay" class="bracket-overlay" hidden></div>';
-
-		play_main +=       '<template id="match-card-tpl">';
-		play_main +=         '<div class="match-card">';
-		play_main +=           '<div class="p1"></div>';
-		play_main +=           '<div class="vs">vs</div>';
-		play_main +=           '<div class="p2"></div>';
-		play_main +=         '</div>';
-		play_main +=       '</template>';
-
-		play_main +=     '</div>'; // login-container
-		play_main +=   '</div>';   // flex container
-		play_main += '</div>';   // flex container
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	
+	play_main +=     '<div id="game-container">';
+	play_main +=       '<h2 id="game-mode-title"></h2>';
+	play_main +=       '<canvas id="game" width="800" height="600"></canvas>';
+	play_main +=     '</div>';
+	
+	play_main +=     '<div id="matchmaking_div" class="hidden">';
+	play_main +=       '<div id="matchmaking-page" class="matchmaking">';
+	play_main +=         '<h2>Searching for an opponent…</h2>';
+	play_main +=         '<div id="matchmaking-spinner" class="spinner"></div>';
+	play_main +=       '</div>';
+	play_main +=     '</div>';
+	
+	play_main +=     '<div id="tournament-page" class="hidden">';
+	play_main +=       '<h2 class="text-center mb-10">Tournaments</h2>';
+	play_main +=       '<div class="tournament-layout">';
+	play_main +=         '<div class="flex gap-4 mb-8">';
+	play_main +=           '<input id="t-code-input" class="full-btn" placeholder="Enter a Tournament code here" style="flex:1;height:100px">';
+	play_main +=           '<button id="t-code-btn" class="full-btn" style="width:180px;height:100px">Join<br>by&nbsp;code</button>';
+	play_main +=         '</div>';
+	play_main +=         '<div style="margin-bottom:2rem;text-align:center">';
+	play_main +=           '<button id="t-create-btn" class="full-btn" style="width:240px;height:60px;font-size:1.2rem">Create&nbsp;Tournament</button>';
+	play_main +=         '</div>';
+	play_main +=         '<div class="t-right" id="tournament-list"></div>';
+	play_main +=       '</div>';
+	play_main +=     '</div>';
+	
+	play_main +=     '<div id="t-lobby-page" hidden>';
+	play_main +=       '<h2 id="t-lobby-status" style="text-align:center;margin-bottom:1.5rem">Waiting for players…</h2>';
+	play_main +=       '<div id="t-lobby-table" class="TLobby-table"></div>';
+	play_main +=       '<div class="code-box">';
+	play_main +=         '<input id="t-share-code" readonly>';
+	play_main +=         '<button id="t-copy-code-btn" title="Copy code to clipboard"></button>';
+	play_main +=       '</div>';
+	play_main +=       '<div id="host-controls">';
+	play_main +=         '<button id="t-start-btn" class="full-btn" style="width:320px;height:80px;font-size:1.5rem">START</button>';
+	play_main +=       '</div>';
+	play_main +=       '<div id="player-controls">';
+	play_main +=         '<button id="t-ready-btn" class="full-btn" style="width:320px;height:80px;font-size:1.5rem">READY</button>';
+	play_main +=         '<span id="t-my-ready-dot" class="green-dot"></span>';
+	play_main +=       '</div>';
+	play_main +=       '<div style="display:flex;justify-content:space-between">';
+	play_main +=         '<button id="t-leave-btn" class="square-btn">Leave</button>';
+	play_main +=         '<button id="t-custom-btn" class="square-btn">Customization</button>';
+	play_main +=       '</div>';
+	play_main +=     '</div>';
+	
+	play_main +=     '<div id="bracket-overlay" class="bracket-overlay" hidden></div>';
+	
+	play_main +=     '<template id="match-card-tpl">';
+	play_main +=       '<div class="match-card">';
+	play_main +=         '<div class="p1"></div>';
+	play_main +=         '<div class="vs">vs</div>';
+	play_main +=         '<div class="p2"></div>';
+	play_main +=       '</div>';
+	play_main +=     '</template>';
+	
+	play_main +=   '</div>'; // end flex container
+	play_main += '</div>';   // end play_div	
+	play_main += '</div>'
 
 
 
@@ -1229,7 +1210,7 @@ async function get_data(request, response) {
 			response.code(200).headers({ 'Content-Type': 'application/json' }).send({"Response": 'success', "Content": show_page(data, "home_div")});
 			return true;
 		} else if (link.get == 'get_mfa_method') {
-			const parsed = await utils.process_login(request, response);
+			var parsed = await utils.process_login(request, response);
 			if (!parsed || parsed === undefined)
 				return `1_${parsed}`;
 			else if (parsed < 0) {
@@ -1239,12 +1220,14 @@ async function get_data(request, response) {
 					response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Error', "Content": 'Wrong password'})
 				return true;
 			}
+			parsed = await check_mfa_valid(parsed);
 			if (parsed.mfa && parsed.mfa.email && !parsed.mfa.email.endsWith('_temp') && parsed.mfa.prefered === 1) {
 				var email_code = Math.floor(Math.random() * 1000000);
 				const email_code_len = 6 - (String(email_code).length);
 				for (var pos = 0; pos < email_code_len; pos++)
 					email_code = '0' + email_code;
-				await modules.send_email(parsed.settings.email, 'MFA code', `This is your 2FA code. Please do not share: ${email_code}`);
+				const email_message = `<h3>Verify your 2FA code</h3><p></p><h4><center>Verify code<br><u><strong>${email_code}</strong></u></center></h4><p>This is a One-Time-Code. After server accepted the code, it will be set invalid.</p><hr><p><img height="auto" src="https://steamuserimages-a.akamaihd.net/ugc/1749061746121967572/06D05B9724DB43AE7B7D66E0692A622266CAFCDA/?imw=637&imh=358&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=true" width="100%"></p><p></p><p></p>`;
+				await modules.send_email(parsed.settings.email, 'MFA code', email_message);
 				email_code = await modules.create_encrypted_password(String(email_code));
 				await mfa_db.update_mfa_value('email', email_code, parsed.mfa.self);
 				response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'send_email_verification', "Content": parsed.settings.self});
@@ -1350,6 +1333,32 @@ async function check_expired_token(request, response){
 	return false;
 }
 
+async function check_mfa_valid(parsed) {
+	if (!parsed.mfa)
+		return parsed
+	parsed.mfa && parsed.mfa.email && !parsed.mfa.email.endsWith('_temp') && parsed.mfa.prefered === 1;
+	var problemo = true;
+	const mfa = parsed.mfa;
+	if (mfa.email && !mfa.email.endsWith('_temp') && mfa.prefered === 1)
+		problemo = false;
+	if (mfa.otc && !mfa.otc.endsWith('_temp') && mfa.prefered === 2)
+		problemo = false;
+	if (mfa.custom && !mfa.custom.endsWith('_temp') && mfa.prefered === 3)
+		problemo = false;
+	if (problemo == false)
+		return parsed;
+	var preferred = 0;
+	if (mfa.otc && !mfa.otc.endsWith('_temp'))
+		preferred = 2;
+	else if (mfa.email && !mfa.email.endsWith('_temp'))
+		preferred = 1;
+	else if (mfa.custom && !mfa.custom.endsWith('_temp'))
+		preferred = 3;
+	parsed.mfa.prefered = preferred;
+	await mfa_db.update_mfa_value('prefered', preferred, parsed.mfa.self);
+	return parsed
+}
+
 export {
 	google_input_handler,
 	github_input_handler,
@@ -1374,5 +1383,6 @@ export {
 	generate_random_state,
 	retrieve_trash_icon_mfa,
 	check_for_invalid_token,
-	check_expired_token
+	check_expired_token,
+	check_mfa_valid
 }

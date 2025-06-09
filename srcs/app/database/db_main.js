@@ -8,12 +8,8 @@ async function create_db() {
     });
 
     try {
-        // Fremdschlüssel aktivieren
         await db.run(`PRAGMA foreign_keys = ON;`);
-        //console.log("Fremdschlüssel aktiviert!");
 
-        // Tabellen in richtiger Reihenfolge erstellen
-        // SETTINGS
         await db.run(`
         CREATE TABLE IF NOT EXISTS settings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,7 +29,7 @@ async function create_db() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             role_id INTEGER,
             username TEXT,
-            status INTEGER DEFAULT 1,
+            status TEXT DEFAULT online,
             self TEXT UNIQUE NOT NULL,
             FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
             FOREIGN KEY (self) REFERENCES settings(self) ON DELETE CASCADE
@@ -91,11 +87,10 @@ async function create_db() {
             
 
 
-
+        //FRIEND_REQUEST
         await db.run(`
         CREATE TABLE friend_request (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            status TEXT DEFAULT 'pending',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             sender_id TEXT NOT NULL,
             receiver_id TEXT NOT NULL,
@@ -104,6 +99,7 @@ async function create_db() {
             UNIQUE (sender_id, receiver_id)
         );`);
 
+        //FRIENDS
         await db.run(`
         CREATE TABLE IF NOT EXISTS friends (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -115,12 +111,10 @@ async function create_db() {
         );`);
 
 
-        //console.log("Alle Tabellen erfolgreich erstellt oder existieren bereits.");
     } catch (err) {
         console.error(`Error creating db: ${err}`);
         return -1;
     } finally {
-        //console.log('Database setup abgeschlossen');
         db.close();
         return 0;
     }

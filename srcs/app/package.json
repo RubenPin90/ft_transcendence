@@ -35,7 +35,7 @@
     "build": "vite build",
     "dev": "vite",
     "preview": "vite preview",
-    "build-frontend": "tsc",
+    "build-frontend": "npx tsc",
     "rebuild:css": "tailwindcss build ./frontend/css/input.css -o ./frontend/css/output.css",
     "start:css": "npx tailwindcss -i ./frontend/css/input.css -o ./frontend/css/output.css",
     "install:css": " npm install tailwindcss --save-dev && npm install tailwindcss"

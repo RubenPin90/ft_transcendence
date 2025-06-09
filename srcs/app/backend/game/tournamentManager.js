@@ -3,15 +3,19 @@ import { MatchManager }   from './matchManager.js';
 import * as db from '../../database/db_matches_tournaments.js';
 
 const WS_OPEN = 1;
-const getPlayerId = p => (typeof p === 'string' ? p : p.id);
+
+const getPlayerId = (p) => {
+  if (p !== null && typeof p === 'object' && 'id' in p) {
+    return p.id;
+  }
+  return String(p);
+};
+
 const hasUser    = (players, uid) => players.some(p => getPlayerId(p) === uid);
 const removeUser = (players, uid) => players.filter(p => getPlayerId(p) !== uid);
 const nextPow2 = n => Math.max(2, 2 ** Math.ceil(Math.log2(n)));
 
 export class TournamentManager {
-  /**
-   * @param {SocketRegistry} socketRegistry – our centralised registry
-   */
     constructor(socketRegistry, matchManager) {
       this.socketRegistry = socketRegistry;
 
@@ -26,7 +30,6 @@ export class TournamentManager {
         return;
       }
 
-      console.log('tournament matchFinished:', { roomId, winnerId, tournamentId });
       const lobby = this.rooms[roomId];
       if (!lobby) return;
 
@@ -127,6 +130,7 @@ export class TournamentManager {
       },
     }));
 
+
     this.broadcastTournamentUpdate();
     return tourney;
   }
@@ -163,10 +167,14 @@ export class TournamentManager {
         type   : 'error',
         payload: { message: 'Tournament is full' },
       }));
-      return;
+    return;
     }
-
-    const newPlayer = { id: userId, name: `Player ${userId.slice(0, 4)}`, ready: false };
+    const uid = getPlayerId(userId);
+    const newPlayer = {
+      id: String(userId),
+      name: `Player ${String(userId).slice(0, 4)}`,
+      ready: false,
+    };
     tournament.players.push(newPlayer);
 
     if (tournament.host === 'SERVER') tournament.host = userId;
@@ -437,7 +445,6 @@ export class TournamentManager {
     for (const player of room.players)
       this.#sendToUser(getPlayerId(player), payload);
     
-    console.log(`Room created: ${room.matchId} with players ${room.players[0].id} vs ${room.players[1].id}`);
   }
 
 
@@ -445,9 +452,8 @@ export class TournamentManager {
     const tournament = this.tournaments[tournamentId];
     if (!tournament) return console.error(`toggleReady: tournament ${tournamentId} not found`);
 
-    const player = tournament.players.find(p => getPlayerId(p) === userId);
+    const player = tournament.players.find(p => getPlayerId(p) == userId);
     if (!player) return console.error(`toggleReady: user ${userId} not in tournament ${tournamentId}`);
-
     player.ready = !player.ready;
     this.broadcastTLobby(tournament);
     this.broadcastTournamentUpdate();
@@ -462,7 +468,6 @@ export class TournamentManager {
 
     if (tournament.players.length === 0) delete this.tournaments[tournament.id];
 
-    console.log(db.show_tournaments());
     this.broadcastTLobby(tournament);
     this.broadcastTournamentUpdate();
   }

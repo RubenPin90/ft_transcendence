@@ -10,7 +10,6 @@ async function translator(text, lang) {
 			return -1;
 		return translated;
 	} catch (err) {
-		//console.log(err);
 		return -2;
 	}
 }
@@ -113,11 +112,11 @@ async function cycle_translations(text, lang, origin) {
 		}
 		return text;
 	}
-	const translated_keys = get_translated_keys(json_data, origin.userid);
+	const translated_keys = get_translated_keys(json_data, origin);
 	const json_keys2 = Object.keys(translated_keys);
 	const json_data2 = await JSON.parse(data);
 	for (var index = 0; index < json_keys2.length; index++) {
-		const key = find_key_by_value(json_data2, json_keys2[index], origin.userid);
+		const key = find_key_by_value(json_data2, json_keys2[index], origin);
 		const translation = await find_translation(key, lang, json_data);
 		const regex = new RegExp(`\\b${json_keys2[index]}\\b`, 'gu');
 		text = text.replace(regex, translation);

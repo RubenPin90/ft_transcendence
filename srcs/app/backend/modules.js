@@ -92,7 +92,7 @@ async function send_email(receiver, subject, text) {
 		from: SMTP_USER,
 		to: receiver,
 		subject: subject,
-		text: text
+		html: text
 	};
 
 	try {
@@ -120,7 +120,6 @@ async function easyfetch(url, method, header, body) {
 		});
 	}
 	if (!raw_data.ok) {
-		//console.log(`Easyfetch error with url ${url}`);
 		return -2;
 	}
 	var token_data;

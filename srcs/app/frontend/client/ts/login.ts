@@ -116,18 +116,8 @@ export async function login2(){
         alert("NO THIS");
         return;
     }
-    
-    
-    
-    // 1: email und passwort holen -> check ob user
     const email = email2.value;
     const password = password2.value;
-
-
-
-    // 2: Wenn das passt, dann: mfa methode holen -> an frontend methode
-    // 3: input code sourcen und mit der mfa methode ans backend -> success oder fail
-    // 4: an login ins backend schicken
 
     const check_user = await fetch('/get_data', {
         method: 'POST',
@@ -230,7 +220,9 @@ async function login() {
         if (!current_file)
             return;
         current_file.innerHTML = content2value;
-        window.history.pushState({}, '', '/');
+        // window.history.pushState({}, '', '/');
+        // window.location.replace('/');
+        history.replaceState({}, '', '/');
         try {
             await openSocket();           // waits until WS is OPEN
             console.log('WebSocket connected after login ✅');
@@ -243,48 +235,5 @@ async function login() {
     }
 }
 
-
-(window as any).login = login;
-
-    // let data;
-    // try {
-    //     data = await response.json();
-    //     var Div = document.getElementById("login-container") as HTMLDivElement;
-    //     if (!Div)
-    //         return;
-    //     if (data.Response === "reload")
-    //         window.location.reload();
-    //     else if (data.Response == "send_email_verification") {
-    //         Div.innerHTML = `
-    //             <h2>Input your Email code</h2>
-    //             <input type="text" id="email-input" placeholder="Code" required><br>
-    //             <button id="email-login-button" onclick="email_login('${data.Content}')">
-    //                 <h3>Verify</h3>
-    //             </button>
-    //         `;
-    //     } else if (data.Response === "send_2FA_verification") {
-    //         Div.innerHTML = `
-    //             <h2>Input your OTC code from your authenticator app</h2>
-    //             <input type="text" id="otc-input" placeholder="Code" required><br>
-    //             <button id="mfa-login-button" onclick="mfa_login('${data.Content}')">
-    //                 <h3>Verify</h3>
-    //             </button>
-    //         `;
-    //     } else if (data.Response === 'send_custom_verification') {
-    //         Div.innerHTML = `
-    //             <h2>Input your Custom code</h2>
-    //             <input type="text" id="custom-input" placeholder="Code" required><br>
-    //             <button id="custom-login-button" onclick="custom_login('${data.Content}')">
-    //                 <h3>Verify</h3>
-    //             </button>
-    //         `;
-    //     }
-    // } catch (jsonError) {
-    //     throw new Error('Fehler beim Parsen der JSON-Antwort');
-    // }
-// }
-
-// Am Ende von login.ts:
 (window as any).login = login;
 (window as any).submit_code = submit_code;
-(window as any).get_mfa_login = get_mfa_login;

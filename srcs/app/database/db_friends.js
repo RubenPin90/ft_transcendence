@@ -21,7 +21,7 @@ async function get_friends() {
 
 // Tested: all working
 async function get_friends_value(search_value, value) {
-	const valid_values = ['user1', 'user2', 'since']
+	const valid_values = ['user1', 'user2']
 	if (!valid_values.includes(search_value))
 		return null;
     const db = await open({
@@ -75,6 +75,61 @@ async function create_friends_value(user1, user2) {
 	}
 }
 
+async function show_accepted_friends(userid){
+	const db = await open({
+		filename: './database/db.sqlite',
+		driver: sqlite3.Database
+	});
+	if (!db){
+		return;
+	}
+	var html = '';
+	try {
+		var rows = await db.all(`
+			SELECT * FROM friends
+			WHERE (user1 = ? OR user2 = ?)`, [userid, userid]);
+		for (var single of rows){
+			var correctId;
+			if (single.user1 == userid){
+				correctId = single.user2;
+			}else{
+				correctId = single.user1;
+			}
+			const sender_settings = await db.get(`
+				SELECT * FROM settings WHERE self = ?
+				`, [correctId]);
+			const sender_user = await db.get(`
+				SELECT * FROM users WHERE self = ?
+				`, [correctId]);
+			const name = sender_user.username;
+			if (sender_user.status === 'online'){
+				html += `
+				<div class="relative flex-shrink-0">
+					<img class="w-24 h-24 rounded-full border-4 border-green-600" src="${sender_settings.pfp}">
+					<span class="absolute text-center w-full">${name}</span><br>
+				</div> 
+				`;
+			} else{
+				html += `
+				<div class="relative flex-shrink-0">
+					<img class="w-24 h-24 rounded-full border-4 grayscale border-green-600" src="${sender_settings.pfp}">
+					<span class="absolute text-center w-full">${name}</span><br>
+				</div> 
+				`;
+			}
+		}
+	} catch (err) {
+		console.error(`Error in show_accepted_friends: ${err}`);
+		return null;
+	} finally {
+		await db.close();
+		if (html == ''){
+			return `<span>No friends currenlty :'( you lonely MF</span>`;
+		}
+		return html;
+	}
+}
+
 // // Not tested: But working propperly so far
 // async function create_friends_value(user1, user2) {
 //     if (user1 === user2){
@@ -114,60 +169,6 @@ async function create_friends_value(user1, user2) {
 //     }
 // }
 
-async function update_friends_value(search_field, new_value, user1, user2) {
-	const valid_fields = ['since'];
-	if (!valid_fields.includes(search_field)) return null;
-
-	const db = await open({ filename: './database/db.sqlite', driver: sqlite3.Database });
-	try {
-		const exists = await db.get(`
-			SELECT * FROM friends
-			WHERE (user1 = ? AND user2 = ?) OR (user1 = ? AND user2 = ?)`,
-			[user1, user2, user2, user1]
-		);
-		if (!exists) return null;
-
-		const query = `UPDATE friends SET ${search_field} = ? WHERE id = ?`;
-		var row = await db.run(query, [new_value, exists.id]);
-	} catch (err) {
-		console.error(`Error in update_friends_value: ${err}`);
-		return null;
-	} finally {
-		await db.close();
-        return row;
-	}
-}
-
-// tested: all working
-// async function update_friends_value(search_value, value, self) {
-//     const valid_values = ['id', 'user1', 'user2', 'since'];
-//     if (!valid_values.includes(search_value))
-//         return null;
-//     const db = await open({
-//         filename: './database/db.sqlite',
-//         driver: sqlite3.Database
-//     });
-
-//     try {
-//         const check = await db.get(`
-//             SELECT * FROM settings
-//             WHERE self = '${self}'
-//         `);
-//         if (!check)
-//             return null;
-//         var row = await db.run(`
-//             UPDATE friends
-//             SET ${search_value} = '${value}'
-//             WHERE self = '${self}'`);
-//     } catch (err) {
-//         console.error(`Error in update_settings_value: ${err}`);
-//         return null;
-//     } finally {
-//         await db.close();
-//         return row;
-//     }
-// }
-
 async function delete_friends_value(user1, user2) {
 	const db = await open({ filename: './database/db.sqlite', driver: sqlite3.Database });
 	try {
@@ -184,35 +185,10 @@ async function delete_friends_value(user1, user2) {
 	}
 }
 
-// // Tested: all working
-// async function delete_friends_value(self) {
-//     const db = await open({
-//         filename: './database/db.sqlite',
-//         driver: sqlite3.Database
-//     });
-
-//     try {
-//         const check = await db.get(`
-//             SELECT * FROM settings
-//             WHERE self = '${self}'`);
-//         if (!check)
-//             return null;
-//         var row = await db.run(`
-//             DELETE FROM friends
-//             WHERE friends.self = '${self}'`);
-//     } catch (err) {
-//         console.error(`Error in delete_friends_value: ${err}`);
-//         return null;
-//     } finally {
-//         await db.close();
-//         return row;
-//     }
-// }
-
 export {
     get_friends,
     get_friends_value,
     create_friends_value,
-    update_friends_value,
-    delete_friends_value
+    delete_friends_value,
+	show_accepted_friends
 }

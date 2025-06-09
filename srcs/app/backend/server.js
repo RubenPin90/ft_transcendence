@@ -10,7 +10,10 @@ import { SocketRegistry } from './socketRegistry.js';
 import { MatchManager } from './game/matchManager.js';
 import { TournamentManager } from './game/tournamentManager.js';
 import handleShutdown from './signals.js';
-import urlsPlugin from './urls.js';
+import * as urlsPlugin from './urls.js';
+import * as modules from './modules.js';
+import {handleClientMessage} from './game/messageHandler.js'
+import * as users_db from '../database/db_users_functions.js';
 
 const PORT = 8080;
 const __filename = fileURLToPath(import.meta.url);
@@ -22,8 +25,10 @@ const tournamentManager = new TournamentManager(socketRegistry, matchManager);
 tournamentManager.matchManager = matchManager;
 matchManager.tournamentManager = tournamentManager;
 
-setInterval(() => tournamentManager.broadcastTournamentUpdate(), 3000);
+
 for (let i = 0; i < 3; i++) tournamentManager.createTournament(null, 'SERVER');
+
+setInterval(() => tournamentManager.broadcastTournamentUpdate(), 3000);
 
 const fastify = Fastify({ logger: false });
 
@@ -37,20 +42,22 @@ await fastify.register(fastifyStatic, {
 
 
 fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
+  // console.log('→ Incoming WS handshake on /ws/game from', req.ip);
   const ws = conn;
 
   const [keys, values] = modules.get_cookies(req);
-  console.log('keys and values', keys, values);
+  // console.log('keys and values', keys, values);
   const user_encrypted = values[keys.indexOf("token")];
-  const userIdd = await modules.get_jwt(user_encrypted);
-  const userId = userIdd.userid;
-  console.log('userId.userId:', userId);
-  console.log('🔑 ws token verified:', userId);
+  const temp = await modules.get_jwt(user_encrypted);
+  const userId = String(temp.userid);
+  // console.log('userId.userId:', userId);
+  // console.log('🔑 ws token verified:', userId);
 
 
   ws.userId        = userId;
   ws.inGame        = false;
   ws.currentGameId = null;
+  await users_db.update_users_value('status', 'online', userId);
   //db_userId_status(userId, online)
 
   console.log('🔌 ws authenticated:', userId);
@@ -63,9 +70,9 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
     handleClientMessage(ws, raw, matchManager, tournamentManager)
   });
 
-  ws.on('close', () => {
+  ws.on('close', async () => {
     console.log('❌ ws closed:', userId);
-    //db_userId_status(userId, offline)
+    await users_db.update_users_value('status', 'offline', userId);
     tournamentManager.leaveTournament(userId);
     matchManager.unregisterSocket(userId);
     socketRegistry.remove(userId);
@@ -76,7 +83,6 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
 
 await fastify.listen({ port: PORT, host: '0.0.0.0' });
 handleShutdown({ fastify });
-
 export {
   fastify
 }

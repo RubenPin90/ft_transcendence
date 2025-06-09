@@ -55,7 +55,6 @@ function createSocket(): WebSocket {
   ws.addEventListener('message', ev => {
     const data: ServerMessage = JSON.parse(ev.data);
     if (data.type !== 'tournamentList' && data.type !== 'state')
-      console.log(`[socket] ← ${data.type}`, data);
     listeners[data.type]?.forEach(cb => cb(data as any));
   });
 
@@ -97,6 +96,12 @@ export async function connect(): Promise<void> {
 
   return new Promise<void>((resolve, reject) => {
     try {
+      if (localStorage.getItem('playerId') != null) {
+        localStorage.removeItem('playerId');
+      }
+      if (localStorage.getItem('currentGameId') != null) {
+        localStorage.removeItem('currentGameId');
+      }
       socket = createSocket() as CustomWebSocket;
     } catch (err) {
       reject(err);
