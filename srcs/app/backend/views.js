@@ -75,8 +75,8 @@ async function register(request, response) {
         const token = await modules.create_jwt(settings.self, '1h');
         const lang = await modules.create_jwt('en', '1h');
         
-        modules.set_cookie(response, 'token', token, 3600); //todo change back to 3600
-        modules.set_cookie(response, 'lang', lang, 3600); //todo change back to 3600
+        modules.set_cookie(response, 'token', token, 3600);
+        modules.set_cookie(response, 'lang', lang, 3600);
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": null });
         return true;
     }

@@ -1,7 +1,8 @@
+import { hideAllPages } from './helpers.js';
 import { check, lastPath } from './play.js';
 import { connect } from './socket.js';
 
-const available_divs = ['change_avatar_div','user_prof_div', 'userpass_div', 'useravatar_div', 'username_div' ,'lang_prof_div' ,'settings_main_div', 'mfa_div','user_settings_div', 'register_div', 'lang_div', 'profile_div', 'menu_div', 'login_div', 'home_div', 'game_div', 'friends_div', 'change_user_div', 'change_login_div']
+const available_divs = ['change_avatar_div','user_prof_div', 'userpass_div', 'useravatar_div', 'username_div' ,'lang_prof_div' ,'settings_main_div', 'mfa_div','user_settings_div', 'register_div', 'lang_div', 'profile_div', 'menu_div', 'login_div', 'home_div', 'play_div', 'friends_div', 'change_user_div', 'change_login_div']
 
 async function show_profile_page() : Promise<string>{
     const response = await fetch ('/profile', {
@@ -57,7 +58,7 @@ async function show_profile_page() : Promise<string>{
     return 'profile_div';
 }
 
-async function check_cookies_expire() : Promise<boolean>{
+export async function check_cookies_expire() : Promise<boolean>{
     const response = await fetch('/check_expire', {
         method: 'POST',
         headers: {
@@ -198,7 +199,41 @@ async function show_login(){
 
 //TODO change window.location.href since it force refreshes the webpage
 export async function where_am_i(path : string) : Promise<string> {
+    // console.log("where_am_i called with path:", path);
+    if (path.startsWith('/tournament') || path.startsWith('/game') || path.startsWith('/matchmaking'))
+    {
+        if (await check_cookies_expire()) {
+            await show_login();
+            history.pushState({}, '', '/');
+            return 'login_div';
+        }
+        if (!await check_cookie_fe()) {
+            history.pushState({}, '', '/login');
+            return 'login_div';
+        }
+        await connect();
+        history.pushState({}, '', '/play');
+        return 'play_div';
+    }
     switch (path) {
+        case '/tournament':
+        case '/matchmaking':
+        case '/game/pve':
+        case '/tournament/':
+        case '/game/1v1': {
+            if (await check_cookies_expire()) {
+            await show_login();
+            history.pushState({}, '', '/');
+            return 'login_div';
+            }
+            if (!await check_cookie_fe()) {
+            history.pushState({}, '', '/login');
+            return 'login_div';
+            }
+            await connect();
+            history.pushState({}, '', '/play');
+            return 'play_div';
+        }
         case '/play':
             if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');

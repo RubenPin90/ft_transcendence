@@ -26,6 +26,7 @@ export default {
       },
       animation: {
           "wrong_input" : "shaking 0.3s linear 1 ",
+          "loader" : "spin 1s linear infinite",
       },
      },
 
