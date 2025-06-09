@@ -97,7 +97,7 @@ on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
     ? rounds as MatchStub[][]
     : [rounds as MatchStub[]];
 
-  renderBracketOverlay(normalized);
+  // renderBracketOverlay(normalized);
   await new Promise(r => setTimeout(r, 700));
 
   // pick the upcoming match (in the last round):
@@ -295,9 +295,15 @@ setOnGameEnd((winnerId: string) => {
     alert('🎉 You won the game! 🎉');
   } 
   else {
-    alert('Game over.');
+    alert('Game over. You lost.');
     return;
   }
+  if (!currentTournamentId) {
+    console.log('[play.ts] No tournament active, stopping game');
+    navigate('/play');
+    return;
+  }
+
 });
 
 
@@ -316,8 +322,8 @@ export let lastPath: string | null = null;
 function route() {
   const TLobbySocket = getSocket();
   const path = window.location.pathname;
-  // console.log('[route] current path:', path);
-  // console.log('lastPath:', lastPath);
+  console.log('[route] current path:', path);
+  console.log('lastPath:', lastPath);
 
   if (path === '/matchmaking' && lastPath !== '/play') {
     // console.log('[route] blocked direct /matchmaking; redirecting to /play');
@@ -335,6 +341,10 @@ function route() {
         type: 'leaveTournament',
         payload: TLobby ? { tournamentId: TLobby.id } : {}
       }));
+      if (localStorage.getItem('currentGameId')) {
+        localStorage.removeItem('currentGameId');
+      }
+      currentTournamentId = null;
       setCurrentTLobby(null);
     }
     if (lastPath?.startsWith('/tournament/')) {

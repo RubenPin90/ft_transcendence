@@ -57,7 +57,7 @@ async function show_profile_page() : Promise<string>{
     return 'profile_div';
 }
 
-async function check_cookies_expire() : Promise<boolean>{
+export async function check_cookies_expire() : Promise<boolean>{
     const response = await fetch('/check_expire', {
         method: 'POST',
         headers: {
@@ -198,7 +198,41 @@ async function show_login(){
 
 //TODO change window.location.href since it force refreshes the webpage
 export async function where_am_i(path : string) : Promise<string> {
+    console.log("where_am_i called with path:", path);
+    if (path.startsWith('/tournament') || path.startsWith('/game') || path.startsWith('/matchmaking'))
+    {
+        if (await check_cookies_expire()) {
+            await show_login();
+            history.pushState({}, '', '/');
+            return 'login_div';
+        }
+        if (!await check_cookie_fe()) {
+            history.pushState({}, '', '/login');
+            return 'login_div';
+        }
+        await connect();
+        history.pushState({}, '', '/play');
+        return 'play_div';
+    }
     switch (path) {
+        case '/tournament':
+        case '/matchmaking':
+        case '/game/pve':
+        case '/tournament/':
+        case '/game/1v1': {
+            if (await check_cookies_expire()) {
+            await show_login();
+            history.pushState({}, '', '/');
+            return 'login_div';
+            }
+            if (!await check_cookie_fe()) {
+            history.pushState({}, '', '/login');
+            return 'login_div';
+            }
+            await connect();
+            history.pushState({}, '', '/play');
+            return 'play_div';
+        }
         case '/play':
             if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');

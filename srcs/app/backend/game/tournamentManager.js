@@ -173,7 +173,7 @@ export class TournamentManager {
       players: userId === 'SERVER' ? [] : [{
         id   : userId,
         name : `Player ${userId.slice(0, 4)}`,
-        ready: false,
+        ready: true,
       }],
       status       : 'waiting',
       rooms        : [],
@@ -200,7 +200,7 @@ export class TournamentManager {
       },
     }));
 
-    // console.log('Tournament created:', tourney);
+    console.log('Tournament created:', tourney);
 
     this.broadcastTournamentUpdate();
     return tourney;
@@ -328,6 +328,9 @@ export class TournamentManager {
           payload: { tournamentId, winnerId }
         }
       );
+      console.log(`Tournament ${tournamentId} finished, winner: ${winnerId}`);
+      delete this.tournaments[tournamentId];
+      // this.broadcastTournamentUpdate();
       return;
     }
   
@@ -442,6 +445,11 @@ export class TournamentManager {
         roundNo++;
       }
 
+      console.log(`Generated bracket for tournament ${tournamentId}:`, rounds);
+      console.log('players in tournament:', players.length);
+      console.log('playerids in tournament:', players.map(getPlayerId));
+      
+
       return rounds;
     };
 
@@ -550,7 +558,6 @@ export class TournamentManager {
       : Object.values(this.tournaments).find(t => hasUser(t.players, userId));
   
     if (!tournament) {
-      console.error(`leaveTournament: user ${userId} not found`);
       return;
     }
   
@@ -562,14 +569,16 @@ export class TournamentManager {
           const ids = match.players.map(p => getPlayerId(p));
           const idx = ids.indexOf(userId);
           if (idx !== -1 && !match.winner) {
-            const opp = match.players[1 - idx];
-            if (opp) {
+            const opponent = match.players[1 - idx];
+            const matchId  = match.matchId;
+            if (opponent) {
               this.reportMatchResult(
                 tournament.id,
-                match.matchId,
-                getPlayerId(opp)
+                matchId,
+                getPlayerId(opponent)
               );
             }
+            this.matchManager.leaveRoom(matchId, userId);
             break;
           }
         }
@@ -592,6 +601,7 @@ export class TournamentManager {
       this.broadcastTournamentUpdate();
     }
   }
+  
   
   
 }
