@@ -99,7 +99,7 @@ on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
     ? rounds as MatchStub[][]
     : [rounds as MatchStub[]];
 
-  renderBracketOverlay(normalized);
+  // renderBracketOverlay(normalized);
   await new Promise(r => setTimeout(r, 700));
 
   // pick the upcoming match (in the last round):
@@ -319,6 +319,9 @@ let wasInGame = false;
 export let lastPath: string | null = null;
 
 function route() {
+  //added this to if the player changes url it replaces it with normal field instead of the wide game_field (Enes)
+  const main_div = document.getElementById('game-main-container')!.classList.replace('game_field', 'field');
+  
   const TLobbySocket = getSocket();
   const path = window.location.pathname;
   // console.log('[route] current path:', path);
@@ -417,8 +420,8 @@ function route() {
   if (path === '/matchmaking') {
     enterMatchmaking();
     markQueued?.(true);
-    (document.getElementById('matchmaking-page') as HTMLElement)!.classList.add('block');
-    (document.getElementById('matchmaking-page') as HTMLElement)!.classList.remove('hidden');
+    (document.getElementById('matchmaking_div') as HTMLElement)!.classList.add('block');
+    (document.getElementById('matchmaking_div') as HTMLElement)!.classList.remove('hidden');
     return;
   }
 

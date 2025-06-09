@@ -88,8 +88,8 @@
       card.className = 't-card';
       card.innerHTML = `
         <div>
-          <div>${t.name}</div>
-          <div>${t.slots}</div>
+          <div class="text-black font-bold text-base">${t.name}</div>
+          <div class="text-black font-bold text-base">${t.slots}</div>
         </div>
         <button class="join-btn" ${t.joinable ? '' : 'disabled'} data-code="${t.code}">
           ${t.joinable ? 'JOIN' : 'FULL'}
@@ -165,14 +165,11 @@
     table.appendChild(frag);
 
 
-    (document.getElementById('t-share-code') as HTMLInputElement).value =
-      '#' + (TLobby.code ?? '----');
-
     const allReady =
       players.length === totalSlots && players.every(p => p.ready);
 
     const hostControls = document.getElementById('host-controls') as HTMLElement;
-    const playerControls = document.getElementById('host-controls') as HTMLElement;
+    const playerControls = document.getElementById('player-controls') as HTMLElement;
     if (amHost) {
       hostControls.classList.remove('hidden');
       playerControls.classList.add('hidden');

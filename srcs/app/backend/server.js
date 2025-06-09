@@ -26,7 +26,7 @@ tournamentManager.matchManager = matchManager;
 matchManager.tournamentManager = tournamentManager;
 
 
-for (let i = 0; i < 3; i++) tournamentManager.createTournament(null, 'SERVER');
+for (let i = 0; i < 30; i++) tournamentManager.createTournament(null, 'SERVER');
 
 setInterval(() => tournamentManager.broadcastTournamentUpdate(), 3000);
 

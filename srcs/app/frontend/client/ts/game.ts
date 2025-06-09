@@ -39,6 +39,8 @@ export function setOnGameEnd(cb: (winnerId: string) => void): void {
 
 
 export function initGameCanvas(): void {
+  const main_div = document.getElementById('game-main-container')!.classList.replace('field', 'game_field');
+
   const canvas = document.getElementById('game') as HTMLCanvasElement | null;
   if (!canvas) {
     alert("GAME CANVAS NOT FOUND");
@@ -112,6 +114,8 @@ export function startGame(mode: GameMode): void {
 export function stopGame(): void {
   searchingForMatch = false;
   if (ws && ws.readyState === WebSocket.OPEN && currentRoomId !== null) {
+    // const main_div = document.getElementById('game-main-container')!.classList.replace('game_field', 'field');
+    // alert("LEFT GAME");
     send({ type: 'leaveGame', payload: { roomId: currentRoomId, userId } });
   }
 
