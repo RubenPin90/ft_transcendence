@@ -6,7 +6,6 @@ export function hideAllPages() {
     'game-container',
     'tournament-page',
     't-lobby-page',
-    // 'matchmaking-page',
     'bracket-overlay',
     'matchmaking_div',
   ];

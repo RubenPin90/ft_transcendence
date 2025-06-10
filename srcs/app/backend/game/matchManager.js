@@ -171,14 +171,6 @@ export class MatchManager extends EventEmitter {
     if (rc === -1) {
       console.warn(`[${room.roomId}] DB: player not in settings - skipping create_match`);
     }
-    // console.log(await show_matches());
-  }
-
-  async _recordMatchUpdate(room) {
-    if (room.mode === GAME_MODES.PVE) return;
-
-    const pointsStr = JSON.stringify(room.scoreBoard);
-    await update_match('points', pointsStr, room.roomId);
   }
 
   async _recordMatchEnd(room, winnerId) {
@@ -187,7 +179,7 @@ export class MatchManager extends EventEmitter {
     const pointsStr = JSON.stringify(room.scoreBoard);
     await update_match('points', pointsStr, room.roomId);
     await update_match('winner', winnerId, room.roomId);
-    // console.log(await show_matches());
+    // console.log(await show_matches());//print matches
   }
 
   async _endMatch(roomId, winnerId, reason = 'normal') {
@@ -211,7 +203,7 @@ export class MatchManager extends EventEmitter {
       roomId,
       winnerId,
       reason,
-      tournamentId: room.tournamentId || null // emit null if not a tournament
+      tournamentId: room.tournamentId || null
     });
   
     await update_match('winner', winnerId, roomId);
