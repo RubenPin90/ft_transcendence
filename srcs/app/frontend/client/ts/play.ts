@@ -92,6 +92,7 @@ on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
     tournamentId: string;
     rounds: MatchStub[][] | MatchStub[];
   };
+  console.log('[tournamentBracketMsg] received:', tournamentId, rounds);
 
   currentTournamentId = tournamentId;
   const normalized = Array.isArray(rounds[0])
@@ -121,6 +122,15 @@ on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
 
   // your existing “first round” logic
   if (isFirstRound) {
+    const firstRound = normalized[0];
+    const firstMatch = firstRound.find(
+      m => m.players.filter(p => p && !('pendingMatchId' in p)).length === 2
+    );
+  
+    if (firstMatch) {
+      const [A, B] = firstMatch.players as PlayerStub[];
+      await showVersusOverlay(A.name, B.name);
+    }
     send({ type: 'beginRound', payload: { tournamentId } });
     isFirstRound = false;
     startedTournament = true;
@@ -239,22 +249,20 @@ function showVersusOverlay(left: string, right: string): Promise<void> {
     if (!el) {
       el = document.createElement('div');
       el.id = 'vs-overlay';
-      el.className = `fixed inset-0 flex items-center justify-center bg-black/80 text-white font-bold text-3xl leading-none z-[9999] text-center opacity-0 transition-opacity duration-[400ms]`
+      el.className = `fixed inset-0 flex items-center justify-center bg-black/80 text-white font-bold text-3xl leading-none z-[9999] text-center opacity-0 transition-opacity duration-[400ms]`;
       document.body.appendChild(el);
     }
 
     el.textContent = `${left}  vs  ${right}`;
     requestAnimationFrame(() => {
-      // el!.style.opacity = '1'
-      el!.classList.remove('opacity-100');
-      el!.classList.add('opacity-0');
+      el!.classList.remove('opacity-0');
+      el!.classList.add('opacity-100'); 
     });
 
     const SHOW_MS = 2500;
     const HIDE_MS = 400;
 
     const hideTimer = setTimeout(() => {
-      // el!.style.opacity = '0';
       el!.classList.remove('opacity-100');
       el!.classList.add('opacity-0');
     }, SHOW_MS);
@@ -299,7 +307,6 @@ setOnGameEnd((winnerId: string) => {
   } 
   else {
     alert('Game over. You lost.');
-    return;
   }
   if (!currentTournamentId) {
     // console.log('[play.ts] No tournament active, stopping game');
@@ -328,8 +335,8 @@ function route() {
   
   const TLobbySocket = getSocket();
   const path = window.location.pathname;
-  // console.log('[route] current path:', path);
-  // console.log('lastPath:', lastPath);
+  console.log('[route] current path:', path);
+  console.log('lastPath:', lastPath);
 
   if (path === '/matchmaking' && lastPath !== '/play') {
     // console.log('[route] blocked direct /matchmaking; redirecting to /play');
