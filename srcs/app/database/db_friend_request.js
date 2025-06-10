@@ -1,24 +1,6 @@
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 
-// Tested: all working//
-async function get_friend_request() {
-    const db = await open({
-        filename: './database/db.sqlite',
-        driver: sqlite3.Database
-    });
-
-    try {
-        var row = await db.all(`SELECT * FROM friend_request`);
-        return row;
-    } catch (err) {
-        console.error(`Error in get_friend_request: ${err}`)
-        return null;
-    } finally {
-        await db.close();
-    }
-}
-
 // Tested: all working
 async function get_friend_request_value(search_value, value) {
 	const valid_values = ['status', 'created_at', 'sender_id', 'receiver_id']
@@ -78,60 +60,43 @@ async function create_friend_request_value(sender_id, receiver_id) {
     }
 }
 
-async function update_friend_request_value(id, userid) {
+async function update_friend_request_value(id, userid, what_do) {
     const db = await open({
         filename: './database/db.sqlite',
         driver: sqlite3.Database
     });
 
     try {
-        //check if request truly exists for the user
         var request = await db.get(`
             SELECT * FROM friend_request
-            WHERE sender_id = ? AND receiver_id = ?
-            `, [id, userid]);
+            WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
+        `, [id, userid, userid, id]);
         if (!request){
             return -1;
         }
-        var alr_friends = await db.get(`
-            SELECT * FROM friends
-            WHERE (user1 = ? AND user2 = ?) OR (user2 = ? AND user1 = ?)
-            `, [request.sender_id, request.receiver_id, request.sender_id, request.receiver_id]);
-        if (alr_friends){
-            return -2;
+        if (what_do == 'accept'){
+            var alr_friends = await db.get(`
+                SELECT * FROM friends
+                WHERE (user1 = ? AND user2 = ?) OR (user2 = ? AND user1 = ?)
+                `, [request.sender_id, request.receiver_id, request.sender_id, request.receiver_id]);
+            if (alr_friends){
+                return -2;
+            }
+            // if it doesnt exists insert sender_id and receiver_id into friends
+            var row = await db.run(`
+                INSERT INTO friends (user1, user2)
+                VALUES (?, ?)`, [request.sender_id, request.receiver_id]);
+                //check if request truly exists for the user
         }
-        // if it doesnt exists insert sender_id and receiver_id into friends
-        var row = await db.run(`
-            INSERT INTO friends (user1, user2)
-            VALUES (?, ?)`, [request.sender_id, request.receiver_id]);
         // lastly delete the row of friends_request
         var row_req = await db.run(`
             DELETE FROM friend_request
-            WHERE sender_id = ? AND receiver_id`, [id, userid]);
+            WHERE (sender_id = ? AND receiver_id = ?) OR (receiver_id = ? AND sender_id = ?)
+            `, [request.sender_id, request.receiver_id, request.sender_id, request.receiver_id]);
         
         return row;
     } catch (err) {
         console.error(`Error in update_friend_request_value: ${err}`);
-        return null;
-    } finally {
-        await db.close();
-    }
-}
-
-// Tested: all working
-async function delete_friend_request_value(id) {
-    const db = await open({
-        filename: './database/db.sqlite',
-        driver: sqlite3.Database
-    });
-
-    try {
-        var row = await db.run(`
-            DELETE FROM friend_request
-            WHERE id = ?`, [id]);
-            return row;
-    } catch (err) {
-        console.error(`Error in delete_friend_request_value: ${err}`);
         return null;
     } finally {
         await db.close();
@@ -190,10 +155,8 @@ async function show_pending_requests(userid){
 }
 
 export {
-    get_friend_request,
     get_friend_request_value,
     create_friend_request_value,
     update_friend_request_value,
-    delete_friend_request_value,
     show_pending_requests
 }
