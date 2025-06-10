@@ -7,6 +7,7 @@ import * as users_db from '../database/db_users_functions.js';
 import * as mfa_db from '../database/db_mfa_functions.js';
 import * as friends_request from '../database/db_friend_request.js'
 import * as friends_db from '../database/db_friends.js'
+import * as game_db from '../database/db_matches.js'
 import qrcode from 'qrcode';
 import { json } from 'stream/consumers';
 import { response } from 'express';
@@ -267,7 +268,11 @@ async function profile(request, response) {
         inner = inner.replace('{{picture}}', settings.pfp);
         // inner = inner.replace('{{status}}', ()=> {if (user.status === 1) return 'online'; else return 'offline'});
         // if (await friends_request.get_friend_request_value('receiver_id', userid) != undefined)
-            inner = inner.replace('{{Friends}}', await friends_db.show_accepted_friends(userid))
+        inner = inner.replace('{{Friends}}', await friends_db.show_accepted_friends(userid))
+        inner = inner.replace('{{winns}}', await game_db.get_won(userid));
+        inner = inner.replace('{{losses}}', await game_db.get_lost(userid));
+        inner = inner.replace('{{table_informations}}', await game_db.get_played_matches(userid));
+        // inner = inner.replace('{{table_informations}}', await game_db.get_played_matches(userid));
         // else
             // inner = inner.replace('{{Friends}}', '<span>No friends currenlty :\'( you lonely MF</span>');
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": inner});

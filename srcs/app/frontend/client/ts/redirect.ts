@@ -211,6 +211,7 @@ export async function where_am_i(path : string) : Promise<string> {
             return 'login_div';
         }
         await connect();
+        check();
         history.pushState({}, '', '/play');
         return 'play_div';
     }

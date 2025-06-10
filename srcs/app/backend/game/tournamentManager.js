@@ -310,12 +310,6 @@ export class TournamentManager {
     if (roundIdx + 1 >= tourney.rounds.length) {
       tourney.winner = winnerId;
   
-      try {
-        await db.set_tournament_winner(tournamentId, winnerId);
-      } catch (err) {
-        console.error('DB-update winner failed:', err);
-      }
-  
       this.#broadcastToUsers(
         this.#activeIds(tourney),
         {
