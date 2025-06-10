@@ -505,11 +505,13 @@ async function accept_friends(request, response){
         return true;
     }
 
-    const receiver = data.row_id;
-    const result = await friends_request.update_friend_request_value(receiver, decoded.userid);
-    if (!result || result === undefined){
+    const receiver_db = await users_db.get_users_value('username', data.sendername);
+
+    const result = await friends_request.update_friend_request_value(receiver_db.self, decoded.userid, 'accept');
+    if (!result || result === undefined || result < 0){
         console.error("error in deleting accepted friend request");
-        return null;
+        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'error'});
+        return true;
     }
     response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'success'});
     return true;
@@ -523,21 +525,23 @@ async function reject_friend(request, response){
         return true;
     }
 
-    let self_user;
+    let decoded;
     try {
-        self_user = await modules.get_jwt(values[keys.indexOf("token")]);
+        decoded = await modules.get_jwt(values[keys.indexOf("token")]);
     } catch (err) {
         response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
         return true;
     }
 
-    const receiver = self_user.userid;
-    const result = await friends_request.delete_friend_request_value(receiver);
-    if (!result || result === undefined){
+    const receiver_db = await users_db.get_users_value('username', data.sendername);
+
+    const result = await friends_request.update_friend_request_value(receiver_db.self, decoded.userid, 'reject');
+    if (!result || result === undefined || result < 0){
         console.error("error in deleting accepted friend request");
-        return null;
+        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'error'});
+        return true;
     }
-    response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin':  '*'}).send({ message: 'success'});
+    response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'success'});
     return true;
 }
 

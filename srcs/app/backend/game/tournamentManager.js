@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { MatchManager }   from './matchManager.js';
-import * as db from '../../database/db_matches_tournaments.js';
+import * as db from '../../database/db_matches.js';
 
 const WS_OPEN = 1;
 
@@ -184,7 +184,6 @@ export class TournamentManager {
       roundWinners : null,
       eliminated   : new Set(),
     };
-    await db.create_tournament_row(tourney.id, tourney.host); 
 
     this.tournaments[id] = tourney;
 

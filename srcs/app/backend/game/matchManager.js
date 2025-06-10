@@ -6,7 +6,7 @@ import {
   create_match,
   update_match,
   show_matches
-} from '../../database/db_matches_tournaments.js';
+} from '../../database/db_matches.js';
 
 export const GAME_MODES = {
   PVE: 'PVE',
@@ -171,7 +171,7 @@ export class MatchManager extends EventEmitter {
     if (rc === -1) {
       console.warn(`[${room.roomId}] DB: player not in settings - skipping create_match`);
     }
-    // (await show_matches());
+    // console.log(await show_matches());
   }
 
   async _recordMatchUpdate(room) {
@@ -187,6 +187,7 @@ export class MatchManager extends EventEmitter {
     const pointsStr = JSON.stringify(room.scoreBoard);
     await update_match('points', pointsStr, room.roomId);
     await update_match('winner', winnerId, room.roomId);
+    // console.log(await show_matches());
   }
 
   async _endMatch(roomId, winnerId, reason = 'normal') {
