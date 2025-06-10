@@ -99,7 +99,7 @@ async function change_user(){
         if (!splited || !name_field)
             return;
         name_field.innerHTML = `${splited[0]}<br>${usernameValue}`;
-
+        history.pushState({}, '', '/settings/user');
     }
     catch (err){
         console.error("error with update: " + err);
@@ -110,26 +110,19 @@ async function change_user(){
 //TODO parse email
 //TODO compare password and repeat password
 async function change_logindata(){
-    const emailField = document.getElementById('email_change') as HTMLInputElement;
     const passField = document.getElementById('password_input_change') as HTMLInputElement;
     const repField = document.getElementById('password_input2_change') as HTMLInputElement;
     
-    const emailValue = emailField.value;
     const passValue = passField.value;
     const repValue = repField.value;
 
     const value_struct = {
-        email: emailValue,
         password: passValue,
         avatar: null
     }
 
     if (passValue !== repValue){
         alert("password is not equal to repeat password");
-        return;
-    }
-    if (emailValue && parse_email(emailValue) === false){
-        alert("Incorrect email");
         return;
     }
     
@@ -141,6 +134,10 @@ async function change_logindata(){
             },
             body: JSON.stringify(value_struct)
         });
+        if (response.ok){
+            alert("Success");
+            history.pushState({}, '', '/settings/user');
+        }
     }
     catch(err){
         console.error('Error updating logindata: ', err);

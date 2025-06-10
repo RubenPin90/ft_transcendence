@@ -824,9 +824,9 @@ async function replace_all_templates(request, response, state, override) {
 	settings_html_user_select_language_string += '<a class="flex-1">'
 	settings_html_user_select_language_string += '<button onclick="change_language()" type="submit" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">'
 	settings_html_user_select_language_string += '<span class="font-bold text-lg">Submit</span></button></a>'
-	settings_html_user_select_language_string += '<a href="/" data-link class="flex-1">'
+	settings_html_user_select_language_string += '<a href="/settings" data-link class="flex-1">'
 	settings_html_user_select_language_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">'
-	settings_html_user_select_language_string += '<span class="font-bold text-lg">Home</span></button></a></div></div></div></div>'
+	settings_html_user_select_language_string += '<span class="font-bold text-lg">Back</span></button></a></div></div></div></div>'
 	const settings_html_user_select_language_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_select_language_string);
 
 	var settings_html_user_profile_settings_string = "";
@@ -896,16 +896,6 @@ async function replace_all_templates(request, response, state, override) {
 
 
 	const settings_html_user_profile_credential_string = `<div id="userpass_div" class="hidden"><div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>
-	<label for="email" class="label_text">Email</label>
-    <div id="email_field" class="relative input_total">
-        <div class="input_svg">
-            <svg class="w-6 h-6 text-gray-500 justify-center" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 16">
-                <path d="m10.036 8.278 9.258-7.79A1.979 1.979 0 0 0 18 0H2A1.987 1.987 0 0 0 .641.541l9.395 7.737Z"/>
-                <path d="M11.241 9.817c-.36.275-.801.425-1.255.427-.428 0-.845-.138-1.187-.395L0 2.6V14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2.5l-8.759 7.317Z"/>
-            </svg>
-        </div>
-        <input type="text" id="email_change" placeholder="example@gmail.com" required class="input_field" />
-    </div>
     <label for="password-input" class="label_text">Password</label>
     <div id="password_field" class="relative input_total">
         <div class="input_svg">

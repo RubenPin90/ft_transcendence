@@ -326,7 +326,7 @@ async function update_settings(request, response) {
         return login(request, response);
     }
 
-    const { email, password, avatar } = data;
+    const { password, avatar } = data;
 
     const tokenIndex = keys.findIndex((key) => key === 'token');
     const token = values[tokenIndex];
@@ -342,9 +342,6 @@ async function update_settings(request, response) {
     let result;
 
     try {
-        if (email){
-            result = await settings_db.update_settings_value('email', email, userid);
-        }
         if (password){
             result = await settings_db.update_settings_value('password', password, userid);
         }
@@ -474,8 +471,8 @@ async function add_friends(request, response){
     const receiver = data.input_value;
     const receiver_db = await users_db.get_users_value('username', receiver);
     if (!receiver_db || receiver_db === undefined){
-        console.error("no user in database");
-        response.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "no user in database" });
+        console.error("no user found");
+        response.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": "no user found" });
         return true;
     }
     if (receiver_db.self == userid){

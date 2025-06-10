@@ -1,12 +1,11 @@
 async function add_friend(){
     const input = document.getElementById('accept_friends') as HTMLInputElement;
     if (!input || input === undefined){
-        alert('no input element');
         return;
     }
     const input_value = input.value;
     if (input_value === ''){
-        alert('input should not be empty');
+        alert('Error: input should not be empty');
         return;
     }
 
@@ -18,13 +17,13 @@ async function add_friend(){
             },
             body: JSON.stringify({input_value}),
         });
-        if (!response.ok){
-            alert("response is not ok in add_friend");
-            return;
-        }
+
         const data = await response.json();
         if (data.Response == "success"){
             alert("Friend request sent");
+            return;
+        } else {
+            alert(`Error: ${data.Response}`);
             return;
         }
     } catch (err){
