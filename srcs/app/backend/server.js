@@ -66,16 +66,16 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
   await users_db.update_users_value('status', 'online', userId);
   //db_userId_status(userId, online)
 
-  console.log('🔌 ws authenticated:', userId);
-  ws.send(JSON.stringify({ type: 'welcome', payload: { userId } }));
-
+  
   if (socketRegistry.has(userId))
-  {
-    console.log('detected double connection');
-    ws.close(1000, 'detected double connection');
-    socketRegistry.remove(userId);
-    return;
-  }
+    {
+      console.log('detected double connection');
+      ws.close(1000, 'detected double connection');
+      socketRegistry.remove(userId);
+      return;
+    }
+    console.log('🔌 ws authenticated:', userId);
+    ws.send(JSON.stringify({ type: 'welcome', payload: { userId } }));
 
   socketRegistry.add(userId, ws);
   matchManager.registerSocket(userId, ws);
