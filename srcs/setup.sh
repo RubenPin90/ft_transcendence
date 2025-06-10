@@ -15,6 +15,7 @@ declare -A secrets=(
     ["jwt"]=".secrets.jwt.pass"
     ["prometheus"]=".secrets.prometheus.pass"
     ["grafana"]=".secrets.grafana.pass"
+    ["pinggy"]=".secrets.pinggy.token"
 )
 
 declare -A users=(

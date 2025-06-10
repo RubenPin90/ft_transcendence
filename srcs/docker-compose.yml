@@ -1,11 +1,19 @@
 services:
+  pinggy:
+    build: ./pinggy
+    container_name: 'pinggy'
+    networks:
+      - trancendence-network
+    depends_on:
+      - nginx
+
   nginx:
     build:
       context: ./nginx
     container_name: 'nginx'
     restart: always
     ports:
-      - "443:443"
+      - "80:80"
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d
     environment:
@@ -65,7 +73,7 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=${USER_NAME}
       - GF_SECURITY_ADMIN_PASSWORD__FILE=/run/secrets/admin_password
-      - GF_SERVER_ROOT_URL=https://localhost/grafana/
+      - GF_SERVER_ROOT_URL=http://localhost/grafana/
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
     secrets:
       - admin_password
@@ -98,8 +106,7 @@ services:
       - "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)($|/)"
     pid: host
     volumes:
-      - /:/host:ro,rslave #TODO comment out when on my PC (ENES) wsl throws error and cant make
-      # - /:/host:ro
+      - /:/host:ro,rslave
     depends_on:
       - prometheus
     networks:
@@ -117,8 +124,6 @@ services:
       - /dev/disk/:/dev/disk:ro
     depends_on:
       - prometheus
-    ports: 
-      - "8080:8080"
     networks:
       - trancendence-network
     privileged: true
