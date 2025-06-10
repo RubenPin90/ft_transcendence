@@ -994,7 +994,7 @@ async function replace_all_templates(request, response, state, override) {
 	play_main +=     '</div>';
 
 	
-	play_main +=     '<div id="game-container">';
+	play_main +=     '<div id="game-container" class="hidden">';
 	play_main +=       '<h2 id="game-mode-title"></h2>';
 	play_main +=       '<canvas id="game" width="800" height="600"></canvas>';
 	play_main +=     '</div>';
@@ -1022,7 +1022,7 @@ async function replace_all_templates(request, response, state, override) {
 
 
 
-	play_main +=     '<div id="t-lobby-page">';
+	play_main +=     '<div id="t-lobby-page" class="hidden">';
 	play_main +=       '<h2 id="t-lobby-status" class="text-center text-2xl font-bold text-white mb-6">Waiting for players…</h2>';
 	play_main +=       '<div id="t-lobby-table" class="max-w-[620px] mx-auto mb-8 border-2 border-black bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] rounded-sm"></div>';
 	play_main +=       '<div id="host-controls">';

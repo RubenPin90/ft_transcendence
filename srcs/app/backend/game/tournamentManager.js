@@ -310,7 +310,6 @@ export class TournamentManager {
   
     if (roundIdx + 1 >= tourney.rounds.length) {
       tourney.winner = winnerId;
-    
       this.#broadcastToUsers(
         this.#activeIds(tourney),
         {
