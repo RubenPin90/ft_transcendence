@@ -84,6 +84,7 @@ export function setupButtonsDelegated(
               type: 'generateBracket',
               payload: { tournamentId: TLobby.id }
             }));
+            (document.getElementById('t-start-btn') as HTMLButtonElement).disabled = true;
           }
           break;
 

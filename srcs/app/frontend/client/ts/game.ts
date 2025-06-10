@@ -157,12 +157,19 @@ export function drawFrame(state: GameState): void {
     ctx.fill();
   }
 
+  const storedId = localStorage.getItem('playerId');
+
+  ctx.save();
   state.players.forEach((p, i) => {
     const x = i === 0 ? 10 : canvas.width - 25;
-    ctx?.fillRect(x, toY(p.y) - 50, 15, 100);
+    const isCurrent = storedId !== null && p.id.toString() === storedId;
+    ctx!.fillStyle = isCurrent ? '#FF00D0' : '#fff';
+    ctx!.fillRect(x, toY(p.y) - 50, 15, 100);
   });
+  ctx.restore();
 
   ctx.font = '20px sans-serif';
+  ctx.fillStyle = '#fff';
   ctx.fillText(
     `${state.scores[state.players[0].id] || 0}`,
     canvas.width * 0.25,
