@@ -203,22 +203,27 @@ export async function where_am_i(path : string) : Promise<string> {
     {
         if (await check_cookies_expire()) {
             await show_login();
-            history.pushState({}, '', '/');
+            history.pushState({}, '', '/login');
             return 'login_div';
         }
         if (!await check_cookie_fe()) {
             history.pushState({}, '', '/login');
             return 'login_div';
         }
+        history.pushState({}, '', '/play');
         await connect();
         check();
-        history.pushState({}, '', '/play');
         return 'play_div';
     }
     switch (path) {
         case '/play':
             if (!await check_cookie_fe()) {
                 history.pushState({}, '', '/login');
+                return 'login_div';
+            }
+            if (await check_cookies_expire()) {
+                await show_login();
+                history.pushState({}, '', '/');
                 return 'login_div';
             }
             await connect();
