@@ -336,8 +336,8 @@ function route() {
   
   const TLobbySocket = getSocket();
   const path = window.location.pathname;
-  console.log('[route] current path:', path);
-  console.log('lastPath:', lastPath);
+  // console.log('[route] current path:', path);
+  // console.log('lastPath:', lastPath);
 
   if (lastPath?.startsWith('/tournament/') && !path.startsWith('/tournament')) {
     const TLobby = getCurrentTLobby();
