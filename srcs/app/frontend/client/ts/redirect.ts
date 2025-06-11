@@ -20,17 +20,10 @@ async function show_profile_page() : Promise<string>{
 
     const data = await response.json();
     if (data.Response === 'success'){
-        const content = data.Content;
-
-        var content2 = content.match(/<body class="background" id="main_body">([\s\S]*?)<\/body>/);
-        var current_file = document.getElementById("main_body");
-        if (!current_file)
-            return "home_div";
-        current_file.innerHTML = content2[1];
-        // var element = document.getElementById("profile_div");
-        // if (element){
-        //     element.outerHTML = data.Content;
-        // }
+        var element = document.getElementById("profile_div");
+        if (element){
+            element.outerHTML = data.Content;
+        }
     }
     else if (data.Response === 'fail'){
         alert(`error with data of profile ${data.Content}`);
@@ -132,7 +125,7 @@ export async function check_cookie_fe(): Promise<boolean> {
 }
 
 export async function render_mfa() : Promise<string>{
-    // var innervalue = document.getElementById("mfa_div")?.innerHTML;
+    var innervalue = document.getElementById("mfa_div")?.innerHTML;
     // console.log("INNERHTML::", innervalue);
 
     const response = await fetch ('/mfa_setup', {
@@ -140,7 +133,7 @@ export async function render_mfa() : Promise<string>{
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({innervalue}),
     });
     if (!response.ok){
         alert("error with MFA response");
@@ -149,13 +142,10 @@ export async function render_mfa() : Promise<string>{
 
     const data = await response.json();
     if (data.Response === 'success'){
-        const content = data.Content;
-
-        var content2 = content.match(/<body class="background" id="main_body">([\s\S]*?)<\/body>/);
-        var current_file = document.getElementById("main_body");
-        if (!current_file)
-            return "home_div";
-        current_file.innerHTML = content2[1];
+        var element = document.getElementById("mfa_div");
+        if (element){
+            element.innerHTML = data.Content;
+        }
     }
     else if (data.Response === 'fail'){
         alert (`error with data of MFA ${data.Content}`)
