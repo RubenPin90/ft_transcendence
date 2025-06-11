@@ -592,13 +592,10 @@ async function replace_all_templates(request, response, state, override) {
 	const settings_html_default = settings_html_raw.replace("{{mfa-button}}", settings_html_default_string);
 
 	var settings_html_mfa_string = "";
-
 	settings_html_mfa_string += '<div id="mfa_div" class="hidden">';
 	settings_html_mfa_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
-
 	settings_html_mfa_string += '<div id="mfa" class="flex w-full h-full"></div>'
     settings_html_mfa_string += '<div id="mfa-button">'
-
     settings_html_mfa_string +='<div class="flex gap-2">'
     settings_html_mfa_string +='<form id="mfa_options" class="w-5/6">'
     settings_html_mfa_string +='<select name="lang" id="select_mfa" class="w-full p-4 text-center rounded-xl text-2xl border border-[#e0d35f] border-spacing-8 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]">'
@@ -611,42 +608,31 @@ async function replace_all_templates(request, response, state, override) {
     settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">'
     settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />'
     settings_html_mfa_string +='</svg></button></div></div>'
-	settings_html_mfa_string +='';
-	settings_html_mfa_string +='';
 	settings_html_mfa_string +='<div class="flex gap-2">';
 	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_otc()">';
 	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
 	settings_html_mfa_string +='<span class="button_text">Create OTC</span></button></div>';
-	settings_html_mfa_string +='';
 	settings_html_mfa_string +='<div id="trash_otc" class="trash_disable">';
 	settings_html_mfa_string +='<button id="trash_otc_button" class="pointer-events-none">';
 	settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
 	settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg></button></div></div>';
-	settings_html_mfa_string +='';
-	settings_html_mfa_string +='';
 	settings_html_mfa_string +='<div class="flex gap-2">';
 	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_custom_code()">';
 	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
 	settings_html_mfa_string +='<span class="button_text">Create custom 6 digit code</span></button></div>';
-	settings_html_mfa_string +='';
 	settings_html_mfa_string +='<div id="trash_custom" class="trash_enable">';
 	settings_html_mfa_string +='<button id="trash_custom_button" class="pointer-events-none">';
 	settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
 	settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg></button></div></div>';
-	settings_html_mfa_string +='';
-	settings_html_mfa_string +='';
 	settings_html_mfa_string +='<div class="flex gap-2">';
 	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_email()">';
 	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
 	settings_html_mfa_string +='<span class="button_text">Enable email authentication</span></button></div>';
-	settings_html_mfa_string +='';
 	settings_html_mfa_string +='<div id="trash_email" class="trash_disable">';
 	settings_html_mfa_string +='<button id="trash_email_button" class="pointer-events-none">';
 	settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
 	settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />';
 	settings_html_mfa_string +='</svg></button></div></div>';
-	settings_html_mfa_string +='';
-	settings_html_mfa_string +='';
 	settings_html_mfa_string +='<div class="flex mt-12 gap-4 w-full">';
 	settings_html_mfa_string +='<a class="flex-1" href="/settings" data-link>';
 	settings_html_mfa_string +='<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
@@ -658,29 +644,7 @@ async function replace_all_templates(request, response, state, override) {
 	settings_html_mfa_string +='</button></a></div></div></div></div></div></div>';
 
 
-	// settings_html_mfa_string += '<div id="mfa_div" class="hidden">';
-	// settings_html_mfa_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
-	// settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_otc()">';
-	// settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
-	// settings_html_mfa_string += '<span class="button_text">Create OTC</span>';
-	// settings_html_mfa_string += '</button></div>';
-	// settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_custom_code()">';
-	// settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
-	// settings_html_mfa_string += '<span class="button_text">Create custom 6 diggit code</span>';
-	// settings_html_mfa_string += '</button></div>';
-	// settings_html_mfa_string += '<div class="buttons mb-6" onclick="create_email()">';
-	// settings_html_mfa_string += '<button class="block w-full mb-6 mt-6">';
-	// settings_html_mfa_string += '<span class="button_text">Enable email authentication</span>';
-	// settings_html_mfa_string += '</button></div>';
-	// settings_html_mfa_string += '<div class="flex mt-12 gap-4 w-full">';
-	// settings_html_mfa_string += '<a class="flex-1" href="/settings" data-link>';
-	// settings_html_mfa_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-	// settings_html_mfa_string += '<span class="font-bold text-lg">Back</span>';
-	// settings_html_mfa_string += '</button></a>';
-	// settings_html_mfa_string += '<a href="/" class="flex-1" data-link>';
-	// settings_html_mfa_string += '<button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-	// settings_html_mfa_string += '<span class="font-bold text-lg">Home</span>';
-	// settings_html_mfa_string += '</button></a></div></div></div></div></div>';
+
 	const settings_html_mfa = settings_html_raw.replace("{{mfa-button}}", settings_html_mfa_string);
 
 	var settings_html_user_string = "";
@@ -713,7 +677,7 @@ async function replace_all_templates(request, response, state, override) {
 
 
 	settings_html_user_select_language_string += '<div id="mfa-button" class="flex flex-col items-center w-full mx-auto">'
-	settings_html_user_select_language_string += '<label for="language" class="justify-center font-bold text-2xl pb-5 text-yellow-100">Choose your main language</label>'
+	settings_html_user_select_language_string += '<label for="language" class="h-auto text-4xl font-bold text-center truncate text-white mb-4">Choose your main language</label>'
 	settings_html_user_select_language_string += '<form id="language" class="w-full mx-auto">'
 	settings_html_user_select_language_string += '<select name="lang" id="lang" class="w-full p-4 text-center rounded-lg text-lg font-[Roboto] border border-[#e0d35f] border-spacing-8 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]">'
 	settings_html_user_select_language_string += `<option value="" selected disabled hidden>Choose your main language</option>
@@ -871,11 +835,12 @@ async function replace_all_templates(request, response, state, override) {
 	const settings_html_user_profile_settings_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_settings_string);
 
 	const settings_html_user_profile_username_string = `<div id="username_div" class="hidden"><div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>
+	<label for="user_field" class="label_text">username</label>
 	<div id="user_field" class="relative input_total">
         <div class="input_svg">
             <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
                 <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd" />
-                </svg>
+			</svg>
         </div>
         <input type="text" id="username_sett" placeholder="Username" required class="input_field" />
     </div>
@@ -903,12 +868,12 @@ async function replace_all_templates(request, response, state, override) {
                 <path fill-rule="evenodd" d="M15.75 1.5a6.75 6.75 0 0 0-6.651 7.906c.067.39-.032.717-.221.906l-6.5 6.499a3 3 0 0 0-.878 2.121v2.818c0 .414.336.75.75.75H6a.75.75 0 0 0 .75-.75v-1.5h1.5A.75.75 0 0 0 9 19.5V18h1.5a.75.75 0 0 0 .53-.22l2.658-2.658c.19-.189.517-.288.906-.22A6.75 6.75 0 1 0 15.75 1.5Zm0 3a.75.75 0 0 0 0 1.5A2.25 2.25 0 0 1 18 8.25a.75.75 0 0 0 1.5 0 3.75 3.75 0 0 0-3.75-3.75Z" clip-rule="evenodd" />
             </svg>
         </div>
-        <button onclick="toggle_eye(1)" id="password_eye" class="password_eye" tabindex="-1">
+        <button onclick="toggle_eye(1)" id="password_eye_settings" class="password_eye" tabindex="-1">
             <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
                 <path d="M3.53 2.47a.75.75 0 0 0-1.06 1.06l18 18a.75.75 0 1 0 1.06-1.06l-18-18ZM22.676 12.553a11.249 11.249 0 0 1-2.631 4.31l-3.099-3.099a5.25 5.25 0 0 0-6.71-6.71L7.759 4.577a11.217 11.217 0 0 1 4.242-.827c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113Z" />
                 <path d="M15.75 12c0 .18-.013.357-.037.53l-4.244-4.243A3.75 3.75 0 0 1 15.75 12ZM12.53 15.713l-4.243-4.244a3.75 3.75 0 0 0 4.244 4.243Z" />
                 <path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 0 0-2.63 4.31c-.12.362-.12.752 0 1.114 1.489 4.467 5.704 7.69 10.675 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 0 1 6.75 12Z" />
-                </svg>
+			</svg>
         </button>
         <input type="password" id="password_input_change" placeholder="Password" required class="input_field" />
     </div>
@@ -919,7 +884,7 @@ async function replace_all_templates(request, response, state, override) {
                 <path fill-rule="evenodd" d="M15.75 1.5a6.75 6.75 0 0 0-6.651 7.906c.067.39-.032.717-.221.906l-6.5 6.499a3 3 0 0 0-.878 2.121v2.818c0 .414.336.75.75.75H6a.75.75 0 0 0 .75-.75v-1.5h1.5A.75.75 0 0 0 9 19.5V18h1.5a.75.75 0 0 0 .53-.22l2.658-2.658c.19-.189.517-.288.906-.22A6.75 6.75 0 1 0 15.75 1.5Zm0 3a.75.75 0 0 0 0 1.5A2.25 2.25 0 0 1 18 8.25a.75.75 0 0 0 1.5 0 3.75 3.75 0 0 0-3.75-3.75Z" clip-rule="evenodd" />
             </svg>
         </div>
-        <button onclick="toggle_eye(2)" id="password_eye2" class="password_eye" tabindex="-1">
+        <button onclick="toggle_eye(2)" id="password_eye2_settings" class="password_eye" tabindex="-1">
             <svg class="w-6 h-6 text-gray-500 justify-center" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
                 <path d="M3.53 2.47a.75.75 0 0 0-1.06 1.06l18 18a.75.75 0 1 0 1.06-1.06l-18-18ZM22.676 12.553a11.249 11.249 0 0 1-2.631 4.31l-3.099-3.099a5.25 5.25 0 0 0-6.71-6.71L7.759 4.577a11.217 11.217 0 0 1 4.242-.827c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113Z" />
                 <path d="M15.75 12c0 .18-.013.357-.037.53l-4.244-4.243A3.75 3.75 0 0 1 15.75 12ZM12.53 15.713l-4.243-4.244a3.75 3.75 0 0 0 4.244 4.243Z" />
@@ -944,23 +909,41 @@ async function replace_all_templates(request, response, state, override) {
 	const settings_html_user_profile_credential_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_credential_string);
 
 	
-	const settings_html_user_profile_avatar_string = `<div id="useravatar_div" class="hidden"><div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>
-	<div class="to-[#d16e1d] from-[#e0d35f] bg-gradient-to-br rounded-lg">
-        <label class="pl-2 block mb-2 font-medium text-gray-900 text-2xl" for="file_input">Upload file</label>
-        <input class="block w-full text-sm text-gray-900 border border-[#e0d35f] to-[#d16e1d] from-[#e0d35f] bg-gradient-to-br  rounded-lg cursor-pointer" id="file_input" type="file">
-    </div>
-    <div class="flex mt-12 gap-4 w-full">
-        <a class="flex-1">
-            <button onclick="change_avatar()" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
-                <span class="font-bold text-lg">Submit</span>
-            </button>
-        </a>
-        <a href="/settings/user" class="flex-1" data-link>
-            <button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
-                <span class="font-bold text-lg">Back</span>
-            </button>
-        </a>
-    </div></div></div></div></div>
+	// <input class="block w-full text-sm text-gray-900 border border-[#e0d35f] to-[#d16e1d] from-[#e0d35f] bg-gradient-to-br  rounded-lg cursor-pointer" id="file_input" type="file" src="{{profile_picture}}">
+	const settings_html_user_profile_avatar_string = `
+	<div id="useravatar_div" class="hidden">
+		<div class="min-h-screen flex items-center justify-center px-4 py-10">
+			<div class="field">
+				<div>
+					<div class="to-[#d16e1d] from-[#e0d35f] bg-gradient-to-br rounded-lg">
+						<label class="pl-2 block mb-2 font-bold text-gray-900 text-3xl text-center" for="file_input">Upload Avatar</label>
+						<div class="flex items-center justify-center w-full">
+							<label for="dropzone-file" class="flex flex-col items-center justify-center w-full h-64 border-2 border-[#924d14] hover:border-[#000000] border-solid rounded-lg cursor-pointer bg-gradient-to-br hover:to-[#ad5c19] hover:from-[#b4aa4c]">
+								<div class="flex flex-col items-center justify-center pt-5 pb-6">
+									<svg class="w-4/5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+										<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+									</svg>
+								</div>
+								<input id="dropzone-file" type="file" class="hidden" />
+							</label>
+						</div>
+					</div>
+					<div class="flex mt-6 gap-4 w-full">
+						<a class="flex-1">
+							<button onclick="change_avatar()" class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
+								<span class="font-bold text-lg">Submit</span>
+							</button>
+						</a>
+						<a href="/settings/user" class="flex-1" data-link>
+							<button class="flex items-center gap-4 bg-gradient-to-br to-[#d1651d] to-85% from-[#d1891d] border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">
+								<span class="font-bold text-lg">Back</span>
+							</button>
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 	`;
 	const settings_html_user_profile_avatar_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_avatar_string);
 
@@ -973,12 +956,12 @@ async function replace_all_templates(request, response, state, override) {
 	play_main +=   '<div class="min-h-screen flex items-center justify-center px-4 py-10">';
 
 	play_main +=     '<div id="game-main-container" class="field">';
-
+	play_main +=	 '<span class="text-4xl font-bold text-center bg truncate text-white mb-8">Choose your preferred Game</span>'
 	play_main +=     '<div id="main-menu">';
 	play_main +=       '<div class="flex flex-col gap-6 mt-6">';
-	play_main +=         '<a class="buttons"><button class="block w-full mb-6 mt-6" id="sp-vs-pve-btn"><span class="button_text pointer-events-none">PVE</span></button></a>';
-	play_main +=         '<a class="buttons"><button class="block w-full mb-6 mt-6" id="one-vs-one-btn"><span class="button_text pointer-events-none">1v1</span></button></a>';
-	play_main +=         '<a class="buttons"><button class="block w-full mb-6 mt-6" id="tournament-btn"><span class="button_text pointer-events-none">Tournament</span></button></a>';
+	play_main +=         '<a class="buttons"><button class="block w-full pb-6 pt-6 h-full" id="sp-vs-pve-btn"><span class="button_text pointer-events-none">PVE</span></button></a>';
+	play_main +=         '<a class="buttons"><button class="block w-full pb-6 pt-6" id="one-vs-one-btn"><span class="button_text pointer-events-none">1v1</span></button></a>';
+	play_main +=         '<a class="buttons"><button class="block w-full pb-6 pt-6" id="tournament-btn"><span class="button_text pointer-events-none">Tournament</span></button></a>';
 	play_main +=         '<a href="/" class="buttons" data-link><button class="block w-full mb-6 mt-6"><span class="button_text pointer-events-none">Back</span></button></a>';
 	play_main +=       '</div>';
 	play_main +=     '</div>';
@@ -1078,7 +1061,9 @@ async function replace_all_templates(request, response, state, override) {
 		throw new Error("Token is not defined!");
 	const user_decrypted = await modules.get_jwt(token);
 	const check_user = await users_db.get_users_value('self', user_decrypted.userid);
+	const check_settings = await settings_db.get_settings_value('self', user_decrypted.userid);
 	index_html = index_html.replace("{{userid}}", check_user.username.toString());
+	index_html = index_html.replace("{{profile_picture}}", check_settings.pfp.toString());
 	return index_html_raw.replace("{{replace}}", index_html.toString());
 }
 

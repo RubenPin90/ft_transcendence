@@ -2,20 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-.form {
-    @apply rounded-xl border-solid border-2 border-violet-800 px-14 py-3 text-black text-center
-}
-
-.error_input {
-    @apply rounded-xl border-solid border-4 border-red-900 px-14 py-3 text-black text-center
-}
-
 .background {
     @apply h-screen w-screen bg-gradient-to-br from-[#000766] via-black to-[#5e2669] relative
-}
-
-.bubble {
-    @apply absolute bg-gradient-to-br shadow-2xl shadow-red-950 z-0 rounded-full
 }
 
 .trash_enable {
@@ -52,10 +40,6 @@
 
 .button_text {
     @apply font-bold text-3xl
-}
-
-.number_input {
-    @apply font-bold w-14 h-20 text-center bg-transparent border-b-4 text-white text-6xl
 }
 
 .field_error {
@@ -100,17 +84,12 @@
 
 /* Grigorii */
 /* Tournament */
-
-.full-btn {
-    @apply w-full h-[100px] mb-8 text-base border-black border-solid border-2
-}
-
 .t-card {
     @apply flex justify-between rounded-lg items-center border-2 border-solid border-black p-6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]
 }
 
 .t-card .join-btn {
-    @apply w-[120px] h-[60px] ml-4 border-2 rounded-lg border-solid border-black bg-[#7e3a8b] cursor-pointer text-white
+    @apply w-32 h-16 ml-4 border-2 rounded-lg border-solid border-black bg-[#7e3a8b] cursor-pointer text-white
 }
 
 .TLobby-row {
@@ -118,15 +97,11 @@
 }
 
 .t-status {
-    @apply inline-block w-4 h-4 rounded-full
+    @apply inline-block w-4 h-4 rounded-full align-middle
 }
 
 .t-name {
     @apply flex-1
-}
-
-.t-status {
-    @apply w-4 h-4 rounded-full
 }
 
 .green-dot {
@@ -137,14 +112,18 @@
     @apply w-3 h-3 rounded-full bg-[#f44336]
 }
 
+.green-dot {
+    @apply w-6 h-6 rounded-full inline-block ml-auto mr-2 bg-[#46c34b]
+}
+
+.red-dot {
+    @apply w-6 h-6 rounded-full inline-block ml-auto mr-2 relative bg-[#e43f3f]
+}
+
 
 /* Bracked */
 .bracket-overlay {
-    @apply fixed inset-0 z-[9999] flex gap-8 p-8 overflow-auto bg-[#000000e6] text-white font-sans
-}
-
-.round-col {
-    @apply flex flex-col gap-4
+    @apply fixed inset-0 z-50 flex gap-8 p-8 overflow-auto bg-[#000000e6] text-white font-sans
 }
 
 .match-card {
@@ -157,34 +136,7 @@
 
 
 /* STYLE */
-
-.full-btn {
-    @apply border-2 border-black bg-white cursor-pointer hover:bg-[#f1f1f1]
-}
-
-.square-btn {
-    @apply border-2 border-black bg-white cursor-pointer w-36 h-16 hover:bg-[#f1f1f1]
-}
-
-.green-dot {
-    @apply w-6 h-6 rounded-full inline-block ml-auto mr-2 bg-[#46c34b]
-}
-
-.red-dot {
-    @apply w-6 h-6 rounded-full inline-block ml-auto mr-2 relative bg-[#e43f3f] after:text-white after:text-base after:font-bold after:absolute after:inset-0 after:grid after:place-items-center
-}
-
 .TLobby-row {
     @apply flex justify-between items-center border-t-2 border-black px-4 py-3 font-semibold uppercase
 }
 
-
-
-
-.code-box {
-    @apply max-w-96 h-[70px] mx-auto flex border-2 border-black
-}
-
-.t-status {
-    @apply inline-block w-3 h-3 rounded-full align-middle
-}

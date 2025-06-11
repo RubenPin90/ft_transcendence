@@ -149,6 +149,9 @@ async function show_pending_requests(userid){
         console.error(`Error in show_pending_requests: ${err}`);
         return null;
     } finally {
+        if (html == ''){
+            return '<span>No current requests</span>';
+        }
         await db.close();
         return html;
     }
