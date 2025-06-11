@@ -47,11 +47,7 @@ on('welcome', (msg) => {
 });
 
 on('error', (msg) => {
-  const banner          = document.getElementById('error-banner')!;
-  banner.textContent    = msg.payload.message;
-  banner.classList.remove('hidden');
-  banner.classList.add('block');
-  // banner.style.display  = 'block';
+  console.error(`Error: ${msg}`);
 });
 
 
@@ -73,7 +69,6 @@ on<'matchAssigned'>('matchAssigned', (msg) => {
   const rival        = players.find(p => p.id !== myId);
   if (!me || !rival) return;
 
-  // console.log('[matchAssigned] navigating to game:', matchId, players);
   localStorage.setItem('currentGameId', matchId);
   currentRoomId        = matchId;
   currentTournamentId  = tournamentId;
@@ -92,7 +87,6 @@ on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
     tournamentId: string;
     rounds: MatchStub[][] | MatchStub[];
   };
-  console.log('[tournamentBracketMsg] received:', tournamentId, rounds);
 
   currentTournamentId = tournamentId;
   const normalized = Array.isArray(rounds[0])
@@ -101,7 +95,6 @@ on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
 
   await new Promise(r => setTimeout(r, 700));
 
-  // pick the upcoming match (in the last round):
   const lastRound  = normalized[normalized.length - 1];
   const nextMatch = lastRound.find(
     m => m.players.filter(p => p && !('pendingMatchId' in p)).length === 2
@@ -120,7 +113,6 @@ on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
     });
   }
 
-  // your existing “first round” logic
   if (isFirstRound) {
     const firstRound = normalized[0];
     const firstMatch = firstRound.find(
@@ -206,7 +198,6 @@ on<'eliminated'>('eliminated', (msg) => {
   alert('You have been eliminated from the tournament 🏳️');
   const TLobbySocket = getSocket();
   const TLobby = getCurrentTLobby();
-  // console.log('Leaving tournament in eliminated:', TLobby?.id);
   if (TLobby) {
     TLobbySocket.send(JSON.stringify({
       type: 'leaveTournament',
@@ -226,7 +217,6 @@ on<'eliminated'>('eliminated', (msg) => {
 
 on<'roundStarted'>('roundStarted', msg => {
   const { roundNumber } = msg.payload;
-  // console.log(`[play.ts] Round ${roundNumber} started.`);
   navigate(`/tournament/round${roundNumber}`);
 });
 
@@ -294,7 +284,6 @@ function joinByCodeWithSocket(code?: string) {
 }
 
 setOnGameEnd((winnerId: string) => {
-  // console.log('[play.ts] Game ended – winner:', winnerId);
 
   teardownInput?.();
   teardownInput = null;
@@ -311,7 +300,6 @@ setOnGameEnd((winnerId: string) => {
     alert('Game over. You lost.');
   }
   if (!currentTournamentId) {
-    // console.log('[play.ts] No tournament active, stopping game');
     navigate('/play');
     return;
   }
@@ -331,13 +319,10 @@ let wasInGame = false;
 export let lastPath: string | null = null;
 
 function route() {
-  //added this to if the player changes url it replaces it with normal field instead of the wide game_field (Enes)
   const main_div = document.getElementById('game-main-container')!.classList.replace('game_field', 'field');
   
   const TLobbySocket = getSocket();
   const path = window.location.pathname;
-  // console.log('[route] current path:', path);
-  // console.log('lastPath:', lastPath);
 
   if (lastPath?.startsWith('/tournament/') && !path.startsWith('/tournament')) {
     const TLobby = getCurrentTLobby();
@@ -353,7 +338,6 @@ function route() {
   }
 
   if (path === '/matchmaking' && lastPath !== '/play') {
-    // console.log('[route] blocked direct /matchmaking; redirecting to /play');
     window.history.replaceState(null, '', '/play');
     return route();
   }
@@ -362,7 +346,6 @@ function route() {
 
   if ((path === '/tournament' && lastPath !== '/play') || (path === '/tournament' && lastPath?.startsWith('/tournament/'))) {
     const TLobby = getCurrentTLobby();
-    // console.log('Leaving tournament in buttons:', TLobby?.id);
     if (TLobby) {
       TLobbySocket.send(JSON.stringify({
         type: 'leaveTournament',
@@ -385,7 +368,6 @@ function route() {
       return;
     }
     else{
-      // console.log('[route] blocked direct /tournament; redirecting to /play');
       window.history.replaceState(null, '', '/play');
     }
     return route();
@@ -394,7 +376,6 @@ function route() {
   if (GAME_RE.test(path)) {
     const mode = path.split('/')[2];
     if (mode === '1v1' && lastPath !== '/matchmaking') {
-      // console.log('[route] blocked direct /game/1v1; redirecting to /play');
       window.history.replaceState(null, '', '/play');
       return route();
     }
@@ -410,7 +391,6 @@ function route() {
     const roomId = localStorage.getItem('currentGameId');
     const userId = localStorage.getItem('playerId');
     if (roomId && userId) {
-      // console.log('[route] Detected leaving /game, sending leaveGame');
       send({
         type: 'leaveGame',
         payload: { roomId, userId }
@@ -429,7 +409,6 @@ function route() {
     if (overlay) {
       overlay.classList.add('block');
       overlay.classList.remove('hidden');
-      // overlay.style.display = 'block';
     }
 
     let hdr = document.getElementById('round-header') as HTMLElement | null;
@@ -463,7 +442,6 @@ function route() {
     (document.getElementById('game-container') as HTMLElement)!.classList.add('block');
     (document.getElementById('game-container') as HTMLElement)!.classList.remove('hidden');
     const mode = path.split('/')[2] || 'pve';
-    // console.log(`[play.ts] Entering game mode: ${mode}`);
 
     if (currentMode && currentMode !== mode) {
       stopGame(); 
@@ -524,7 +502,6 @@ function showGameContainerAndStart(): void {
 
   cont.classList.add('block');
   cont.classList.remove('hidden');
-  // cont.style.display = 'block';
   initGameCanvas();   
   startGame('1v1');        
   teardownInput = setupInputHandlers();
@@ -533,7 +510,6 @@ function showGameContainerAndStart(): void {
 export function check() {
   const path = window.location.pathname;
   if (path === '/play') {
-    console.log('[play.ts] Detected /play, setting up buttons and handlers');
     lastPath = path;
     currentTournamentId = null;
     isFirstRound = true;

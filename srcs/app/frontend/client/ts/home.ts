@@ -34,15 +34,9 @@ async function Log_out() {
         console.error("Error on logout:", err);
     }
 
-    // window.location.replace('/login');
-    // history.pushState(null, document.title, location.href);
     history.replaceState(null, '', '/login');
 }
 
 async function Delete_cookie(name : string) {
     document.cookie = name  + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
 }
-
-// window.addEventListener('DOMContentLoaded', () => {
-//     document.getElementById('logout-btn')?.addEventListener('click', Logout);
-// });

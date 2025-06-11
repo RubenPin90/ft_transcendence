@@ -5,7 +5,6 @@ import { promises as fs } from 'fs';
 
 const max_loop_size = 1000000000;
 
-// Tested: All working
 async function get_settings_value(search_value, value) {
     const valid_values = ['password', 'pfp', 'MFA', 'email', 'lang', 'google', 'github', 'self'];
     if (!valid_values.includes(search_value))
@@ -29,7 +28,6 @@ async function get_settings_value(search_value, value) {
     }
 }
 
-// Tested: all working
 async function get_settings() {
     const db = await open({
         filename: './database/db.sqlite',
@@ -47,7 +45,6 @@ async function get_settings() {
     }
 }
 
-// Not tested: But working propperly so far
 async function create_settings_value(password, pfp, mfa, email, lang, google, github) {
     const db = await open({
         filename: './database/db.sqlite',
@@ -130,7 +127,6 @@ async function create_settings_value(password, pfp, mfa, email, lang, google, gi
     }
 }
 
-// Tested: all working
 async function update_settings_value(search_value, value, self) {
     const valid_values = ['pfp', 'password', 'mfa', 'email', 'lang', 'google', 'github'];
     if (!valid_values.includes(search_value))

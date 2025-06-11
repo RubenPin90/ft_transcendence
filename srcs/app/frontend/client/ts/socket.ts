@@ -1,5 +1,3 @@
-// socket.ts – singleton WebSocket + type-safe message bus
-
 import type { GameState } from './game.js';
 import type { TLobbyState, TourneySummary } from './types.js';
 import { check_cookie_fe, check_cookies_expire } from './redirect.js';
@@ -52,13 +50,10 @@ function createSocket(): WebSocket {
 
   ws.addEventListener('message', ev => {
     const data: ServerMessage = JSON.parse(ev.data);
-    // if (data.type !== 'tournamentList' && data.type !== 'state' && data.type !== 'tLobbyState')
-    //   console.log(`[socket] ← ${data.type}`, data);
     listeners[data.type]?.forEach(cb => cb(data as any));
   });
 
   ws.addEventListener('close', () => {
-    // console.log('close socket arrived');
     if(localStorage.getItem('playerId'))
       localStorage.removeItem('playerId');
     if(localStorage.getItem('currentRoomId'))

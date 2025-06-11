@@ -24,8 +24,7 @@ export async function create_otc() {
         const qrcodeDiv = document.getElementById('mfa');
         const qrcodeButtonDiv = document.getElementById('mfa-button');
         if (qrcodeDiv && qrcodeButtonDiv) {
-            qrcodeDiv.innerHTML = `<img class="mx-auto mb-4" src=${data.qrCodeUrl}></p>`; ////////
-            // qrcodeButtonDiv.innerHTML = '<input id="Code" name="Code" placeholder="Code"></label> <button onclick="verify_code()">Verify</button> <a><button onclick="render_mfa()">Back</button></a>';
+            qrcodeDiv.innerHTML = `<img class="mx-auto mb-4" src=${data.qrCodeUrl}></p>`;
             qrcodeButtonDiv.innerHTML = `
             <input id="Code" class="input_field2" name="Code" placeholder="Code">
             <div class="flex mt-2 gap-4 w-full">
@@ -50,7 +49,6 @@ export async function create_otc() {
         input_field.focus();
         input_field.select();
     } catch (error) {
-        // console.error('Fehler bei create_otc:', error.message);
         throw error;
     }
 }
@@ -58,7 +56,6 @@ export async function create_otc() {
 async function verify_otc() {
     const code = document.getElementById('Code') as HTMLInputElement;
     if (!code){
-        alert("code not found");
         return;
     }
     code.focus();
@@ -67,7 +64,6 @@ async function verify_otc() {
         alert("Error. Input cant be empty");
         return;
     }
-    //console.log(code.value);
     const response = await fetch('/settings/mfa', {
         method: 'POST',
         headers: {
@@ -86,15 +82,12 @@ async function verify_otc() {
             alert("Error: 2FA code invalid");
         else
             render_mfa();
-        //     clear window and replace with nice UI Box. Client success
     } catch (jsonError) {
         throw new Error('Fehler beim Parsen der JSON-Antwort');
     }
-    //console.log(data);
 }
 
 
-// THIS IS COPIED FROM CHATGPT. CREATE OWN FRONTEND UI
 async function verify_custom_code() {
     const qrcodeDiv = document.getElementById('mfa');
     const inputField = document.getElementById('Code') as HTMLInputElement;
@@ -102,7 +95,6 @@ async function verify_custom_code() {
         return;
 
     const codeValue = inputField.value;
-    //console.log("Sende Code zur Verifizierung:", codeValue);
 
     try {
         const response = await fetch('/settings/mfa', {
@@ -134,9 +126,7 @@ async function verify_custom_code() {
 
 
 
-// THIS IS COPIED FROM CHATGPT. CREATE OWN FRONTEND UI
 async function create_custom_code() {
-    //console.log("create_custom_code gestartet");
     
     const qrcodeDiv = document.getElementById('mfa');
     const qrcodeButtonDiv = document.getElementById('mfa-button') as HTMLDivElement;
@@ -164,23 +154,21 @@ async function create_custom_code() {
                 </a>
             </div>
         `;
-            // <button id="nextButton">Next</button>
-            // <button onclick="render_mfa()">Back</button>
         const inputField = document.getElementById('Code') as HTMLInputElement;
-            if (!inputField) return;
+            if (!inputField)
+                return;
         inputField.focus();
         inputField.select();
         const nextButton = document.getElementById('nextButton') as HTMLButtonElement;
 
-        // Beim ersten Klick sendet der Button den Code und wechselt zur Verifikation
         nextButton.addEventListener('click', async function firstClick() {
             const inputField = document.getElementById('Code') as HTMLInputElement;
-            if (!inputField) return;
+            if (!inputField)
+                return;
 
             const codeValue = inputField.value;
             inputField.focus();
             inputField.select();
-            //console.log("Sende Code:", codeValue);
 
             try {
                 const response = await fetch('/settings/mfa', {
@@ -196,7 +184,6 @@ async function create_custom_code() {
 
                 const data = await response.json();
                 if (data.Response === "success") {
-                    // qrcodeDiv.innerHTML = '<h2>Verify your 2FA custom 6 diggit code</h2>';
                     qrcodeDiv.innerHTML = '<h1 class="text-4xl font-bold text-center bg mb-4 text-white">Verify your 2FA custom 6 diggit code</h1>';
                     inputField.value = "";
                     nextButton.removeEventListener('click', firstClick);
@@ -212,18 +199,12 @@ async function create_custom_code() {
     }
 }
 
-// Copied from a function that used chatgpt. Rebuild pls
 export async function verifyEmail() {
-    // console.log("aaaaaaaAAaaaaaAAAAAAAAaaaAAAAAAAAAAAAAAAaaaAAAAaaaAAAAaaaAAAaaAAAaaaAaaaaAAaaaaAAAAaAAAaa");
     const code2 = document.getElementById('Code') as HTMLInputElement;
-    // console.log(code2);
     if (!code2){
         return;
     }
     const code = code2.value;
-    //console.log("Verification code:", code);
-    
-    // console.log("LOL");
     try {
         const response = await fetch("/settings/mfa", {
             method: 'POST',
@@ -231,11 +212,9 @@ export async function verifyEmail() {
             body: JSON.stringify({ "Function": "verify_email", "Code": code })
         });
         
-        // console.log("LOL");
         if (!response.ok) {
             throw new Error(`HTTP Fehler! Status: ${response.status}`);
         }
-        // console.log("LOL");
 
         const data = await response.json();
         if (data.Response === "success") {
@@ -263,19 +242,13 @@ async function create_email() {
     try {
         data = await response.json();
         if (data.Response === "NoEmail")
-            alert("no email set"); // Here an alert that there is email set. then start a promt to let user input a mail
+            alert("no email set");
         else if (data.Response === "success") {
             const emailDiv = document.getElementById('mfa');
             const emailInputDiv = document.getElementById('mfa-button');
             if (!emailDiv || !emailInputDiv){
                 return;
             }
-            // emailDiv.innerHTML = '<h2>Verify your email code</h2>';
-
-
-            // <input type="text" id="email-code" placeholder="Code"></input>
-            // <button onclick="verifyEmail()">Verify</button>
-            // <button onclick="render_mfa()">Back</button>
             emailDiv.innerHTML = '<h1 class="text-4xl font-bold text-center bg mb-4 text-white">Verify your email code</h1>';
             emailInputDiv.innerHTML = `
                 <input id="Code" class="input_field2" name="Code" placeholder="Code">
@@ -368,7 +341,7 @@ async function change_language() {
         if (!full_page)
             return;
         if (!lang){
-            alert("Please enter a language"); //TODO MAKE IT MORE APPEALING WITH CSS
+            alert("Please enter a language");
             return;
         }
         const response = await fetch('/settings/user', {
@@ -380,7 +353,6 @@ async function change_language() {
             body: JSON.stringify({'Function': 'change_language', 'Lang': lang, 'Page': full_page.innerHTML}),
         });
         var lang_data = await response.json();
-        console.log(lang_data.Content);
         if (!lang_data)
             return;
         if (lang_data.Response == 'success') {
@@ -392,14 +364,6 @@ async function change_language() {
         alert("error with update");
     };
 }
-
-// async function logout() {
-//     delete_cookie("token");
-// }
-
-// async function delete_cookie(name : string) {
-//     document.cookie = name  + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-// }
 
 (window as any).create_otc = create_otc;
 (window as any).verify_otc = verify_otc;

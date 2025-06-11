@@ -73,7 +73,7 @@ async function change_user(){
     try{
         const usernameValue = usernameField.value;
         if (!usernameValue){
-            alert("please enter a username"); //TODO MAKE IT MORE APPEALING WITH CSS
+            alert("please enter a username");
             return;
         }
         const response = await fetch('/update_user', {

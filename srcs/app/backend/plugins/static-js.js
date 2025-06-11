@@ -1,4 +1,3 @@
-// plugins/static-js.js
 import fp from 'fastify-plugin'
 import fastifyStatic from '@fastify/static'
 import path from 'path'

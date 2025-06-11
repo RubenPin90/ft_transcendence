@@ -1,7 +1,6 @@
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 
-// Tested: all working//
 async function get_friends() {
     const db = await open({
         filename: './database/db.sqlite',

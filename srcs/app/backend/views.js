@@ -25,11 +25,11 @@ async function login(request, response) {
         const parsed = await utils.process_login(request, response);
         if (!parsed || parsed === undefined || parsed < 0)
             return true;
-        const token = await modules.create_jwt(parsed.settings.self, '1h');
-        const lang = await modules.create_jwt(parsed.settings.lang, '1h');
+        const token = await modules.create_jwt(parsed.settings.self, '10h');
+        const lang = await modules.create_jwt(parsed.settings.lang, '10h');
 
-        modules.set_cookie(response, 'token', token, 3600);
-        modules.set_cookie(response, 'lang', lang, 3600);
+        modules.set_cookie(response, 'token', token, 36000);
+        modules.set_cookie(response, 'lang', lang, 36000);
 
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'success', "Settings": parsed.settings, "Mfa": parsed.mfa, "Content": null})
         return true;
@@ -73,11 +73,11 @@ async function register(request, response) {
             response.code(500).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Failed creating table in user', "Content": null});
             return true;
         }
-        const token = await modules.create_jwt(settings.self, '1h');
-        const lang = await modules.create_jwt('en', '1h');
+        const token = await modules.create_jwt(settings.self, '10h');
+        const lang = await modules.create_jwt('en', '10h');
         
-        modules.set_cookie(response, 'token', token, 3600);
-        modules.set_cookie(response, 'lang', lang, 3600);
+        modules.set_cookie(response, 'token', token, 36000);
+        modules.set_cookie(response, 'lang', lang, 36000);
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": null });
         return true;
     }
@@ -99,15 +99,15 @@ async function home(request, response) {
         const google_return = await encrypt_google(code);
         if (google_return < 0)
             return `1_${google_return}`;
-        modules.set_cookie(response, 'token', google_return.token, 3600);
-        modules.set_cookie(response, 'lang', google_return.lang, 3600);
+        modules.set_cookie(response, 'token', google_return.token, 36000);
+        modules.set_cookie(response, 'lang', google_return.lang, 36000);
         response.redirect("https://localhost/login");
     } else if (request.url !== '/' && request.url !== '/login') {
         const github_return = await utils.encrypt_github(request, response);
         if (github_return < 0)
             return `2_${github_return}`;
-        modules.set_cookie(response, 'token', github_return.token, 3600);
-        modules.set_cookie(response, 'lang', github_return.lang, 3600);
+        modules.set_cookie(response, 'token', github_return.token, 36000);
+        modules.set_cookie(response, 'lang', github_return.lang, 36000);
         response.redirect("https://localhost/login");
     }
     const check = await send.send_html('index.html', response, 200, async (data) => {
@@ -196,15 +196,15 @@ async function user(request, response, userid, lang) {
         if (data.Function == "change_language") {
             const new_lang = data.Lang;
             const old_lang = lang;
-            const new_lang_decrypted = await modules.create_jwt(new_lang, '1h');
-            modules.set_cookie(response, 'lang', new_lang_decrypted, 3600);
+            const new_lang_decrypted = await modules.create_jwt(new_lang, '10h');
+            modules.set_cookie(response, 'lang', new_lang_decrypted, 36000);
             await settings_db.update_settings_value('lang', new_lang, userid);
             const new_page = await translator.cycle_translations(data.Page, new_lang, old_lang);
-            response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'success', 'Content': new_page}); // 'Content': data.Page
+            response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'success', 'Content': new_page});
             return true;
         }
         if (data.Function == "change_language_site") {
-            response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'success', 'Content': data.Page}); // 'Content': data.Page
+            response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'success', 'Content': data.Page});
             return true;
         }
     }
@@ -266,15 +266,10 @@ async function profile(request, response) {
         inner = inner.replace('{{username}}', user.username);
         inner = inner.replace('{{email}}', settings.email);
         inner = inner.replace('{{picture}}', settings.pfp);
-        // inner = inner.replace('{{status}}', ()=> {if (user.status === 1) return 'online'; else return 'offline'});
-        // if (await friends_request.get_friend_request_value('receiver_id', userid) != undefined)
         inner = inner.replace('{{Friends}}', await friends_db.show_accepted_friends(userid))
         inner = inner.replace('{{winns}}', await game_db.get_won(userid));
         inner = inner.replace('{{losses}}', await game_db.get_lost(userid));
         inner = inner.replace('{{table_informations}}', await game_db.get_played_matches(userid));
-        // inner = inner.replace('{{table_informations}}', await game_db.get_played_matches(userid));
-        // else
-            // inner = inner.replace('{{Friends}}', '<span>No friends currenlty :\'( you lonely MF</span>');
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": inner});
         return true;
     }
@@ -335,7 +330,7 @@ async function update_settings(request, response) {
         decoded = await modules.get_jwt(token);
     }
     catch (err) {
-        return // Here was a redirect(response, '/login', 302);
+        return;
     }
     const userid = decoded.userid;
 
@@ -368,7 +363,6 @@ async function update_user(request, response) {
     
     const trans_file = await fs.readFile('./translations.json', 'utf8');
     const forbidden_names = ['Login', 'Register', 'Settings', 'Logout', 'Sign in with Google', 'Already have an account? Log in', 'Sign up with Github', 'Sign up with Google', 'Sign in with Github', 'Dont have an account? Create one', '404 - Page Not Found', 'The page you were looking for does not exist', 'Upload file', 'Submit', 'Repeat Password', 'Password', 'E-Mail', 'Play', 'Profile', 'Log Out', 'Sign up', 'PvE', '1v1 Mathmaking', 'Tournament', 'Tournaments', 'Search for an opponent', 'Searching for an opponent', 'Cancel Search', 'Join by code', 'Join', 'Create Tournament', 'Waiting for players', 'Copy', 'START', 'READY', 'Leave', 'Customization', 'Username', 'email', 'win/loss', 'elo', 'status', 'Match History', 'opponent', 'final score', 'date', 'Change username', 'Change login info', 'Change avatar', 'Welcome home user', 'Welcome', 'Change language', 'Choose a default authentication method', 'Disable email authentication', 'Create custom 6 diggit code', 'Create OTC', 'Recreate custom 6 diggit code', 'Remove custom 6 digit code', 'Regenerate OTC', 'Remove OTC', 'Otc', 'Custom', 'Enable email authentication', 'Change User Information', 'Choose your main language', 'Next', 'Create your 2FA custom', '6 diggit code', 'Create your 2FA custom 6 diggit code', 'Verify your 2FA custom 6 diggit code', 'Verify', 'Input your Email code', 'Input your OTC code from your authenticator app', 'Input your Custom code', 'Friends', 'Blocked Users', 'MFA', 'User', 'Home', 'Back', 'Delete account', 'Change login data'];
-    // const forbidden_names_translated = 
     if (data === null || data === undefined){
         response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid data'});
         return true;
@@ -387,7 +381,7 @@ async function update_user(request, response) {
         decoded = await modules.get_jwt(token);
     }
     catch (err) {
-        return // Here was a redirect(response, '/login', 302);
+        return;
     }
 
     const userid = decoded.userid;
@@ -416,8 +410,6 @@ async function friends(request, response){
     if (request.method == 'POST') {
         const userid = valid_token.userid;
         var inner = request.body.innervalue;
-        // inner = await translator.cycle_translations(inner, decoded_lang);
-        // if (await friends_request.get_friend_request_value('self', userid) != undefined)
         inner = await friends_request.show_pending_requests(userid);
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": inner});
         return true;
@@ -571,8 +563,6 @@ async function play(request, response) {
         return await login(request, response);
     }
 
-    // const tokenIndex = keys.findIndex((key) => key === 'token');
-    // const token = values[tokenIndex];
     const token = values[keys.indexOf('token')];
     let decoded;
     try {

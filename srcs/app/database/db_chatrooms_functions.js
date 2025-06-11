@@ -18,7 +18,6 @@ async function get_chatrooms() {
     }
 }
 
-// Not tested
 async function get_chatrooms_value(search_value, value) {
     const valid_values = ['name', 'self'];
     if (!valid_values.includes(search_value))
@@ -42,7 +41,6 @@ async function get_chatrooms_value(search_value, value) {
     }
 }
 
-// Not tested
 async function create_chatrooms_value(name, self) {
     const db = await open({
         filename: './database/db.sqlite',
@@ -72,7 +70,6 @@ async function create_chatrooms_value(name, self) {
     }
 }
 
-// Not tested
 async function update_chatrooms_value(search_value, value, self) {
     const valid_values = ['name'];
     if (!valid_values.includes(search_value))
@@ -102,7 +99,6 @@ async function update_chatrooms_value(search_value, value, self) {
     }
 }
 
-// Tested: all working
 async function delete_chatrooms_value(self) {
     const db = await open({
         filename: './database/db.sqlite',

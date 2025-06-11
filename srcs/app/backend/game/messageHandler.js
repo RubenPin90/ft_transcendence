@@ -16,11 +16,6 @@ export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager)
     console.error('Invalid JSON message from client:', err);
     return;
   }
-  // if (data.type != 'movePaddle'){
-  //   console.log(`Received message from ${ws.userId}:`, data);
-  //   const temp = data.payload;
-  //   console.log(`Payload:`, temp);
-  // }
 
   switch (data.type) {
 
@@ -172,6 +167,6 @@ export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager)
       break;
     }
     default:
-      console.log('Unknown message type:', data.type);
+      console.error('Unknown message type:', data.type);
   }
 }

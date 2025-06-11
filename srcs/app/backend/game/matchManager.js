@@ -179,7 +179,6 @@ export class MatchManager extends EventEmitter {
     const pointsStr = JSON.stringify(room.scoreBoard);
     await update_match('points', pointsStr, room.roomId);
     await update_match('winner', winnerId, room.roomId);
-    // console.log(await show_matches());//print matches
   }
 
   async _endMatch(roomId, winnerId, reason = 'normal') {

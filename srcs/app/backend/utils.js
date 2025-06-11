@@ -95,12 +95,12 @@ async function encrypt_github(request) {
 		const lang_check = await settings_db.get_settings_value('self', userid);
 		if (lang_check === undefined) {
 			const check_user = await settings_db.get_settings_value("github", userid);
-			const userid_encode = await modules.create_jwt(check_user.self, '1h');
-			const lang_encode = await modules.create_jwt(check_user.lang, '1h');
+			const userid_encode = await modules.create_jwt(check_user.self, '10h');
+			const lang_encode = await modules.create_jwt(check_user.lang, '10h');
 			return {"response": "success", "token": userid_encode, "lang": lang_encode};
 		} else {	
-			const userid_encode = await modules.create_jwt(lang_check.self, '1h');
-			const lang_encode = await modules.create_jwt(lang_check.lang, '1h');
+			const userid_encode = await modules.create_jwt(lang_check.self, '10h');
+			const lang_encode = await modules.create_jwt(lang_check.lang, '10h');
 			return {"response": "success", "token": userid_encode, "lang": lang_encode};
 		}
 	}
@@ -112,9 +112,9 @@ async function encrypt_github(request) {
 	const check_username = await users_db.create_users_value(0, username, userid);
 	if (check_username < 0)
 		return -10;
-	const lang_encode = await modules.create_jwt('en', '1h');
+	const lang_encode = await modules.create_jwt('en', '10h');
 	const lang_check = await settings_db.get_settings_value('self', userid);
-	const userid_encode = await modules.create_jwt(lang_check.self, '1h');
+	const userid_encode = await modules.create_jwt(lang_check.self, '10h');
 	return {"response": "success", "token": userid_encode, "lang": lang_encode};
 }
 
@@ -148,12 +148,12 @@ async function encrypt_google(request) {
 			const lang_check = await settings_db.get_settings_value('self', userid);
 			if (lang_check === undefined) {
 				const check_user = await settings_db.get_settings_value("google", userid);
-				const userid_encode = await modules.create_jwt(check_user.self, '1h');
-				const lang_encode = await modules.create_jwt(check_user.lang, '1h');
+				const userid_encode = await modules.create_jwt(check_user.self, '10h');
+				const lang_encode = await modules.create_jwt(check_user.lang, '10h');
 				return {"response": "success", "token": userid_encode, "lang": lang_encode};
 			} else {
-				const userid_encode = await modules.create_jwt(lang_check.self, '1h');
-				const lang_encode = await modules.create_jwt(lang_check.lang, '1h');
+				const userid_encode = await modules.create_jwt(lang_check.self, '10h');
+				const lang_encode = await modules.create_jwt(lang_check.lang, '10h');
 				return {"response": "success", "token": userid_encode, "lang": lang_encode};
 			}
 		}
@@ -166,8 +166,8 @@ async function encrypt_google(request) {
 		if (!check_username || check_username === undefined || check_username < 0)
 			return -11;
 		const lang_check = await settings_db.get_settings_value('self', userid);
-		const userid_encode = await modules.create_jwt(lang_check.self, '1h');
-		const lang_encode = await modules.create_jwt('en', '1h');
+		const userid_encode = await modules.create_jwt(lang_check.self, '10h');
+		const lang_encode = await modules.create_jwt('en', '10h');
 		return {"response": "success", "token": userid_encode, "lang": lang_encode};
 	} catch (error) {
 		console.error("Error during Google OAuth:", error);
@@ -222,11 +222,6 @@ async function process_login(request, response) {
 		response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'Password incorrect', "Content": null});
 		return -2;
 	}
-	// if (socketRegistry.has(check_settings.self))
-	// {
-	// 	response.code(401).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": 'User already logged in', "Content": null});
-	// 	return -3;
-	// }
 	const mfa = await mfa_db.get_mfa_value('self', check_settings.self);
 	if (!mfa || mfa === undefined || mfa < 0 || ((mfa.otc && mfa.otc.endsWith('_temp')) && (mfa.email && mfa.email.endsWith('_temp')) && (mfa.custom && mfa.custom.endsWith('_temp')) ))
 		return {'settings': check_settings, 'mfa': null};
@@ -269,7 +264,7 @@ function otc_secret(base32_secret) {
 	var secret;
 	try {
 		secret = {
-			base32: base32_secret, // custom secret to every user. 1: look in db if secret exists. 2: If no, create one and return it. If yes, return it.
+			base32: base32_secret,
 			otpauth_url: speakeasy.otpauthURL({
 				secret: base32_secret,
 				label: 'FT_Transendence',
@@ -282,7 +277,6 @@ function otc_secret(base32_secret) {
 	return secret;
 }
 
-// replace_data: {'Function': 'verify', 'Code': ${code}}
 async function verify_otc(request, response, replace_data, userid) {
 	const check_mfa = await mfa_db.get_mfa_value('self', userid);
 	var secret;
@@ -475,7 +469,6 @@ async function clear_settings_mfa(userid, search_value, response) {
 }
 
 
-// Ignore. dont know where to put tbh
 function DOM_text(row) {
 	var open_tag;
 	var open_tag_name;
@@ -638,9 +631,6 @@ async function replace_all_templates(request, response, state, override) {
 	settings_html_mfa_string +='<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
 	settings_html_mfa_string +='<span class="font-bold text-lg">Home</span>';
 	settings_html_mfa_string +='</button></a></div></div></div></div></div></div>';
-
-
-
 	const settings_html_mfa = settings_html_raw.replace("{{mfa-button}}", settings_html_mfa_string);
 
 	var settings_html_user_string = "";
@@ -669,9 +659,6 @@ async function replace_all_templates(request, response, state, override) {
 	var settings_html_user_select_language_string = "";
 	settings_html_user_select_language_string += '<div id="lang_div" class="hidden">';
 	settings_html_user_select_language_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
-
-
-
 	settings_html_user_select_language_string += '<div id="mfa-button" class="flex flex-col items-center w-full mx-auto">'
 	settings_html_user_select_language_string += '<label for="language" class="h-auto text-4xl font-bold text-center truncate text-white mb-4">Choose your main language</label>'
 	settings_html_user_select_language_string += '<form id="language" class="w-full mx-auto">'
@@ -810,11 +797,6 @@ async function replace_all_templates(request, response, state, override) {
                 <span class="button_text">Change avatar</span>
             </button>
         </a>
-		<a class="delete_button">
-			<button class="block w-full mb-4 mt-6" onclick="delete_account()">
-				<span class="button_text">Delete account</span>
-			</button>
-		</a>
     </div>
     <div class="flex mt-12 gap-4 w-full">
 		<a href="/settings" class="flex-1" data-link>
@@ -905,7 +887,6 @@ async function replace_all_templates(request, response, state, override) {
 	const settings_html_user_profile_credential_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_credential_string);
 
 	
-	// <input class="block w-full text-sm text-gray-900 border border-[#e0d35f] to-[#d16e1d] from-[#e0d35f] bg-gradient-to-br  rounded-lg cursor-pointer" id="file_input" type="file" src="{{profile_picture}}">
 	const settings_html_user_profile_avatar_string = `
 	<div id="useravatar_div" class="hidden">
 		<div class="min-h-screen flex items-center justify-center px-4 py-10">
@@ -945,12 +926,9 @@ async function replace_all_templates(request, response, state, override) {
 
 
 	const play_raw = await fs.readFile("./backend/templates/play.html", 'utf8');
-
 	let play_main = "";
-
 	play_main += '<div id="play_div" class="hidden">';
 	play_main +=   '<div class="min-h-screen flex items-center justify-center px-4 py-10">';
-
 	play_main +=     '<div id="game-main-container" class="field">';
 	play_main +=     '<div id="main-menu">';
 	play_main +=       '<div class="flex flex-col gap-6 mt-6">';
@@ -960,13 +938,10 @@ async function replace_all_templates(request, response, state, override) {
 	play_main +=         '<a href="/" class="buttons" data-link><button class="block w-full mb-6 mt-6"><span class="button_text pointer-events-none">Back</span></button></a>';
 	play_main +=       '</div>';
 	play_main +=     '</div>';
-
-	
 	play_main +=     '<div id="game-container" class="hidden">';
 	play_main +=       '<h2 id="game-mode-title"></h2>';
 	play_main +=       '<canvas id="game" width="800" height="600"></canvas>';
 	play_main +=     '</div>';
-	
 	play_main +=     '<div id="matchmaking_div" class="hidden">';
 	play_main +=       '<div id="matchmaking-page" class="flex flex-col w-full h-full justify-center items-center">';
 	play_main +=	     '<svg class="fuck_animation w-14 h-14 text-white mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">'
@@ -976,7 +951,6 @@ async function replace_all_templates(request, response, state, override) {
 	play_main +=         '<h2 class="text-white font-bold text-2xl">Searching for an opponent…</h2>';
 	play_main +=       '</div>';
 	play_main +=     '</div>';
-
 	play_main +=     '<div id="tournament-page" class="hidden">';
 	play_main +=       '<h2 class="text-center font-bold text-2xl mb-10 text-white">Tournaments</h2>';
 	play_main +=       '<div class="flex flex-col gap-6 mt-6">';
@@ -985,11 +959,6 @@ async function replace_all_templates(request, response, state, override) {
 	play_main +=	     '<a href="/play" class="buttons" data-link><button class="block w-full mb-6 mt-6"><span class="button_text pointer-events-none">Back</span></button></a>'
 	play_main +=       '</div>';
 	play_main +=     '</div>';
-
-
-
-
-
 	play_main +=     '<div id="t-lobby-page" class="hidden">';
 	play_main +=       '<h2 id="t-lobby-status" class="text-center text-2xl font-bold text-white mb-6">Waiting for players…</h2>';
 	play_main +=       '<div id="t-lobby-table" class="max-w-[620px] mx-auto mb-8 border-2 border-black bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] rounded-sm"></div>';
@@ -1004,9 +973,6 @@ async function replace_all_templates(request, response, state, override) {
 	play_main +=         '<a class="flex-1"><button id="t-leave-btn" class="w-1/3 h-20 mt-4 bg-gradient-to-br buttons_small_C border-black rounded-lg"><span class="font-bold text-lg pointer-events-none">Leave</span></button></a>';
 	play_main +=       '</div>';
 	play_main +=     '</div>';
-	
-	// play_main +=     '<div id="bracket-overlay" class="bracket-overlay"></div>';
-	
 	play_main +=     '<template id="match-card-tpl">';
 	play_main +=       '<div class="match-card">';
 	play_main +=         '<div class="p1"></div>';
@@ -1014,9 +980,8 @@ async function replace_all_templates(request, response, state, override) {
 	play_main +=         '<div class="p2"></div>';
 	play_main +=       '</div>';
 	play_main +=     '</template>';
-	
-	play_main +=   '</div>'; // end flex container
-	play_main += '</div>';   // end play_div	
+	play_main +=   '</div>';
+	play_main += '</div>';
 	play_main += '</div>'
 
 	const index_html_raw = await fs.readFile("./backend/templates/index.html", 'utf8')
@@ -1169,7 +1134,7 @@ async function get_data(request, response) {
 		return true;
 	} catch (err) {
       	console.error('Error:', err);
-		return false; //or false idk
+		return false;
     }
 }
 

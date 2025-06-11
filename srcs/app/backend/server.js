@@ -1,5 +1,3 @@
-// server.js
-
 import Fastify from 'fastify';
 import websocket from '@fastify/websocket';
 import fastifyCookie from '@fastify/cookie';
@@ -26,9 +24,7 @@ tournamentManager.matchManager = matchManager;
 matchManager.tournamentManager = tournamentManager;
 
 
-for (let i = 0; i < 3; i++) tournamentManager.createTournament(null, 'SERVER');
-
-setInterval(() => tournamentManager.broadcastTournamentUpdate(), 3000);
+setInterval(() => tournamentManager.broadcastTournamentUpdate(), 1000);
 
 const fastify = Fastify({ logger: false });
 
@@ -42,11 +38,9 @@ await fastify.register(fastifyStatic, {
 
 
 fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
-  // console.log('→ Incoming WS handshake on /ws/game from', req.ip);
   const ws = conn;
 
   const [keys, values] = modules.get_cookies(req);
-  // console.log('keys and values', keys, values);
   const user_encrypted = values[keys.indexOf("token")];
   const temp = await modules.get_jwt(user_encrypted);
   if (!temp || !temp.userid) {
@@ -55,8 +49,6 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
     return;
   } 
   const userId = String(temp.userid);
-  // console.log('userId.userId:', userId);
-  // console.log('🔑 ws token verified:', userId);
 
   const user_db = await users_db.get_users_value('self', userId);
   ws.userId        = userId;
@@ -64,7 +56,6 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
   ws.inGame        = false;
   ws.currentGameId = null;
   await users_db.update_users_value('status', 'online', userId);
-  //db_userId_status(userId, online)
 
   
   if (socketRegistry.has(userId))
@@ -73,7 +64,6 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
       socketRegistry.remove(userId);
       return;
     }
-    // console.log('🔌 ws authenticated:', userId);
     ws.send(JSON.stringify({ type: 'welcome', payload: { userId } }));
 
   socketRegistry.add(userId, ws);
@@ -84,7 +74,6 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
   });
 
   ws.on('close', async () => {
-    // console.log('❌ ws closed:', userId);
     await users_db.update_users_value('status', 'offline', userId);
     if (ws.inGame) matchManager.leaveRoom(ws.currentGameId, userId);
     tournamentManager.leaveTournament(userId);

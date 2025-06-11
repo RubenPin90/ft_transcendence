@@ -12,7 +12,6 @@ export function hideAllPages() {
 
   for (const id of pageIds) {
     const el = document.getElementById(id);
-    // if (el) el.style.display = 'none';
     if (el) el.classList.add('hidden');
   }
 }

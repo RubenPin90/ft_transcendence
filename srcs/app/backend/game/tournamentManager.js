@@ -315,7 +315,6 @@ export class TournamentManager {
           payload: { tournamentId, winnerId }
         }
       );
-      // console.log(`Tournament ${tournamentId} finished, winner: ${winnerId}`);
       this.leaveTournament(winnerId, tournamentId);
       delete this.tournaments[tournamentId];
       return;
@@ -347,9 +346,6 @@ export class TournamentManager {
     );
   
     const [p1, p2] = placeholder.players;
-    // if (p1 && !p1.pendingMatchId && p2 && !p2.pendingMatchId) {
-    //   this.createMatchRoom(tournamentId, placeholder.matchId, p1, p2);
-    // }
   
     const nextRoundFilled =
       roundIdx + 1 < tourney.rounds.length &&

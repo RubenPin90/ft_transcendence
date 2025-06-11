@@ -55,7 +55,6 @@ export function initGameCanvas(): void {
 
 export function startGame(mode: GameMode): void {
   ws = getSocket();
-  // console.log('[startGame] called, ws readyState:', ws?.readyState, 'mode:', mode);
   userId        = localStorage.getItem('playerId');
   currentRoomId = localStorage.getItem('currentGameId');
   if (!userId) {
@@ -69,7 +68,6 @@ export function startGame(mode: GameMode): void {
     if (searchingForMatch) return;
     searchingForMatch = true;
     const sendJoinQueue = () =>{
-      // console.log('[startGame] sending joinQueue for mode:', mode);
       send({ type: 'joinQueue', payload: { mode } });
     }
   
@@ -87,7 +85,6 @@ export function startGame(mode: GameMode): void {
       currentRoomId = msg.payload.gameId;
       userId        = msg.payload.userId;
       localStorage.setItem('currentGameId', currentRoomId);
-      // console.log(`Match ready: room=${currentRoomId}, user=${userId}`);
     };
     on('matchFound', matchFoundListener);
   }
@@ -114,8 +111,6 @@ export function startGame(mode: GameMode): void {
 export function stopGame(): void {
   searchingForMatch = false;
   if (ws && ws.readyState === WebSocket.OPEN && currentRoomId !== null) {
-    // const main_div = document.getElementById('game-main-container')!.classList.replace('game_field', 'field');
-    // alert("LEFT GAME");
     send({ type: 'leaveGame', payload: { roomId: currentRoomId, userId } });
   }
 
