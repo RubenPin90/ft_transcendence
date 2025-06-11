@@ -575,10 +575,6 @@ async function replace_all_templates(request, response, state, override) {
 	settings_html_default_string += '<a class="buttons" href="/settings/user" data-link>';
 	settings_html_default_string += '<button class="block w-full mb-6 mt-6">';
 	settings_html_default_string += '<span class="button_text">User</span>';
-	settings_html_default_string += '</button></a>';
-	settings_html_default_string += '<a class="buttons" href="/settings/language" data-link>';
-	settings_html_default_string += '<button class="block w-full mb-6 mt-6">';
-	settings_html_default_string += '<span class="button_text">Change language</span>';
 	settings_html_default_string += '</button></a></div>';
 	settings_html_default_string += '<div class="flex mt-12 gap-4 w-full">';
 	settings_html_default_string += '<a class="flex-1" href="/" data-link>';
@@ -956,7 +952,6 @@ async function replace_all_templates(request, response, state, override) {
 	play_main +=   '<div class="min-h-screen flex items-center justify-center px-4 py-10">';
 
 	play_main +=     '<div id="game-main-container" class="field">';
-	play_main +=	 '<span class="text-4xl font-bold text-center bg truncate text-white mb-8">Choose your preferred Game</span>'
 	play_main +=     '<div id="main-menu">';
 	play_main +=       '<div class="flex flex-col gap-6 mt-6">';
 	play_main +=         '<a class="buttons"><button class="block w-full pb-6 pt-6 h-full" id="sp-vs-pve-btn"><span class="button_text pointer-events-none">PVE</span></button></a>';

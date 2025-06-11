@@ -39,6 +39,7 @@ export async function change_preferred_mfa(){
         alert("Could not change your preferred mfa");
         return;
     }
+    alert("successfully changed preferred mfa");
 }
 
 (window as any).change_preferred_mfa = change_preferred_mfa;
