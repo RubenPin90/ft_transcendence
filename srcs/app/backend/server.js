@@ -55,8 +55,8 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
     return;
   } 
   const userId = String(temp.userid);
-  console.log('userId.userId:', userId);
-  console.log('🔑 ws token verified:', userId);
+  // console.log('userId.userId:', userId);
+  // console.log('🔑 ws token verified:', userId);
 
   const user_db = await users_db.get_users_value('self', userId);
   ws.userId        = userId;
@@ -69,12 +69,11 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
   
   if (socketRegistry.has(userId))
     {
-      console.log('detected double connection');
       ws.close(1000, 'detected double connection');
       socketRegistry.remove(userId);
       return;
     }
-    console.log('🔌 ws authenticated:', userId);
+    // console.log('🔌 ws authenticated:', userId);
     ws.send(JSON.stringify({ type: 'welcome', payload: { userId } }));
 
   socketRegistry.add(userId, ws);
@@ -85,7 +84,7 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
   });
 
   ws.on('close', async () => {
-    console.log('❌ ws closed:', userId);
+    // console.log('❌ ws closed:', userId);
     await users_db.update_users_value('status', 'offline', userId);
     if (ws.inGame) matchManager.leaveRoom(ws.currentGameId, userId);
     tournamentManager.leaveTournament(userId);

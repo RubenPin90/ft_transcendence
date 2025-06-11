@@ -59,8 +59,6 @@ export class TournamentManager {
     const tourney = this.tournaments[tournamentId];
     if (!tourney) {
       console.error(`playerReady: tournament ${tournamentId} not found`);
-      console.log('Available tournaments:', Object.keys(this.tournaments));
-      console.log('Current tournaments:', this.tournaments);
       return;
     }
     if (!Array.isArray(tourney.rounds)) {
@@ -317,7 +315,7 @@ export class TournamentManager {
           payload: { tournamentId, winnerId }
         }
       );
-      console.log(`Tournament ${tournamentId} finished, winner: ${winnerId}`);
+      // console.log(`Tournament ${tournamentId} finished, winner: ${winnerId}`);
       this.leaveTournament(winnerId, tournamentId);
       delete this.tournaments[tournamentId];
       return;
@@ -538,9 +536,6 @@ export class TournamentManager {
       : Object.values(this.tournaments).find(t => hasUser(t.players, userId));
   
     if (!tournament) {
-      console.log(`leaveTournament: user ${userId} not in any tournament`);
-      console.log('Available tournaments:', Object.keys(this.tournaments));
-      console.log('Current tournaments:', this.tournaments);
       return;
     }
   
