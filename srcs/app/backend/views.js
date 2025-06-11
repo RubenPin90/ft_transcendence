@@ -251,7 +251,6 @@ async function profile(request, response) {
         return await login(request, response);
 
     if (request.method == 'POST') {
-
         const user = await users_db.get_users_value('self', valid_token.userid);
         if (!user || user === undefined){
             response.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'fail', "Content": "No user or user undefined"});
@@ -263,35 +262,6 @@ async function profile(request, response) {
             return true;
         }
         const userid = valid_token.userid;
-
-        var index = await utils.replace_all_templates(request, response);
-        index = index.replace('{{username}}', user.username);
-        index = index.replace('{{email}}', settings.email);
-        index = index.replace('{{picture}}', settings.pfp);
-        // if (await friends_request.get_friend_request_value('receiver_id', userid) != undefined)
-        index = index.replace('{{Friends}}', await friends_db.show_accepted_friends(userid))
-        index = index.replace('{{winns}}', await game_db.get_won(userid));
-        index = index.replace('{{losses}}', await game_db.get_lost(userid));
-        index = index.replace('{{table_informations}}', await game_db.get_played_matches(userid));
-        index = utils.show_page(index, 'profile_div');
-        
-
-
-        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "success", "Content": index});
-        return true;
-
-
-        // const user = await users_db.get_users_value('self', valid_token.userid);
-        // if (!user || user === undefined){
-        //     response.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'fail', "Content": "No user or user undefined"});
-        //     return true;
-        // }
-        // const settings = await settings_db.get_settings_value('self', valid_token.userid);
-        // if (!settings || settings === undefined){
-        //     response.code(404).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'fail', "Content": "no settings or settings undefined"});
-        //     return true;
-        // }
-        // const userid = valid_token.userid;
         var inner = await fs.readFile("./backend/templates/profile.html", 'utf8');
         inner = inner.replace('{{username}}', user.username);
         inner = inner.replace('{{email}}', settings.email);
@@ -633,106 +603,101 @@ async function play(request, response) {
 
 
 async function set_up_mfa_buttons(request, response) {
-    var index = await utils.replace_all_templates(request, response);
-    index = utils.show_page(index, 'mfa_div');
-    response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({"Response": "success", "Content": index});
-    return true;
-    // const [keys, values] = modules.get_cookies(request);
-    // if (!keys?.includes('token')) {
-    //     return login(request, response);
-    // }
+    const [keys, values] = modules.get_cookies(request);
+    if (!keys?.includes('token')) {
+        return login(request, response);
+    }
 
-    // const encrypted_userid = values[keys.indexOf('token')];
-    // var userid
-    // try {
-    //     userid = await modules.get_jwt(encrypted_userid);
-    // } catch (err) {
-    //     response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
-    //     return true;
-    // }
-    // var set = 0;
-    // var options = '';
-    // var userid = userid.userid;
-    // var parsed = await mfa_db.get_mfa_value('self', userid);
-    // if (parsed == undefined)
-    //     await mfa_db.create_mfa_value('', '', '', 0, userid);
-    // else {
-    //     if (parsed.email.length !== 0 && !parsed.email.endsWith('_temp')) {
-    //         set++;
-    //         options += "<option value=\"1\">Email</option>";
-    //     }
-    //     if (parsed.otc.length !== 0 && !parsed.otc.endsWith('_temp')) {
-    //         set++;
-    //         options += "<option value=\"2\">OTC</option>";
-    //     }
-    //     if (parsed.custom.length !== 0 && !parsed.custom.endsWith('_temp')) {
-    //         set++;
-    //         options += "<option value=\"3\">Custom</option>";
-    //     }
-    // }
+    const encrypted_userid = values[keys.indexOf('token')];
+    var userid
+    try {
+        userid = await modules.get_jwt(encrypted_userid);
+    } catch (err) {
+        response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
+        return true;
+    }
+    var set = 0;
+    var options = '';
+    var userid = userid.userid;
+    var parsed = await mfa_db.get_mfa_value('self', userid);
+    if (parsed == undefined)
+        await mfa_db.create_mfa_value('', '', '', 0, userid);
+    else {
+        if (parsed.email.length !== 0 && !parsed.email.endsWith('_temp')) {
+            set++;
+            options += "<option value=\"1\">Email</option>";
+        }
+        if (parsed.otc.length !== 0 && !parsed.otc.endsWith('_temp')) {
+            set++;
+            options += "<option value=\"2\">OTC</option>";
+        }
+        if (parsed.custom.length !== 0 && !parsed.custom.endsWith('_temp')) {
+            set++;
+            options += "<option value=\"3\">Custom</option>";
+        }
+    }
 
-    // var settings_html_mfa_string = "";
-	// settings_html_mfa_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
-	// settings_html_mfa_string += '<div id="mfa"></div>'
-    // settings_html_mfa_string += '<div id="mfa-button">'
+    var settings_html_mfa_string = "";
+	settings_html_mfa_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
+	settings_html_mfa_string += '<div id="mfa"></div>'
+    settings_html_mfa_string += '<div id="mfa-button">'
 
-    // if (set > 1){
-    //     settings_html_mfa_string +='<div class="flex gap-2">'
-    //     settings_html_mfa_string +='<form id="mfa_options" class="w-5/6">'
-    //     settings_html_mfa_string +='<select name="lang" id="select_mfa" class="w-full p-4 text-center rounded-xl text-2xl border border-[#e0d35f] border-spacing-8 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]">'
-    //     settings_html_mfa_string +='<option value="" selected disabled hidden>Choose your main 2FA</option>'
-    //     settings_html_mfa_string += options;
-    //     settings_html_mfa_string +='</select></form>'
+    if (set > 1){
+        settings_html_mfa_string +='<div class="flex gap-2">'
+        settings_html_mfa_string +='<form id="mfa_options" class="w-5/6">'
+        settings_html_mfa_string +='<select name="lang" id="select_mfa" class="w-full p-4 text-center rounded-xl text-2xl border border-[#e0d35f] border-spacing-8 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]">'
+        settings_html_mfa_string +='<option value="" selected disabled hidden>Choose your main 2FA</option>'
+        settings_html_mfa_string += options;
+        settings_html_mfa_string +='</select></form>'
         
-    //     settings_html_mfa_string +='<div class="flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl cursor-pointer">'
-    //     settings_html_mfa_string +='<button onclick="change_preferred_mfa()" id="mfa_update_btn">'
-    //     settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">'
-    //     settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />'
-    //     settings_html_mfa_string +='</svg></button></div></div>'
-    // }
-	// settings_html_mfa_string +='';
-	// settings_html_mfa_string +='<div class="flex gap-2">';
-	// settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_otc()">';
-	// settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
-	// settings_html_mfa_string +='<span class="button_text">Create OTC</span></button></div>';
-	// settings_html_mfa_string +='';
-    // if (options.includes("OTC"))
-	//     settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_otc')", true);
-    // else
-    //     settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_otc')", false);
-    // settings_html_mfa_string +='';
-	// settings_html_mfa_string +='<div class="flex gap-2">';
-	// settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_custom_code()">';
-	// settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
-	// settings_html_mfa_string +='<span class="button_text">Create custom 6 digit code</span></button></div>';
-	// settings_html_mfa_string +='';
-	// settings_html_mfa_string +='';
-    // if (options.includes("Custom"))
-	//     settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_custom_code')", true);
-    // else
-    //     settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_custom_code')", false);
-	// settings_html_mfa_string +='';
-	// settings_html_mfa_string +='<div class="flex gap-2">';
-	// settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_email()">';
-	// settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
-	// settings_html_mfa_string +='<span class="button_text">Enable email authentication</span></button></div>';
-	// settings_html_mfa_string +='';
-    // if (options.includes("Email"))
-	//     settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_email')", true);
-    // else
-    //     settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_email')", false);
-	// settings_html_mfa_string +='';
-	// settings_html_mfa_string +='<div class="flex mt-12 gap-4 w-full">';
-	// settings_html_mfa_string +='<a class="flex-1" href="/settings" data-link>';
-	// settings_html_mfa_string +='<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-	// settings_html_mfa_string +='<span class="font-bold text-lg">Back</span>';
-	// settings_html_mfa_string +='</button></a>';
-	// settings_html_mfa_string +='<a href="/" class="flex-1" data-link>';
-	// settings_html_mfa_string +='<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
-	// settings_html_mfa_string +='<span class="font-bold text-lg">Home</span>';
-	// settings_html_mfa_string +='</button></a></div></div></div></div></div>';
-
-    // return response.code(200).headers({'Content-Type': 'application/json','Access-Control-Allow-Origin': '*'}).send({"Response": "success","Content": settings_html_mfa_string});
+        settings_html_mfa_string +='<div class="flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl cursor-pointer">'
+        settings_html_mfa_string +='<button onclick="change_preferred_mfa()" id="mfa_update_btn">'
+        settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">'
+        settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />'
+        settings_html_mfa_string +='</svg></button></div></div>'
+    }
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex gap-2">';
+	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_otc()">';
+	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
+	settings_html_mfa_string +='<span class="button_text">Create OTC</span></button></div>';
+	settings_html_mfa_string +='';
+    if (options.includes("OTC"))
+	    settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_otc')", true);
+    else
+        settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_otc')", false);
+    settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex gap-2">';
+	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_custom_code()">';
+	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
+	settings_html_mfa_string +='<span class="button_text">Create custom 6 digit code</span></button></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='';
+    if (options.includes("Custom"))
+	    settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_custom_code')", true);
+    else
+        settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_custom_code')", false);
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex gap-2">';
+	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_email()">';
+	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
+	settings_html_mfa_string +='<span class="button_text">Enable email authentication</span></button></div>';
+	settings_html_mfa_string +='';
+    if (options.includes("Email"))
+	    settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_email')", true);
+    else
+        settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_email')", false);
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='<div class="flex mt-12 gap-4 w-full">';
+	settings_html_mfa_string +='<a class="flex-1" href="/settings" data-link>';
+	settings_html_mfa_string +='<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	settings_html_mfa_string +='<span class="font-bold text-lg">Back</span>';
+	settings_html_mfa_string +='</button></a>';
+	settings_html_mfa_string +='<a href="/" class="flex-1" data-link>';
+	settings_html_mfa_string +='<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	settings_html_mfa_string +='<span class="font-bold text-lg">Home</span>';
+	settings_html_mfa_string +='</button></a></div></div></div></div></div>';
+    return response.code(200).headers({'Content-Type': 'application/json','Access-Control-Allow-Origin': '*'}).send({"Response": "success","Content": settings_html_mfa_string});
 }
 
 async function check_preferred_mfa(request, response){
