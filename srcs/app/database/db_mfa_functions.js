@@ -18,7 +18,6 @@ async function get_mfa() {
     }
 }
 
-// Tested: all working
 async function get_mfa_value(search_value, value) {
     const valid_values = ['email', 'otc', 'custom', 'prefered', 'self'];
     if (!valid_values.includes(search_value))
@@ -42,7 +41,6 @@ async function get_mfa_value(search_value, value) {
     }
 }
 
-// Not tested: But working propperly so far
 async function create_mfa_value(mfa_email, otc, custom, prefered, self) {
     const db = await open({
         filename: './database/db.sqlite',
@@ -101,7 +99,6 @@ async function update_mfa_value(search_value, value, self) {
     }
 }
 
-// Tested: all working
 async function delete_mfa_value(self) {
     const db = await open({
         filename: './database/db.sqlite',

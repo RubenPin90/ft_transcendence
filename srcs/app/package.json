@@ -33,9 +33,6 @@
   "version": "1.0.0",
   "main": "mimes.js",
   "scripts": {
-    "build": "vite build",
-    "dev": "vite",
-    "preview": "vite preview",
     "build-frontend": "npx tsc",
     "rebuild:css": "tailwindcss build ./frontend/css/input.css -o ./frontend/css/output.css",
     "start:css": "npx tailwindcss -i ./frontend/css/input.css -o ./frontend/css/output.css",
@@ -61,7 +58,6 @@
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3",
-    "vite": "^6.2.5"
+    "typescript": "^5.8.3"
   }
 }

@@ -7,16 +7,13 @@ export function setupButtonsDelegated(
   navigate: (path: string) => void,
   TLobbySocket: WebSocket
 ) {
-  // console.log('buttonsInitialized:', buttonsInitialized);
   if (buttonsInitialized) return;
   buttonsInitialized = true;
 
   const mainMenu = document.getElementById('main-menu');
   if (mainMenu) {
     mainMenu.addEventListener('click', (event) => {
-      // console.log("EVENT:::", event);
       const target = event.target as HTMLElement;
-      // console.log('Main menu button clicked:', target.id);
       switch (target.id) {
         case 'sp-vs-pve-btn':
           navigate('/game/pve');
@@ -51,7 +48,6 @@ export function setupButtonsDelegated(
       const TLobby = getCurrentTLobby();
       const userId = getMyId();
 
-      // console.log('Lobby button clicked:', target.id);
       switch (target.id) {
         case 't-back-btn':
           navigate('/');
@@ -62,7 +58,6 @@ export function setupButtonsDelegated(
           break;
 
         case 't-leave-btn':
-          // console.log('Leaving tournament in buttons:', TLobby?.id);
           TLobbySocket.send(JSON.stringify({
             type: 'leaveTournament',
             payload: TLobby ? { tournamentId: TLobby.id } : {}
@@ -89,7 +84,6 @@ export function setupButtonsDelegated(
           break;
 
         default:
-          // console.log('Unknown lobby button clicked:', target.id);
           break;
       }
     });
@@ -99,7 +93,6 @@ export function setupButtonsDelegated(
   if (tournamentPage) {
     tournamentPage.addEventListener('click', (event) => {
       const target = event.target as HTMLElement;
-      //console.log('Tournament page button clicked:', target.id);
 
       switch (target.id) {
         case 't-create-btn':

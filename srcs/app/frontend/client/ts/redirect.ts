@@ -118,7 +118,6 @@ export async function check_cookie_fe(): Promise<boolean> {
     } catch (err) {
         console.error(err);
     }
-    // console.log(data.content);
     if (data.content == "full")
         return true;
     return false;
@@ -126,7 +125,6 @@ export async function check_cookie_fe(): Promise<boolean> {
 
 export async function render_mfa() : Promise<string>{
     var innervalue = document.getElementById("mfa_div")?.innerHTML;
-    // console.log("INNERHTML::", innervalue);
 
     const response = await fetch ('/mfa_setup', {
         method: 'POST',
@@ -174,7 +172,6 @@ async function show_login(){
     field.innerHTML = data;
 }
 
-//TODO change window.location.href since it force refreshes the webpage
 export async function where_am_i(path : string) : Promise<string> {
     if (path.startsWith('/tournament') || path.startsWith('/game') || path.startsWith('/matchmaking'))
     {

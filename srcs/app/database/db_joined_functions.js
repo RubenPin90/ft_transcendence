@@ -1,7 +1,6 @@
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 
-// In testing: need values to work
 async function get_settings_mfa_value(search_value, value) {
     const valid_values = ['id', 'email', 'otc', 'custom', 'self'];
     if (!valid_values.includes(search_value))

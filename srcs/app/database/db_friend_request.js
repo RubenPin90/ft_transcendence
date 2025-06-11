@@ -1,7 +1,6 @@
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 
-// Tested: all working
 async function get_friend_request_value(search_value, value) {
 	const valid_values = ['status', 'created_at', 'sender_id', 'receiver_id']
 	if (!valid_values.includes(search_value))
@@ -23,7 +22,6 @@ async function get_friend_request_value(search_value, value) {
     }
 }
 
-// Not tested: But working propperly so far
 async function create_friend_request_value(sender_id, receiver_id) {
     const db = await open({
         filename: './database/db.sqlite',
@@ -82,13 +80,10 @@ async function update_friend_request_value(id, userid, what_do) {
             if (alr_friends){
                 return -2;
             }
-            // if it doesnt exists insert sender_id and receiver_id into friends
             var row = await db.run(`
                 INSERT INTO friends (user1, user2)
                 VALUES (?, ?)`, [request.sender_id, request.receiver_id]);
-                //check if request truly exists for the user
         }
-        // lastly delete the row of friends_request
         var row_req = await db.run(`
             DELETE FROM friend_request
             WHERE (sender_id = ? AND receiver_id = ?) OR (receiver_id = ? AND sender_id = ?)

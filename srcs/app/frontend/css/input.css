@@ -15,15 +15,15 @@
 }
 
 .field {
-    @apply bg-gray-600 w-11/12 max-w-lg rounded-3xl p-6 mx-auto bg-clip-padding backdrop-filter backdrop-blur-xl bg-opacity-30 border-[#ff00d0] border-2 shadow-strong shadow-[#ff00d0]/80
+    @apply bg-gray-600 w-11/12 max-w-lg rounded-3xl p-6 mx-auto bg-clip-padding backdrop-filter backdrop-blur-xl bg-opacity-30 border-[#ff00d0] border-2 shadow-[#ff00d0]/80
 }
 
 .game_field{
-    @apply bg-gray-600 w-11/12 max-w-[850px] rounded-3xl p-6 mx-auto bg-clip-padding backdrop-filter backdrop-blur-xl bg-opacity-30 border-[#ff00d0] border-2 shadow-strong shadow-[#ff00d0]/80
+    @apply bg-gray-600 w-11/12 max-w-[850px] rounded-3xl p-6 mx-auto bg-clip-padding backdrop-filter backdrop-blur-xl bg-opacity-30 border-[#ff00d0] border-2 shadow-[#ff00d0]/80
 }
 
 .user_field {
-    @apply bg-gray-600 w-11/12 max-w-5xl rounded-3xl p-6 mx-auto bg-clip-padding backdrop-filter backdrop-blur-xl bg-opacity-30 border-[#ff00d0] border-2 shadow-strong shadow-[#ff00d0]/80
+    @apply bg-gray-600 w-11/12 max-w-5xl rounded-3xl p-6 mx-auto bg-clip-padding backdrop-filter backdrop-blur-xl bg-opacity-30 border-[#ff00d0] border-2 shadow-[#ff00d0]/80
 }
 
 .buttons {
@@ -82,8 +82,8 @@
     @apply animate-loader
 }
 
-/* Grigorii */
-/* Tournament */
+
+
 .t-card {
     @apply flex justify-between rounded-lg items-center border-2 border-solid border-black p-6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]
 }
@@ -121,7 +121,6 @@
 }
 
 
-/* Bracked */
 .bracket-overlay {
     @apply fixed inset-0 z-50 flex gap-8 p-8 overflow-auto bg-[#000000e6] text-white font-sans
 }
@@ -135,7 +134,6 @@
 }
 
 
-/* STYLE */
 .TLobby-row {
     @apply flex justify-between items-center border-t-2 border-black px-4 py-3 font-semibold uppercase
 }

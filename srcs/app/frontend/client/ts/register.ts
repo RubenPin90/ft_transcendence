@@ -1,4 +1,3 @@
-// helpers --------------------------------------------------------------
 import {connect} from './socket.js'
 
 
@@ -7,17 +6,6 @@ function parse_emaiL(email : string) : boolean {
     return regex.test(email);
 }
 
-
-// function GetInput(id: string): HTMLInputElement | null {
-//   const input = document.getElementById(id) as HTMLInputElement;
-//   if (!input)
-//     return null;
-//   return  input;
-// }
-
-// function GetElement(id: string): HTMLElement | null {
-//     return document.getElementById(id);
-// }
 
 function getValue(id: string): string {
   const element = document.getElementById(id) as HTMLInputElement;
@@ -44,12 +32,11 @@ function wrong_input(error : string) {
 }
 
 function check_fields(email : string, username : string, password : string, repeat : string) {
-  //for animations
   const userField  = document.getElementById('user_field');
   const emailField = document.getElementById('email_field');
   const passField  = document.getElementById('password_field');
   const repField   = document.getElementById('repeat_field');
-  //for CSS
+
   const userInput  = document.getElementById('username_SignUp') as HTMLInputElement;
   const emailInput = document.getElementById('email_SignUp') as HTMLInputElement;
   const passInput  = document.getElementById('password-input_SignUp') as HTMLInputElement;
@@ -116,16 +103,16 @@ export async function create_account() {
     alert("Server Error creating user please contact Staff?");
     return;
   }
-  const blob = await picture.blob();    //Gets the raw binary data of the image
+  const blob = await picture.blob();
 
   const base64 = await new Promise<string | void>((resolve, reject) => {
-    const file = new FileReader();      //A built-in browser API for reading files (like images).
-    file.onloadend = () => {            // This function runs when the file has finished reading.
-      pfp = file.result as string;      //Inside this, you assign the result to pfp
-      resolve();                        // Then call resolve() to say “we’re done, continue the await”
+    const file = new FileReader();
+    file.onloadend = () => {
+      pfp = file.result as string;
+      resolve();
     };
     file.onerror = reject;
-    file.readAsDataURL(blob);           // Tells the reader to convert the binary blob into a Base64-encoded data URL
+    file.readAsDataURL(blob);
   })
   const response = await fetch('/register', {
     method : 'POST',  
@@ -133,10 +120,6 @@ export async function create_account() {
     body   : JSON.stringify({email, username, password, pfp})
   });
 
-  // if (!response.ok) {
-  //   alert('Server error');
-  //   return;
-  // }
   try {
     const data = await response.json();
     if (data.Response !== 'success'){

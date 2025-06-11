@@ -37,33 +37,17 @@ async function submit_code(userid: string, method: string, email: string){
             "Userid": userid,
         }),
     });
-    // if (!response.ok){
-    //     alert_user(`Error: ${data.Response}`);
-    //     return false;
-    // }
 
     const data = await response.json();
     
     if (data.Response == "success"){
         login();
     }else{
-        alert_user(`Error: ${data.Response}`); // either close or alert user
+        alert_user(`Error: ${data.Response}`);
         return false;
 
     }
 }
-
-
-// async function get_unlocker() {
-//     var login_field = document.getElementById("login-container");
-//     var tfa_field = document.getElementById("2fa_field");
-//     if (!login_field || !tfa_field){
-//         alert("NOT FOUND 1")
-//         return;
-//     }
-//     login_field.classList.add("blur-md");
-//     tfa_field.classList.remove("hidden");
-// }
 
 function close_unlocker() {
     var mfa_div_field = document.getElementById("{{mfa_div_check}}");
@@ -82,7 +66,6 @@ async function get_mfa_login(userid: string, method: string, email: string){
     if (!login_field)
         return; 
     var temp = document.createElement("div");
-    // <div id="2fa_field" class="h-3/5 w-11/12 max-w-lg flex flex-col items-center justify-center absolute z-10 bg-gray-800/70 rounded-3xl border-[#ff00d0] border-2 shadow-strong shadow-[#ff00d0]/80">
     temp.innerHTML = `
         <span id="error_message" class="text-xl text-red-900 font-bold"></span>
         <span class="text-3xl mb-6 font-bold text-gray-300">Enter your choosen 2FA</span>
@@ -96,13 +79,12 @@ async function get_mfa_login(userid: string, method: string, email: string){
             </svg>
         </button>
     `;
-    // </div>
     var mfa_div_field = document.getElementById("{{mfa_div_check}}");
     if (!mfa_div_field)
         return;
     mfa_div_field.innerHTML = temp.innerHTML;
     login_field.classList.add("blur-md");
-    mfa_div_field.className = "h-3/5 w-11/12 max-w-lg flex flex-col items-center justify-center absolute z-10 bg-gray-800/70 rounded-3xl border-[#ff00d0] border-2 shadow-strong shadow-[#ff00d0]/80";
+    mfa_div_field.className = "h-3/5 w-11/12 max-w-lg flex flex-col items-center justify-center absolute z-10 bg-gray-800/70 rounded-3xl border-[#ff00d0] border-2 shadow-[#ff00d0]/80";
 }
 
 document.getElementById('login-button')?.addEventListener('click', login2);
@@ -123,16 +105,12 @@ export async function login2(){
         },
         body: JSON.stringify({"get": "check_user", email, password}),
     });
-    // if (!check_user.ok){
-    //     alert(`CHECK USER NOT OK`);
-    //     return;
-    // }
 
     try{
         const data = await check_user.json();
         if (data.Response != "success"){
             alert(`Error with login: ${data.Response}`);
-            return;//add message
+            return;
         }
     } catch(err) {
         alert(`error with data check_user: ${err}`);
@@ -216,12 +194,9 @@ async function login() {
         if (!current_file)
             return;
         current_file.innerHTML = content2value;
-        // window.history.pushState({}, '', '/');
-        // window.location.replace('/');
         history.replaceState({}, '', '/');
         try {
-            await openSocket();           // waits until WS is OPEN
-            // console.log('WebSocket connected after login ✅');
+            await openSocket();
           } catch (err) {
             console.error('WS failed to connect', err);
           }
