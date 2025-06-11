@@ -16,7 +16,26 @@ export function handleClientMessage(ws, rawMsg, matchManager, tournamentManager)
     console.error('Invalid JSON message from client:', err);
     return;
   }
+  // if (data.type != 'movePaddle'){
+  //   console.log(`Received message from ${ws.userId}:`, data);
+  //   const temp = data.payload;
+  //   console.log(`Payload:`, temp);
+  // }
+
   switch (data.type) {
+
+    case 'waitForNextMatch': {
+      const { tournamentId, matchId } = data.payload;
+      if (!tournamentId || !matchId) {
+        ws.send(JSON.stringify({
+          type: 'error',
+          payload: { message: 'Both tournamentId and matchId are required.' }
+        }));
+        return;
+      }
+      tournamentManager.playerReady(ws.userId, tournamentId, matchId);
+      break;
+    }
 
     case 'createTournament': {
       tournamentManager.createTournament(ws, ws.userId);

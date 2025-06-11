@@ -39,7 +39,6 @@ export function setupButtonsDelegated(
           break;
 
         default:
-          console.log('Main menu button clicked:', target.id);
           break;
       }
     });
@@ -63,13 +62,14 @@ export function setupButtonsDelegated(
           break;
 
         case 't-leave-btn':
+          // console.log('Leaving tournament in buttons:', TLobby?.id);
           TLobbySocket.send(JSON.stringify({
             type: 'leaveTournament',
             payload: TLobby ? { tournamentId: TLobby.id } : {}
           }));
           if (TLobby) setCurrentTLobby(null);
           navigate('/tournament');
-          break;
+          break;  
 
         case 't-ready-btn':
           TLobbySocket.send(JSON.stringify({
@@ -84,11 +84,12 @@ export function setupButtonsDelegated(
               type: 'generateBracket',
               payload: { tournamentId: TLobby.id }
             }));
+            (document.getElementById('t-start-btn') as HTMLButtonElement).disabled = true;
           }
           break;
 
         default:
-          console.log('Unknown lobby button clicked:', target.id);
+          // console.log('Unknown lobby button clicked:', target.id);
           break;
       }
     });

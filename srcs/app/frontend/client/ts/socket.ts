@@ -2,7 +2,7 @@
 
 import type { GameState } from './game.js';
 import type { TLobbyState, TourneySummary } from './types.js';
-import { check_cookie_fe } from './redirect.js';
+import { check_cookie_fe, check_cookies_expire } from './redirect.js';
 
 export type ServerMessage =
   | { type: 'error';                payload: { message: string } }
@@ -32,9 +32,7 @@ interface CustomWebSocket extends WebSocket {
 
 let socket: CustomWebSocket | null = null;
 
-// You can replace this with actual token logic if needed
 declare const authToken: string | null;
-// declare function getJwt(): string | null;
 
 
 function isLoggedIn(): boolean {
@@ -54,11 +52,17 @@ function createSocket(): WebSocket {
 
   ws.addEventListener('message', ev => {
     const data: ServerMessage = JSON.parse(ev.data);
-    if (data.type !== 'tournamentList' && data.type !== 'state')
+    // if (data.type !== 'tournamentList' && data.type !== 'state' && data.type !== 'tLobbyState')
+    //   console.log(`[socket] ← ${data.type}`, data);
     listeners[data.type]?.forEach(cb => cb(data as any));
   });
 
   ws.addEventListener('close', () => {
+    console.log('close socket arrived');
+    if(localStorage.getItem('playerId'))
+      localStorage.removeItem('playerId');
+    if(localStorage.getItem('currentRoomId'))
+      localStorage.removeItem('currentRoomId');
     socket = null;
   });
 
@@ -92,16 +96,22 @@ export async function connect(): Promise<void> {
   const hasCookie = await check_cookie_fe();
   if (!hasCookie) throw new Error('User not authenticated – cookie missing');
 
+  const expiredCookie = await check_cookies_expire();
+  if (expiredCookie) {
+    history.pushState({}, '', '/');
+    throw new Error('User not authenticated – cookie expired');
+  } 
+  if (localStorage.getItem('playerId') != null) {
+    localStorage.removeItem('playerId');
+  }
+  if (localStorage.getItem('currentGameId') != null) {
+    localStorage.removeItem('currentGameId');
+  }
+
   if (socket && socket.readyState === WebSocket.OPEN) return;
 
   return new Promise<void>((resolve, reject) => {
     try {
-      if (localStorage.getItem('playerId') != null) {
-        localStorage.removeItem('playerId');
-      }
-      if (localStorage.getItem('currentGameId') != null) {
-        localStorage.removeItem('currentGameId');
-      }
       socket = createSocket() as CustomWebSocket;
     } catch (err) {
       reject(err);

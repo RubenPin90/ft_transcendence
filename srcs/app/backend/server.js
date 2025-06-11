@@ -19,7 +19,7 @@ const PORT = 8080;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const socketRegistry = new SocketRegistry();
+export const socketRegistry = new SocketRegistry();
 const matchManager = new MatchManager(socketRegistry);
 const tournamentManager = new TournamentManager(socketRegistry, matchManager);
 tournamentManager.matchManager = matchManager;
@@ -49,19 +49,33 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
   // console.log('keys and values', keys, values);
   const user_encrypted = values[keys.indexOf("token")];
   const temp = await modules.get_jwt(user_encrypted);
+  if (!temp || !temp.userid) {
+    console.error('❌ Invalid or missing token:', user_encrypted);
+    ws.close(1008, 'Invalid token');
+    return;
+  } 
   const userId = String(temp.userid);
-  // console.log('userId.userId:', userId);
-  // console.log('🔑 ws token verified:', userId);
+  console.log('userId.userId:', userId);
+  console.log('🔑 ws token verified:', userId);
 
-
+  const user_db = await users_db.get_users_value('self', userId);
   ws.userId        = userId;
+  ws.username = user_db.username;
   ws.inGame        = false;
   ws.currentGameId = null;
   await users_db.update_users_value('status', 'online', userId);
   //db_userId_status(userId, online)
 
-  console.log('🔌 ws authenticated:', userId);
-  ws.send(JSON.stringify({ type: 'welcome', payload: { userId } }));
+  
+  if (socketRegistry.has(userId))
+    {
+      console.log('detected double connection');
+      ws.close(1000, 'detected double connection');
+      socketRegistry.remove(userId);
+      return;
+    }
+    console.log('🔌 ws authenticated:', userId);
+    ws.send(JSON.stringify({ type: 'welcome', payload: { userId } }));
 
   socketRegistry.add(userId, ws);
   matchManager.registerSocket(userId, ws);
@@ -73,10 +87,10 @@ fastify.get('/ws/game', { websocket: true }, async(conn, req) => {
   ws.on('close', async () => {
     console.log('❌ ws closed:', userId);
     await users_db.update_users_value('status', 'offline', userId);
+    if (ws.inGame) matchManager.leaveRoom(ws.currentGameId, userId);
     tournamentManager.leaveTournament(userId);
     matchManager.unregisterSocket(userId);
     socketRegistry.remove(userId);
-    if (ws.inGame) matchManager.leaveRoom(ws.currentGameId, userId);
   });
 });
 

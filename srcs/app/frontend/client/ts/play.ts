@@ -10,8 +10,7 @@ import {
 import {
   renderTournamentList,
   joinByCode,
-  renderTLobby,
-  renderBracketOverlay
+  renderTLobby
 } from './tournament.js';
 import { setupButtonsDelegated } from './buttons.js';
 import type {
@@ -32,14 +31,12 @@ import { where_am_i, toggle_divs } from './redirect.js';
 let currentRoomId: string | null       = null;
 let currentMatch: string | null        = null;
 let teardownInput: (() => void) | null = null;
+let startedTournament: boolean = false;
 
 
 
 let currentTournamentId: string | null = null;
 let isFirstRound                       = true;
-
-
-// console.log('[play.ts] Initializing play module...');
 
 on('welcome', (msg) => {
   const id   = msg.payload.userId;
@@ -52,7 +49,9 @@ on('welcome', (msg) => {
 on('error', (msg) => {
   const banner          = document.getElementById('error-banner')!;
   banner.textContent    = msg.payload.message;
-  banner.style.display  = 'block';
+  banner.classList.remove('hidden');
+  banner.classList.add('block');
+  // banner.style.display  = 'block';
 });
 
 
@@ -85,40 +84,60 @@ on<'matchAssigned'>('matchAssigned', (msg) => {
   }, 3000);
 });
 
+
+
+
 on<'tournamentBracketMsg'>('tournamentBracketMsg', async (msg) => {
   const { tournamentId, rounds } = msg.payload as {
     tournamentId: string;
     rounds: MatchStub[][] | MatchStub[];
   };
+  console.log('[tournamentBracketMsg] received:', tournamentId, rounds);
 
   currentTournamentId = tournamentId;
-
-  const normalized: MatchStub[][] = Array.isArray(rounds[0])
+  const normalized = Array.isArray(rounds[0])
     ? rounds as MatchStub[][]
     : [rounds as MatchStub[]];
 
-  if (!Array.isArray(rounds[0])) {
-    location.href = '/tournament/round2';
-  }
-  renderBracketOverlay(normalized);
-
   await new Promise(r => setTimeout(r, 700));
 
-  const firstRound = normalized[0];
-  const firstReal  = firstRound.find(
+  // pick the upcoming match (in the last round):
+  const lastRound  = normalized[normalized.length - 1];
+  const nextMatch = lastRound.find(
     m => m.players.filter(p => p && !('pendingMatchId' in p)).length === 2
   );
 
-  if (firstReal) {
-    const [A, B] = firstReal.players as PlayerStub[];
+  if (nextMatch) {
+    const [A, B] = nextMatch.players as PlayerStub[];
     await showVersusOverlay(A.name, B.name);
+
+    send({
+      type   : 'waitForNextMatch',
+      payload: {
+        tournamentId,
+        matchId     : nextMatch.matchId
+      }
+    });
   }
 
+  // your existing “first round” logic
   if (isFirstRound) {
+    const firstRound = normalized[0];
+    const firstMatch = firstRound.find(
+      m => m.players.filter(p => p && !('pendingMatchId' in p)).length === 2
+    );
+  
+    if (firstMatch) {
+      const [A, B] = firstMatch.players as PlayerStub[];
+      await showVersusOverlay(A.name, B.name);
+    }
     send({ type: 'beginRound', payload: { tournamentId } });
     isFirstRound = false;
+    startedTournament = true;
   }
 });
+
+
 
 on('tournamentCreated', (msg) => {
   const TLobby: TLobbyState = msg.payload;
@@ -129,6 +148,7 @@ on('tournamentCreated', (msg) => {
 });
 
 on('tournamentUpdated', (msg) => {
+  if (isInGame()) return;
   renderTLobby(msg.payload as TLobbyState, getSocket());
 });
 
@@ -150,10 +170,16 @@ on<'tournamentFinished'>('tournamentFinished', (msg) => {
 
   hideAllPages();
 
-  setCurrentTLobby(null);
-  localStorage.removeItem('currentGameId');
+  const TLobbySocket = getSocket();
+  const TLobby = getCurrentTLobby();
+  TLobbySocket.send(JSON.stringify({
+    type: 'leaveTournament',
+    payload: TLobby ? { tournamentId: TLobby.id } : {}
+  }));
   currentTournamentId = null;
   isFirstRound        = true;
+  setCurrentTLobby(null);
+  localStorage.removeItem('currentGameId');
 
   const myId = localStorage.getItem('playerId') ??
                (getSocket() as any).userId;
@@ -163,12 +189,11 @@ on<'tournamentFinished'>('tournamentFinished', (msg) => {
   } else {
     alert('Tournament finished.');
   }
-
-  toggle_divs('home_div');
-  window.location.href = '/';
+  navigate('/play');
 });
 
 on('tLobbyState', (msg) => {
+  if (isInGame()) return;
   const lobby   = msg.payload as TLobbyState;
   const current = getCurrentTLobby();
   if (current && current.id !== lobby.id) return;
@@ -178,15 +203,25 @@ on('tLobbyState', (msg) => {
 
 on<'eliminated'>('eliminated', (msg) => {
   const { reason } = msg.payload;
-
   alert('You have been eliminated from the tournament 🏳️');
-
+  const TLobbySocket = getSocket();
+  const TLobby = getCurrentTLobby();
+  // console.log('Leaving tournament in eliminated:', TLobby?.id);
+  if (TLobby) {
+    TLobbySocket.send(JSON.stringify({
+      type: 'leaveTournament',
+      payload: TLobby ? { tournamentId: TLobby.id } : {}
+    }));
+    setCurrentTLobby(null);
+  }
+  currentTournamentId = null;
+  isFirstRound        = true;
   localStorage.removeItem('currentGameId');
   setCurrentTLobby(null as any);
+  
   teardownInput?.();
   teardownInput = null;
-  toggle_divs('home_div');
-  window.location.href = '/';
+  navigate('/play');
 });
 
 on<'roundStarted'>('roundStarted', msg => {
@@ -216,21 +251,22 @@ function showVersusOverlay(left: string, right: string): Promise<void> {
     if (!el) {
       el = document.createElement('div');
       el.id = 'vs-overlay';
-      el.style.cssText = `
-        position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-        background:rgba(0,0,0,.8); color:#fff; font:700 3rem/1 sans-serif; z-index:9999;
-        text-align:center; opacity:0; transition:opacity .4s;`;
+      el.className = `fixed inset-0 flex items-center justify-center bg-black/80 text-white font-bold text-3xl leading-none z-[9999] text-center opacity-0 transition-opacity duration-[400ms]`;
       document.body.appendChild(el);
     }
 
     el.textContent = `${left}  vs  ${right}`;
-    requestAnimationFrame(() => (el!.style.opacity = '1'));
+    requestAnimationFrame(() => {
+      el!.classList.remove('opacity-0');
+      el!.classList.add('opacity-100'); 
+    });
 
     const SHOW_MS = 2500;
     const HIDE_MS = 400;
 
     const hideTimer = setTimeout(() => {
-      el!.style.opacity = '0';
+      el!.classList.remove('opacity-100');
+      el!.classList.add('opacity-0');
     }, SHOW_MS);
 
     const onEnd = () => {
@@ -267,15 +303,17 @@ setOnGameEnd((winnerId: string) => {
 
   const myId = localStorage.getItem('playerId') ?? (getSocket() as any).userId;
 
-  alert(`Player ${winnerId} wins!`);
-
-  if (myId === winnerId && currentTournamentId) {
-    setTimeout(() => {
-      send({
-        type   : 'beginRound',
-        payload: { tournamentId: currentTournamentId }
-      });
-    }, 2000);
+  if (myId === winnerId)  
+  {
+    alert('🎉 You won the game! 🎉');
+  } 
+  else {
+    alert('Game over. You lost.');
+  }
+  if (!currentTournamentId) {
+    // console.log('[play.ts] No tournament active, stopping game');
+    navigate('/play');
+    return;
   }
 });
 
@@ -293,10 +331,26 @@ let wasInGame = false;
 export let lastPath: string | null = null;
 
 function route() {
+  //added this to if the player changes url it replaces it with normal field instead of the wide game_field (Enes)
+  const main_div = document.getElementById('game-main-container')!.classList.replace('game_field', 'field');
+  
   const TLobbySocket = getSocket();
   const path = window.location.pathname;
-  // console.log('[route] current path:', path);
-  // console.log('lastPath:', lastPath);
+  console.log('[route] current path:', path);
+  console.log('lastPath:', lastPath);
+
+  if (lastPath?.startsWith('/tournament/') && !path.startsWith('/tournament')) {
+    const TLobby = getCurrentTLobby();
+    if (TLobby) {
+      TLobbySocket.send(JSON.stringify({
+        type: 'leaveTournament',
+        payload: { tournamentId: TLobby.id }
+      }));
+      setCurrentTLobby(null);
+    }
+    currentTournamentId = null;
+    isFirstRound = true;   
+  }
 
   if (path === '/matchmaking' && lastPath !== '/play') {
     // console.log('[route] blocked direct /matchmaking; redirecting to /play');
@@ -308,15 +362,25 @@ function route() {
 
   if ((path === '/tournament' && lastPath !== '/play') || (path === '/tournament' && lastPath?.startsWith('/tournament/'))) {
     const TLobby = getCurrentTLobby();
+    // console.log('Leaving tournament in buttons:', TLobby?.id);
     if (TLobby) {
       TLobbySocket.send(JSON.stringify({
         type: 'leaveTournament',
         payload: TLobby ? { tournamentId: TLobby.id } : {}
       }));
+      if (localStorage.getItem('currentGameId')) {
+        localStorage.removeItem('currentGameId');
+      }
+      currentTournamentId = null;
+      isFirstRound = true;
       setCurrentTLobby(null);
     }
     if (lastPath?.startsWith('/tournament/')) {
-      document.getElementById('tournament-page')!.style.display = 'block';
+      const tournament_page = document.getElementById('tournament-page') as HTMLElement;
+      tournament_page?.classList.add('block');
+      tournament_page?.classList.remove('hidden');
+      currentTournamentId = null;
+      isFirstRound = true;
       renderTournamentList(tournaments, joinByCodeWithSocket);
       return;
     }
@@ -362,7 +426,11 @@ function route() {
     const roundNo      = Number(roundStr);
 
     const overlay = document.getElementById('bracket-overlay');
-    if (overlay) overlay.style.display = 'block';
+    if (overlay) {
+      overlay.classList.add('block');
+      overlay.classList.remove('hidden');
+      // overlay.style.display = 'block';
+    }
 
     let hdr = document.getElementById('round-header') as HTMLElement | null;
     if (!hdr) {
@@ -375,7 +443,10 @@ function route() {
   }
 
   if (path === '/tournament') {
-    document.getElementById('tournament-page')!.style.display = 'block';
+    (document.getElementById('tournament-page') as HTMLElement)!.classList.add('block');
+    (document.getElementById('tournament-page') as HTMLElement)!.classList.remove('hidden');
+    currentTournamentId = null;
+    isFirstRound = true;
     renderTournamentList(tournaments, joinByCodeWithSocket);
     return;
   }
@@ -383,12 +454,14 @@ function route() {
   if (path === '/matchmaking') {
     enterMatchmaking();
     markQueued?.(true);
-    document.getElementById('matchmaking-page')!.style.display = 'block';
+    (document.getElementById('matchmaking_div') as HTMLElement)!.classList.add('block');
+    (document.getElementById('matchmaking_div') as HTMLElement)!.classList.remove('hidden');
     return;
   }
 
   if (GAME_RE.test(path)) {
-    document.getElementById('game-container')!.style.display = 'block';
+    (document.getElementById('game-container') as HTMLElement)!.classList.add('block');
+    (document.getElementById('game-container') as HTMLElement)!.classList.remove('hidden');
     const mode = path.split('/')[2] || 'pve';
     // console.log(`[play.ts] Entering game mode: ${mode}`);
 
@@ -408,7 +481,8 @@ function route() {
   }
 
   if (path.startsWith('/tournament/')) {
-    document.getElementById('t-lobby-page')!.style.display = 'block';
+    (document.getElementById('t-lobby-page') as HTMLElement)!.classList.add('block');
+    (document.getElementById('t-lobby-page') as HTMLElement)!.classList.remove('hidden');
     return;
   }
 
@@ -418,34 +492,39 @@ function route() {
   };
   const pageId = mapping[path];
   if (pageId) {
-    document.getElementById(pageId)!.style.display = 'block';
+    (document.getElementById(pageId) as HTMLElement)!.classList.add('block');
+    (document.getElementById(pageId) as HTMLElement)!.classList.remove('hidden');
     return;
   }
 
   const mainMenuEl = document.getElementById('main-menu');
   if (mainMenuEl) {
-    mainMenuEl.style.display = 'block';
+    mainMenuEl.classList.add('block');
+    mainMenuEl.classList.remove('hidden');
   }
+}
+
+function isInGame(): boolean {
+  if (GAME_RE.test(window.location.pathname))
+  {
+    return true;
+  }
+  else
+    return false;
 }
 
 window.addEventListener('popstate', () => {
   route();
 });
 
-window.addEventListener('beforeunload', () => {
-  if (localStorage.getItem('currentGameId')) {
-    const roomId = localStorage.getItem('currentGameId')!;
-    const userId = localStorage.getItem('playerId')!;
-    // console.log('[beforeunload] sending leaveGame');
-    send({ type: 'leaveGame', payload: { roomId, userId } });
-  }
-});
-
 function showGameContainerAndStart(): void {
+  hideAllPages();
   const cont = document.getElementById('game-container');
   if (!cont) return;
 
-  cont.style.display = 'block';
+  cont.classList.add('block');
+  cont.classList.remove('hidden');
+  // cont.style.display = 'block';
   initGameCanvas();   
   startGame('1v1');        
   teardownInput = setupInputHandlers();
@@ -454,7 +533,10 @@ function showGameContainerAndStart(): void {
 export function check() {
   const path = window.location.pathname;
   if (path === '/play') {
+    console.log('[play.ts] Detected /play, setting up buttons and handlers');
     lastPath = path;
+    currentTournamentId = null;
+    isFirstRound = true;
     setupCodeJoinHandlers();
     setupButtonsDelegated(navigate, getSocket());
     ({ markQueued } = setupMatchmakingHandlers(navigate, getSocket()));
@@ -475,12 +557,6 @@ function leaveMatchmaking() {
   if (!queued) return;
   queued = false;
   send({ type: 'leaveQueue' });
-}
-
-function amHost(): boolean {
-  const lobby = getCurrentTLobby();
-  const myId  = localStorage.getItem('playerId') ?? (getSocket() as any).userId;
-  return lobby?.hostId === myId;
 }
 
 export function setupCodeJoinHandlers() {

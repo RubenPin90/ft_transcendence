@@ -23,11 +23,15 @@
 }
 
 .trash_disable {
-@apply flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#b62a2a] from-45% to-50% via-black from-[#b62a2a] border-black border border-spacing-5 rounded-xl cursor-not-allowed
+    @apply flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#b62a2a] from-45% to-50% via-black from-[#b62a2a] border-black border border-spacing-5 rounded-xl cursor-not-allowed
 }
 
 .field {
     @apply bg-gray-600 w-11/12 max-w-lg rounded-3xl p-6 mx-auto bg-clip-padding backdrop-filter backdrop-blur-xl bg-opacity-30 border-[#ff00d0] border-2 shadow-strong shadow-[#ff00d0]/80
+}
+
+.game_field{
+    @apply bg-gray-600 w-11/12 max-w-[850px] rounded-3xl p-6 mx-auto bg-clip-padding backdrop-filter backdrop-blur-xl bg-opacity-30 border-[#ff00d0] border-2 shadow-strong shadow-[#ff00d0]/80
 }
 
 .user_field {
@@ -90,23 +94,23 @@
     @apply font-bold text-lg uppercase
 }
 
+.fuck_animation{
+    @apply animate-loader
+}
 
 /* Grigorii */
 /* Tournament */
-.tournament-layout {
-    @apply grid gap-2 grid-cols-2
-}
 
 .full-btn {
     @apply w-full h-[100px] mb-8 text-base border-black border-solid border-2
 }
 
-.t-right .t-card {
-    @apply flex justify-between items-center border-2 border-solid border-black p-6 mb-6
+.t-card {
+    @apply flex justify-between rounded-lg items-center border-2 border-solid border-black p-6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]
 }
 
 .t-card .join-btn {
-    @apply w-[120px] h-[60px] border-2 border-solid border-black bg-white cursor-pointer
+    @apply w-[120px] h-[60px] ml-4 border-2 rounded-lg border-solid border-black bg-[#7e3a8b] cursor-pointer text-white
 }
 
 .TLobby-row {
@@ -167,46 +171,20 @@
 }
 
 .red-dot {
-    @apply w-6 h-6 rounded-full inline-block ml-auto mr-2 relative bg-[#e43f3f] after:text-white after:text-base after:font-bold after:absolute after:inset-0 after:grid after:place-items-center
-}
-
-.TLobby-table {
-    @apply max-w-[620px] mx-auto mb-8 border-2 border-black
+    @apply w-6 h-6 rounded-full inline-block ml-auto mr-2 relative bg-[#e43f3f]
 }
 
 .TLobby-row {
     @apply flex justify-between items-center border-t-2 border-black px-4 py-3 font-semibold uppercase
 }
 
-.TLobby-row:first-child {
-    @apply first:border-t-0
-}
+
+
 
 .code-box {
     @apply max-w-96 h-[70px] mx-auto flex border-2 border-black
 }
 
-.code-box input {
-    @apply flex-1 border-none text-2xl px-4 outline-none uppercase
-}
-
-.code-box button {
-    @apply w-[70px] border-l-2 border-black bg-[url('/copy.svg')] bg-center bg-no-repeat bg-[length:28px] cursor-pointer
-}
-
-.TLobby-row {
-    @apply flex items-center gap-2
-}
-
 .t-status {
     @apply inline-block w-3 h-3 rounded-full align-middle
 }
-
-.green-dot {
-    @apply bg-[#4caf50] h-3 w-3 rounded-full
-}
-
-.red-dot {
-    @apply bg-[#f44336] h-2.5 w-2.5 rounded-full
-}
-

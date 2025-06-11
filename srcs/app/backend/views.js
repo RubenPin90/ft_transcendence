@@ -7,6 +7,7 @@ import * as users_db from '../database/db_users_functions.js';
 import * as mfa_db from '../database/db_mfa_functions.js';
 import * as friends_request from '../database/db_friend_request.js'
 import * as friends_db from '../database/db_friends.js'
+import * as game_db from '../database/db_matches.js'
 import qrcode from 'qrcode';
 import { json } from 'stream/consumers';
 import { response } from 'express';
@@ -75,8 +76,8 @@ async function register(request, response) {
         const token = await modules.create_jwt(settings.self, '1h');
         const lang = await modules.create_jwt('en', '1h');
         
-        modules.set_cookie(response, 'token', token, 3600); //todo change back to 3600
-        modules.set_cookie(response, 'lang', lang, 3600); //todo change back to 3600
+        modules.set_cookie(response, 'token', token, 3600);
+        modules.set_cookie(response, 'lang', lang, 3600);
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": null });
         return true;
     }
@@ -267,7 +268,11 @@ async function profile(request, response) {
         inner = inner.replace('{{picture}}', settings.pfp);
         // inner = inner.replace('{{status}}', ()=> {if (user.status === 1) return 'online'; else return 'offline'});
         // if (await friends_request.get_friend_request_value('receiver_id', userid) != undefined)
-            inner = inner.replace('{{Friends}}', await friends_db.show_accepted_friends(userid))
+        inner = inner.replace('{{Friends}}', await friends_db.show_accepted_friends(userid))
+        inner = inner.replace('{{winns}}', await game_db.get_won(userid));
+        inner = inner.replace('{{losses}}', await game_db.get_lost(userid));
+        inner = inner.replace('{{table_informations}}', await game_db.get_played_matches(userid));
+        // inner = inner.replace('{{table_informations}}', await game_db.get_played_matches(userid));
         // else
             // inner = inner.replace('{{Friends}}', '<span>No friends currenlty :\'( you lonely MF</span>');
         response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ "Response": 'success', "Content": inner});
@@ -505,11 +510,13 @@ async function accept_friends(request, response){
         return true;
     }
 
-    const receiver = data.row_id;
-    const result = await friends_request.update_friend_request_value(receiver, decoded.userid);
-    if (!result || result === undefined){
+    const receiver_db = await users_db.get_users_value('username', data.sendername);
+
+    const result = await friends_request.update_friend_request_value(receiver_db.self, decoded.userid, 'accept');
+    if (!result || result === undefined || result < 0){
         console.error("error in deleting accepted friend request");
-        return null;
+        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'error'});
+        return true;
     }
     response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'success'});
     return true;
@@ -523,21 +530,23 @@ async function reject_friend(request, response){
         return true;
     }
 
-    let self_user;
+    let decoded;
     try {
-        self_user = await modules.get_jwt(values[keys.indexOf("token")]);
+        decoded = await modules.get_jwt(values[keys.indexOf("token")]);
     } catch (err) {
         response.code(400).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'Invalid decoded'});
         return true;
     }
 
-    const receiver = self_user.userid;
-    const result = await friends_request.delete_friend_request_value(receiver);
-    if (!result || result === undefined){
+    const receiver_db = await users_db.get_users_value('username', data.sendername);
+
+    const result = await friends_request.update_friend_request_value(receiver_db.self, decoded.userid, 'reject');
+    if (!result || result === undefined || result < 0){
         console.error("error in deleting accepted friend request");
-        return null;
+        response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'error'});
+        return true;
     }
-    response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin':  '*'}).send({ message: 'success'});
+    response.code(200).headers({'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}).send({ message: 'success'});
     return true;
 }
 

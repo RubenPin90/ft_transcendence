@@ -6,12 +6,13 @@ export function hideAllPages() {
     'game-container',
     'tournament-page',
     't-lobby-page',
-    'matchmaking-page',
     'bracket-overlay',
+    'matchmaking_div',
   ];
 
   for (const id of pageIds) {
     const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
+    // if (el) el.style.display = 'none';
+    if (el) el.classList.add('hidden');
   }
 }

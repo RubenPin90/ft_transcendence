@@ -18,38 +18,16 @@
                         <span id="username_prof">{{username}}</span>
                         <label for="email" class="label_profile">email</label>
                         <span id="email">{{email}}</span>
-                        <label for="win/loss" class="label_profile">win/loss</label>
-                        <span id="win_loss">{{win_loss}}</span>
-                        <!-- <label for="status" class="label_profile">status</label>
-                        <span id="status">{{status}}</span> -->
+                        <label for="win_loss" class="label_profile">win/loss</label>
+                        <span id="win_loss">{{winns}}/{{losses}}</span>
                     </div>
                 </div>
                 <div class="w-full flex bg-gray-400 mt-2 pb-8 py-4 pl-4 gap-2 overflow-x-auto">
                     {{Friends}}
                 </div>
                 <div class="w-full max-h-60 overflow-y-auto flex h-full flex-col bg-gray-500 mt-2 py-4 pl-4">
-                    <h1>Match History</h1>
+                    <h1 class="font-bold">Match History</h1>
                         <table class="table-auto text-left">
-                            <thead>
-                                <tr class="">
-                                    <th>opponent</th>
-                                    <th>final score</th>
-                                <th>date</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table_body">
-                            <tr class=""> <!--if loss show red if win show green forefit is a win-->
-                                <td>{{enemy}}</td>
-                                <td>{{final_score}}</td>
-                                <td>{{date}}</td>
-                            </tr>
-                            <tr class=""> <!--if loss show red if win show green forefit is a win-->
-                                <td>tournament by: {{host}}</td>
-                                <td>rounds: {{final_score}}</td>
-                                <td>{{date}}</td>
-                            </tr>
-
-
                             {{table_informations}}
                         </tbody>
                     </table>

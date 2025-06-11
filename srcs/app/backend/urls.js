@@ -56,6 +56,8 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.post('/register', (req, reply) => views.register(req, reply));
   // Block done
 
+  
+
   fastify.get('/settings', (req, reply) => views.settings(req, reply));
   fastify.post('/settings', (req, reply) => views.settings(req, reply));
   fastify.get('/settings/*', (req, reply) => views.settings(req, reply));
@@ -87,8 +89,12 @@ export default fastifyPlugin(async function routes(fastify) {
   fastify.post("/change_preferred_mfa", (req, reply) => views.change_preferred_mfa(req, reply));
 
   fastify.post("/check_expire", (request, reply) => utils.check_expired_token(request, reply));
-  // Block done
-  fastify.get('/game/*', (req, reply) => views.home(req, reply));
+  // Block done{
+  fastify.get('/game/*', (req, reply) => views.play(req, reply));
+  fastify.get('/matchmaking', (req, reply) => views.play(req, reply));
+  fastify.get('/matchmaking*', (req, reply) => views.play(req, reply));
+  fastify.get('/matchmaking/*', (req, reply) => views.play(req, reply));
+  fastify.get('/tournament*', (req, reply) => views.play(req, reply));
   // --- 404 fallback ---
   fastify.setNotFoundHandler((req, reply) => {
     return send.send_error_page('404.html', reply, 404);

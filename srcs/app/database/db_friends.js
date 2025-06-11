@@ -19,29 +19,6 @@ async function get_friends() {
     }
 }
 
-// Tested: all working
-async function get_friends_value(search_value, value) {
-	const valid_values = ['user1', 'user2']
-	if (!valid_values.includes(search_value))
-		return null;
-    const db = await open({
-        filename: './database/db.sqlite',
-        driver: sqlite3.Database
-    });
-
-    try {
-        var row = await db.get(`
-            SELECT * FROM friends
-            WHERE ${search_value} = '${value}'`);
-    } catch (err) {
-        console.error(`Error in get_friends_value: ${err}`);
-        return null;
-    } finally {
-        await db.close();
-        return row;
-    }
-}
-
 async function create_friends_value(user1, user2) {
 	if (user1 === user2) {
 		return -4;
@@ -130,45 +107,6 @@ async function show_accepted_friends(userid){
 	}
 }
 
-// // Not tested: But working propperly so far
-// async function create_friends_value(user1, user2) {
-//     if (user1 === user2){
-//         return -4;
-//     }
-
-//     const db = await open({
-//         filename: './database/db.sqlite',
-//         driver: sqlite3.Database
-//     });
-
-//     try {
-//         const check = await db.get(`
-//             SELECT * FROM settings
-//             WHERE self = ?`, [self]);
-//         if (!check)
-//             return -1;
-// 		const check_username = await db.get(`
-// 			SELECT * FROM friends
-// 			WHERE user2 = ?`, [user2])
-// 		if (check_username)
-// 			return -2;
-//         const check_self = await db.get(`
-//             SELECT * FROM friends
-//             WHERE self = ?`, [self])
-//         if (check_self)
-//             return -3;
-//         var row = await db.run(`
-//             INSERT INTO friends (user1, user2)
-//             VALUES (?, ?)`, [user1, user2]);
-//     } catch (err) {
-//         console.error(`Error in create_friends_value: ${err}`);
-//         return null;
-//     } finally {
-//         await db.close();
-//         return row;
-//     }
-// }
-
 async function delete_friends_value(user1, user2) {
 	const db = await open({ filename: './database/db.sqlite', driver: sqlite3.Database });
 	try {
@@ -187,7 +125,6 @@ async function delete_friends_value(user1, user2) {
 
 export {
     get_friends,
-    get_friends_value,
     create_friends_value,
     delete_friends_value,
 	show_accepted_friends
