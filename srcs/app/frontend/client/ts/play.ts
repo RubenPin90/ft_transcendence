@@ -339,7 +339,7 @@ function route() {
   console.log('[route] current path:', path);
   console.log('lastPath:', lastPath);
 
-  if (lastPath?.startsWith('/tournament') && !path.startsWith('/tournament')) {
+  if (lastPath?.startsWith('/tournament/') && !path.startsWith('/tournament')) {
     const TLobby = getCurrentTLobby();
     if (TLobby) {
       TLobbySocket.send(JSON.stringify({
@@ -376,7 +376,7 @@ function route() {
       setCurrentTLobby(null);
     }
     if (lastPath?.startsWith('/tournament/')) {
-      const tournament_page = document.getElementById('tournament-page') as HTMLElement//!.style.display = 'block';
+      const tournament_page = document.getElementById('tournament-page') as HTMLElement;
       tournament_page?.classList.add('block');
       tournament_page?.classList.remove('hidden');
       currentTournamentId = null;
@@ -445,6 +445,8 @@ function route() {
   if (path === '/tournament') {
     (document.getElementById('tournament-page') as HTMLElement)!.classList.add('block');
     (document.getElementById('tournament-page') as HTMLElement)!.classList.remove('hidden');
+    currentTournamentId = null;
+    isFirstRound = true;
     renderTournamentList(tournaments, joinByCodeWithSocket);
     return;
   }
@@ -499,7 +501,6 @@ function route() {
   if (mainMenuEl) {
     mainMenuEl.classList.add('block');
     mainMenuEl.classList.remove('hidden');
-    // mainMenuEl.style.display = 'block';
   }
 }
 
@@ -556,12 +557,6 @@ function leaveMatchmaking() {
   if (!queued) return;
   queued = false;
   send({ type: 'leaveQueue' });
-}
-
-function amHost(): boolean {
-  const lobby = getCurrentTLobby();
-  const myId  = localStorage.getItem('playerId') ?? (getSocket() as any).userId;
-  return lobby?.hostId === myId;
 }
 
 export function setupCodeJoinHandlers() {
