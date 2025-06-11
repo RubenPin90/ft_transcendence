@@ -26,7 +26,6 @@
     );
   }
 
-  /** Render the tournament selection list (right column on the page). */
   export function renderTournamentList(list: TourneySummary[], onJoin: (code: string) => void) {
     if (!Array.isArray(list)) return;
     const box = document.getElementById('tournament-list')!;
