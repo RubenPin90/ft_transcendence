@@ -562,6 +562,12 @@ async function replace_all_templates(request, response, state, override) {
 	const register_html_raw = await fs.readFile("./backend/templates/register.html", 'utf8');
 	var register_html = register_html_raw.replace("{{google_login}}", google_login);
 	register_html = register_html.replace("{{github_login}}", github_login);
+	if (state == 1) {
+		const index_html_raw = await fs.readFile("./backend/templates/index.html", 'utf8')
+		var final_string = login_html;
+		final_string += register_html;
+		return index_html_raw.replace("{{replace}}", final_string);
+	}
 	const profile_html_raw = await fs.readFile("./backend/templates/profile.html", 'utf8');
 	const settings_html_raw = await fs.readFile("./backend/templates/settings.html", 'utf8');
 
@@ -591,48 +597,88 @@ async function replace_all_templates(request, response, state, override) {
 	settings_html_default_string += '</button></a></div></div></div></div></div>';
 	const settings_html_default = settings_html_raw.replace("{{mfa-button}}", settings_html_default_string);
 
+	const [keys, values] = modules.get_cookies(request);
+	const token = values[keys.indexOf('token')];
+	if (!token)
+		throw new Error("Token is not defined!");
+	const user_decrypted = await modules.get_jwt(token);
+	const check_user = await users_db.get_users_value('self', user_decrypted.userid);
+	const check_settings = await settings_db.get_settings_value('self', user_decrypted.userid);
+		
+
+	var set = 0;
+	var options = '';
+	var userid = user_decrypted.userid;
+	var parsed = await mfa_db.get_mfa_value('self', userid);
+	if (parsed == undefined)
+		await mfa_db.create_mfa_value('', '', '', 0, userid);
+	else {
+		if (parsed.email.length !== 0 && !parsed.email.endsWith('_temp')) {
+			set++;
+			options += "<option value=\"1\">Email</option>";
+		}
+		if (parsed.otc.length !== 0 && !parsed.otc.endsWith('_temp')) {
+			set++;
+			options += "<option value=\"2\">OTC</option>";
+		}
+		if (parsed.custom.length !== 0 && !parsed.custom.endsWith('_temp')) {
+			set++;
+			options += "<option value=\"3\">Custom</option>";
+		}
+	}
+
 	var settings_html_mfa_string = "";
-	settings_html_mfa_string += '<div id="mfa_div" class="hidden">';
+	settings_html_mfa_string += '<div id="mfa_div" class="hidden">'; //
 	settings_html_mfa_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
-	settings_html_mfa_string += '<div id="mfa" class="flex w-full h-full"></div>'
-    settings_html_mfa_string += '<div id="mfa-button">'
-    settings_html_mfa_string +='<div class="flex gap-2">'
-    settings_html_mfa_string +='<form id="mfa_options" class="w-5/6">'
-    settings_html_mfa_string +='<select name="lang" id="select_mfa" class="w-full p-4 text-center rounded-xl text-2xl border border-[#e0d35f] border-spacing-8 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]">'
-    settings_html_mfa_string +='<option value="" selected disabled hidden>Choose your main 2FA</option>'
-    settings_html_mfa_string +='{{2FAOPTIONS}}'
-    settings_html_mfa_string +='</select></form>'
-    settings_html_mfa_string +='<div class="flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl cursor-pointer">'
-    settings_html_mfa_string +='<button onclick="change_preferred_mfa()">'
-    settings_html_mfa_string +='<button onclick="change_preferred_mfa()">'
-    settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">'
-    settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />'
-    settings_html_mfa_string +='</svg></button></div></div>'
+	settings_html_mfa_string += '<div id="mfa"></div>'
+	settings_html_mfa_string += '<div id="mfa-button">'
+
+	if (set > 1){
+		settings_html_mfa_string +='<div class="flex gap-2">'
+		settings_html_mfa_string +='<form id="mfa_options" class="w-5/6">'
+		settings_html_mfa_string +='<select name="lang" id="select_mfa" class="w-full p-4 text-center rounded-xl text-2xl border border-[#e0d35f] border-spacing-8 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]">'
+		settings_html_mfa_string +='<option value="" selected disabled hidden>Choose your main 2FA</option>'
+		settings_html_mfa_string += options;
+		settings_html_mfa_string +='</select></form>'
+		
+		settings_html_mfa_string +='<div class="flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl cursor-pointer">'
+		settings_html_mfa_string +='<button onclick="change_preferred_mfa()" id="mfa_update_btn">'
+		settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">'
+		settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />'
+		settings_html_mfa_string +='</svg></button></div></div>'
+	}
+	settings_html_mfa_string +='';
 	settings_html_mfa_string +='<div class="flex gap-2">';
 	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_otc()">';
 	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
 	settings_html_mfa_string +='<span class="button_text">Create OTC</span></button></div>';
-	settings_html_mfa_string +='<div id="trash_otc" class="trash_disable">';
-	settings_html_mfa_string +='<button id="trash_otc_button" class="pointer-events-none">';
-	settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
-	settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg></button></div></div>';
+	settings_html_mfa_string +='';
+	if (options.includes("OTC"))
+		settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_otc')", true);
+	else
+		settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_otc')", false);
+	settings_html_mfa_string +='';
 	settings_html_mfa_string +='<div class="flex gap-2">';
 	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_custom_code()">';
 	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
 	settings_html_mfa_string +='<span class="button_text">Create custom 6 digit code</span></button></div>';
-	settings_html_mfa_string +='<div id="trash_custom" class="trash_enable">';
-	settings_html_mfa_string +='<button id="trash_custom_button" class="pointer-events-none">';
-	settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
-	settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg></button></div></div>';
+	settings_html_mfa_string +='';
+	settings_html_mfa_string +='';
+	if (options.includes("Custom"))
+		settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_custom_code')", true);
+	else
+		settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_custom_code')", false);
+	settings_html_mfa_string +='';
 	settings_html_mfa_string +='<div class="flex gap-2">';
 	settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_email()">';
 	settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
 	settings_html_mfa_string +='<span class="button_text">Enable email authentication</span></button></div>';
-	settings_html_mfa_string +='<div id="trash_email" class="trash_disable">';
-	settings_html_mfa_string +='<button id="trash_email_button" class="pointer-events-none">';
-	settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
-	settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />';
-	settings_html_mfa_string +='</svg></button></div></div>';
+	settings_html_mfa_string +='';
+	if (options.includes("Email"))
+		settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_email')", true);
+	else
+		settings_html_mfa_string += utils.retrieve_trash_icon_mfa("remove_mfa('remove_email')", false);
+	settings_html_mfa_string +='';
 	settings_html_mfa_string +='<div class="flex mt-12 gap-4 w-full">';
 	settings_html_mfa_string +='<a class="flex-1" href="/settings" data-link>';
 	settings_html_mfa_string +='<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
@@ -641,7 +687,62 @@ async function replace_all_templates(request, response, state, override) {
 	settings_html_mfa_string +='<a href="/" class="flex-1" data-link>';
 	settings_html_mfa_string +='<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
 	settings_html_mfa_string +='<span class="font-bold text-lg">Home</span>';
-	settings_html_mfa_string +='</button></a></div></div></div></div></div></div>';
+	settings_html_mfa_string +='</button></a></div></div></div></div></div>';
+	settings_html_mfa_string +='</div>';
+
+
+
+	// var settings_html_mfa_string = "";
+	// settings_html_mfa_string += '<div id="mfa_div" class="hidden">';
+	// settings_html_mfa_string += '<div class="min-h-screen flex items-center justify-center px-4 py-10"><div class="field"><div>';
+	// settings_html_mfa_string += '<div id="mfa" class="flex w-full h-full"></div>'
+    // settings_html_mfa_string += '<div id="mfa-button">'
+    // settings_html_mfa_string +='<div class="flex gap-2">'
+    // settings_html_mfa_string +='<form id="mfa_options" class="w-5/6">'
+    // settings_html_mfa_string +='<select name="lang" id="select_mfa" class="w-full p-4 text-center rounded-xl text-2xl border border-[#e0d35f] border-spacing-8 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f]">'
+    // settings_html_mfa_string +='<option value="" selected disabled hidden>Choose your main 2FA</option>'
+    // settings_html_mfa_string +='{{2FAOPTIONS}}'
+    // settings_html_mfa_string +='</select></form>'
+    // settings_html_mfa_string +='<div class="flex items-center justify-center w-1/6 mb-6 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] border-black border border-spacing-5 rounded-xl cursor-pointer">'
+    // settings_html_mfa_string +='<button onclick="change_preferred_mfa()">'
+    // settings_html_mfa_string +='<button onclick="change_preferred_mfa()">'
+    // settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">'
+    // settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />'
+    // settings_html_mfa_string +='</svg></button></div></div>'
+	// settings_html_mfa_string +='<div class="flex gap-2">';
+	// settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_otc()">';
+	// settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
+	// settings_html_mfa_string +='<span class="button_text">Create OTC</span></button></div>';
+	// settings_html_mfa_string +='<div id="trash_otc" class="trash_disable">';
+	// settings_html_mfa_string +='<button id="trash_otc_button" class="pointer-events-none">';
+	// settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
+	// settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg></button></div></div>';
+	// settings_html_mfa_string +='<div class="flex gap-2">';
+	// settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_custom_code()">';
+	// settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
+	// settings_html_mfa_string +='<span class="button_text">Create custom 6 digit code</span></button></div>';
+	// settings_html_mfa_string +='<div id="trash_custom" class="trash_enable">';
+	// settings_html_mfa_string +='<button id="trash_custom_button" class="pointer-events-none">';
+	// settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
+	// settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg></button></div></div>';
+	// settings_html_mfa_string +='<div class="flex gap-2">';
+	// settings_html_mfa_string +='<div class="buttons mb-6 w-5/6" onclick="create_email()">';
+	// settings_html_mfa_string +='<button class="block w-full mb-6 mt-6">';
+	// settings_html_mfa_string +='<span class="button_text">Enable email authentication</span></button></div>';
+	// settings_html_mfa_string +='<div id="trash_email" class="trash_disable">';
+	// settings_html_mfa_string +='<button id="trash_email_button" class="pointer-events-none">';
+	// settings_html_mfa_string +='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16">';
+	// settings_html_mfa_string +='<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />';
+	// settings_html_mfa_string +='</svg></button></div></div>';
+	// settings_html_mfa_string +='<div class="flex mt-12 gap-4 w-full">';
+	// settings_html_mfa_string +='<a class="flex-1" href="/settings" data-link>';
+	// settings_html_mfa_string +='<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	// settings_html_mfa_string +='<span class="font-bold text-lg">Back</span>';
+	// settings_html_mfa_string +='</button></a>';
+	// settings_html_mfa_string +='<a href="/" class="flex-1" data-link>';
+	// settings_html_mfa_string +='<button class="flex items-center gap-4 bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] from-5% border-black border border-spacing-5 rounded-xl px-6 py-4 w-full">';
+	// settings_html_mfa_string +='<span class="font-bold text-lg">Home</span>';
+	// settings_html_mfa_string +='</button></a></div></div></div></div></div></div>';
 
 
 
@@ -909,7 +1010,6 @@ async function replace_all_templates(request, response, state, override) {
 	const settings_html_user_profile_credential_raw = settings_html_raw.replace("{{mfa-button}}", settings_html_user_profile_credential_string);
 
 	
-	// <input class="block w-full text-sm text-gray-900 border border-[#e0d35f] to-[#d16e1d] from-[#e0d35f] bg-gradient-to-br  rounded-lg cursor-pointer" id="file_input" type="file" src="{{profile_picture}}">
 	const settings_html_user_profile_avatar_string = `
 	<div id="useravatar_div" class="hidden">
 		<div class="min-h-screen flex items-center justify-center px-4 py-10">
@@ -949,14 +1049,10 @@ async function replace_all_templates(request, response, state, override) {
 
 
 	const play_raw = await fs.readFile("./backend/templates/play.html", 'utf8');
-
 	let play_main = "";
-
 	play_main += '<div id="play_div" class="hidden">';
 	play_main +=   '<div class="min-h-screen flex items-center justify-center px-4 py-10">';
-
 	play_main +=     '<div id="game-main-container" class="field">';
-	play_main +=	 '<span class="text-4xl font-bold text-center bg truncate text-white mb-8">Choose your preferred Game</span>'
 	play_main +=     '<div id="main-menu">';
 	play_main +=       '<div class="flex flex-col gap-6 mt-6">';
 	play_main +=         '<a class="buttons"><button class="block w-full pb-6 pt-6 h-full" id="sp-vs-pve-btn"><span class="button_text pointer-events-none">PVE</span></button></a>';
@@ -965,13 +1061,10 @@ async function replace_all_templates(request, response, state, override) {
 	play_main +=         '<a href="/" class="buttons" data-link><button class="block w-full mb-6 mt-6"><span class="button_text pointer-events-none">Back</span></button></a>';
 	play_main +=       '</div>';
 	play_main +=     '</div>';
-
-	
 	play_main +=     '<div id="game-container" class="hidden">';
 	play_main +=       '<h2 id="game-mode-title"></h2>';
 	play_main +=       '<canvas id="game" width="800" height="600"></canvas>';
 	play_main +=     '</div>';
-	
 	play_main +=     '<div id="matchmaking_div" class="hidden">';
 	play_main +=       '<div id="matchmaking-page" class="flex flex-col w-full h-full justify-center items-center">';
 	play_main +=	     '<svg class="fuck_animation w-14 h-14 text-white mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">'
@@ -981,7 +1074,6 @@ async function replace_all_templates(request, response, state, override) {
 	play_main +=         '<h2 class="text-white font-bold text-2xl">Searching for an opponent…</h2>';
 	play_main +=       '</div>';
 	play_main +=     '</div>';
-
 	play_main +=     '<div id="tournament-page" class="hidden">';
 	play_main +=       '<h2 class="text-center font-bold text-2xl mb-10 text-white">Tournaments</h2>';
 	play_main +=       '<div class="flex flex-col gap-6 mt-6">';
@@ -990,11 +1082,6 @@ async function replace_all_templates(request, response, state, override) {
 	play_main +=	     '<a href="/play" class="buttons" data-link><button class="block w-full mb-6 mt-6"><span class="button_text pointer-events-none">Back</span></button></a>'
 	play_main +=       '</div>';
 	play_main +=     '</div>';
-
-
-
-
-
 	play_main +=     '<div id="t-lobby-page" class="hidden">';
 	play_main +=       '<h2 id="t-lobby-status" class="text-center text-2xl font-bold text-white mb-6">Waiting for players…</h2>';
 	play_main +=       '<div id="t-lobby-table" class="max-w-[620px] mx-auto mb-8 border-2 border-black bg-gradient-to-br to-[#d16e1d] from-[#e0d35f] rounded-sm"></div>';
@@ -1009,9 +1096,6 @@ async function replace_all_templates(request, response, state, override) {
 	play_main +=         '<a class="flex-1"><button id="t-leave-btn" class="w-1/3 h-20 mt-4 bg-gradient-to-br buttons_small_C border-black rounded-lg"><span class="font-bold text-lg pointer-events-none">Leave</span></button></a>';
 	play_main +=       '</div>';
 	play_main +=     '</div>';
-	
-	// play_main +=     '<div id="bracket-overlay" class="bracket-overlay"></div>';
-	
 	play_main +=     '<template id="match-card-tpl">';
 	play_main +=       '<div class="match-card">';
 	play_main +=         '<div class="p1"></div>';
@@ -1019,20 +1103,15 @@ async function replace_all_templates(request, response, state, override) {
 	play_main +=         '<div class="p2"></div>';
 	play_main +=       '</div>';
 	play_main +=     '</template>';
-	
-	play_main +=   '</div>'; // end flex container
-	play_main += '</div>';   // end play_div	
-	play_main += '</div>'
+	play_main +=   '</div>';
+	play_main += '</div>';
+	play_main += '</div>';
 
 	const index_html_raw = await fs.readFile("./backend/templates/index.html", 'utf8')
 
 	const play_main_string = play_raw.replace("{{main-menu}}", play_main);
 
-	if (state == 1) {
-		var final_string = login_html;
-		final_string += register_html;
-		return index_html_raw.replace("{{replace}}", final_string);
-	}
+	
 	var index_html = home_html_raw;
 	index_html += profile_html_raw;
 	index_html += settings_html_default;
@@ -1046,7 +1125,6 @@ async function replace_all_templates(request, response, state, override) {
 	index_html += friends_html_raw;
 	index_html += play_main;
   
-	const [keys, values] = modules.get_cookies(request);
 	if (keys?.includes('lang') && (override == undefined || !override)) {
 		const lang_encoded = values[keys.indexOf('lang')];
 		const lang_decrypted = await modules.get_jwt(lang_encoded);
@@ -1056,19 +1134,19 @@ async function replace_all_templates(request, response, state, override) {
 		if (override != "en")
 			index_html = await translator.cycle_translations(index_html, override);
 	}
-	const token = values[keys.indexOf('token')];
-	if (!token)
-		throw new Error("Token is not defined!");
-	const user_decrypted = await modules.get_jwt(token);
-	const check_user = await users_db.get_users_value('self', user_decrypted.userid);
-	const check_settings = await settings_db.get_settings_value('self', user_decrypted.userid);
+	// const token = values[keys.indexOf('token')];
+	// if (!token)
+	// 	throw new Error("Token is not defined!");
+	// const user_decrypted = await modules.get_jwt(token);
+	// const check_user = await users_db.get_users_value('self', user_decrypted.userid);
+	// const check_settings = await settings_db.get_settings_value('self', user_decrypted.userid);
 	index_html = index_html.replace("{{userid}}", check_user.username.toString());
 	index_html = index_html.replace("{{profile_picture}}", check_settings.pfp.toString());
 	return index_html_raw.replace("{{replace}}", index_html.toString());
 }
 
 function show_page(data, tag_name) {
-	const available = ['change_avatar_div', 'user_settings_div', 'register_div', 'profile_div', 'menu_div', 'login_div', 'home_div', 'game_div', 'friends_div', 'change_user_div', 'change_login_div']
+	const available = ['change_avatar_div', 'user_settings_div', 'register_div', 'profile_div', 'menu_div', 'login_div', 'home_div', 'game_div', 'friends_div', 'change_user_div', 'change_login_div', 'mfa_div']
 	
 	var page = data;
 	available.forEach((element) => {
