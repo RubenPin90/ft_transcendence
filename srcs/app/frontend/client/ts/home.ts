@@ -1,4 +1,6 @@
-async function Log_out() {
+import { disconnect } from "./socket.js";
+
+export async function Log_out() {
     try{
         const response = await fetch('/logout',{
             method: 'POST',
@@ -29,6 +31,11 @@ async function Log_out() {
             return;
         }
         field.innerHTML = content[1];
+        await disconnect();
+        if (localStorage.getItem('playerId'))
+            localStorage.removeItem('playerId')
+        if (localStorage.getItem('currentRoomId'))
+            localStorage.removeItem('currentRoomId')
         window.location.replace('/login');
     } catch (err){
         console.error("Error on logout:", err);
@@ -40,3 +47,5 @@ async function Log_out() {
 async function Delete_cookie(name : string) {
     document.cookie = name  + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
 }
+
+(window as any).Log_out = Log_out;
