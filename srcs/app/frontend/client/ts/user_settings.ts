@@ -51,23 +51,6 @@ function toggle_eye(num : number){
     }
 }
 
-async function delete_account() {
-    const response = await fetch("/delete_account", {
-        method: 'POST',
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({"action": "delete"}),
-    });
-
-    var data;
-    try {
-        data = await response.json();
-        if (data.Response == "success")
-            Log_out();
-    } catch (err) {
-        console.error(err);
-    }
-}
-
 async function change_user(){
     const usernameField = document.getElementById('username_sett') as HTMLInputElement;
     try{
@@ -184,7 +167,6 @@ async function change_avatar(){
 }
 
 (window as any).change_logindata = change_logindata;
-(window as any).delete_account = delete_account;
 (window as any).change_avatar = change_avatar;
 (window as any).change_user = change_user;
 (window as any).toggle_eye = toggle_eye;
