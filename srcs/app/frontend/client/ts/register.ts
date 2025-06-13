@@ -1,11 +1,9 @@
 import {connect} from './socket.js'
 
-
 function parse_emaiL(email : string) : boolean {
     const regex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
     return regex.test(email);
 }
-
 
 function getValue(id: string): string {
   const element = document.getElementById(id) as HTMLInputElement;
@@ -118,25 +116,18 @@ export async function create_account() {
   }
   const blob = await picture.blob();
 
-  const read = new FileReader();
-  read.readAsDataURL(blob);
-  read.onerror = () =>{
-    alert("Error setting up default profile picture");
-    pfp = '';
-  }
-  read.onload = () =>{
-    pfp = read.result as string;
-  }
-
-  // const base64 = await new Promise<string | void>((resolve, reject) => {
-  //   const file = new FileReader();
-  //   file.onloadend = () => {
-  //     pfp = file.result as string;
-  //     resolve();
-  //   };
-  //   file.onerror = reject;
-  //   file.readAsDataURL(blob);
-  // })
+  pfp = await new Promise<string>( (resolve, reject) => {
+    const read = new FileReader();
+    read.readAsDataURL(blob);
+    read.onerror = () =>{
+      alert("Error setting up default profile picture");
+      reject;
+    }
+    read.onload = () =>{
+      pfp = read.result as string;
+      resolve(pfp);
+    }
+  })
 
   const response = await fetch('/register', {
     method : 'POST',  
