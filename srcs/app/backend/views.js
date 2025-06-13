@@ -8,14 +8,8 @@ import * as mfa_db from '../database/db_mfa_functions.js';
 import * as friends_request from '../database/db_friend_request.js'
 import * as friends_db from '../database/db_friends.js'
 import * as game_db from '../database/db_matches.js'
-import qrcode from 'qrcode';
-import { json } from 'stream/consumers';
-import { response } from 'express';
-import { promises as fs, utimes } from 'fs';
+import { promises as fs } from 'fs';
 import { encrypt_google } from './utils.js';
-import http from 'http';
-import { parse } from 'path';
-import { log } from 'console';
 
 async function login(request, response) {
     var [keys, values] = modules.get_cookies(request);

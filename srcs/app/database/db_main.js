@@ -60,27 +60,27 @@ async function create_db() {
         // match
         await db.run(`
             CREATE TABLE IF NOT EXISTS match (
-                id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                points        TEXT NOT NULL,
-                player1       TEXT NOT NULL,
-                player2       TEXT NOT NULL,
-                winner        TEXT,                             -- NULL until the game ends
-                date          DATETIME DEFAULT CURRENT_TIMESTAMP,
-                match_id      TEXT UNIQUE NOT NULL,             -- uuid for the room
-                tournament_id TEXT,                             -- NULL → “normal” game
-                FOREIGN KEY (player1)      REFERENCES users(self)        ON DELETE CASCADE,
-                FOREIGN KEY (player2)      REFERENCES users(self)        ON DELETE CASCADE,
-                FOREIGN KEY (winner)       REFERENCES users(self)        ON DELETE SET NULL,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                points TEXT NOT NULL,
+                player1 TEXT NOT NULL,
+                player2 TEXT NOT NULL,
+                winner TEXT,
+                date DATETIME DEFAULT CURRENT_TIMESTAMP,
+                match_id TEXT UNIQUE NOT NULL,
+                tournament_id TEXT,
+                FOREIGN KEY (player1) REFERENCES users(self) ON DELETE CASCADE,
+                FOREIGN KEY (player2) REFERENCES users(self) ON DELETE CASCADE,
+                FOREIGN KEY (winner) REFERENCES users(self) ON DELETE SET NULL,
                 FOREIGN KEY (tournament_id)REFERENCES tournaments(tournament_id) ON DELETE CASCADE
             );`);
 
         // tournaments
         await db.run(`
         CREATE TABLE IF NOT EXISTS tournaments (
-            tournament_id TEXT PRIMARY KEY,          -- uuid from createTournament
-            host_id       TEXT NOT NULL,             -- P1 / creator
-            winner_id     TEXT,                      -- NULL until bracket ends
-            created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+            tournament_id TEXT PRIMARY KEY,
+            host_id TEXT NOT NULL,
+            winner_id TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (host_id)  REFERENCES users(self) ON DELETE CASCADE,
             FOREIGN KEY (winner_id)REFERENCES users(self) ON DELETE SET NULL
         );`);
