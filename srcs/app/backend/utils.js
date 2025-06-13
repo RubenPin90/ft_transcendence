@@ -3,16 +3,11 @@ import { Buffer } from 'buffer';
 import * as settings_db from '../database/db_settings_functions.js';
 import * as users_db from '../database/db_users_functions.js';
 import * as mfa_db from '../database/db_mfa_functions.js';
-import * as send from './responses.js';
-import https from 'https';
 import * as modules from './modules.js';
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
-import * as friends_request from '../database/db_friend_request.js'
 import { promises as fs, utimes } from 'fs';
-import { log, profile } from 'console';
 import * as translator from './translate.js';
-import { fastify } from './server.js';
 import * as views from './views.js';
 import * as utils from './utils.js';
 import { socketRegistry } from './server.js';

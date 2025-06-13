@@ -1,4 +1,4 @@
-import path, { dirname } from 'path';
+import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import fastifyPlugin from 'fastify-plugin';
@@ -6,9 +6,6 @@ import * as utils from './utils.js';
 import * as views from './views.js';
 import * as mimes from './mimes.js';
 import * as send from './responses.js';
-import * as modules from './modules.js';
-import * as user_db from '../database/db_users_functions.js'
-import { log } from 'console';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

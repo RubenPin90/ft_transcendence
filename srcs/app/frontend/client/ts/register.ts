@@ -23,6 +23,10 @@ function triggerAnimation(field: HTMLElement | null) {
   field.classList.add('animate-wrong_input');
 }
 
+function parse_username(username: string): boolean{
+  const uname_RE = /^[A-Za-z0-9_.-]{3,}$/;
+  return uname_RE.test(username);
+}
 
 function wrong_input(error : string) {
   const header = document.getElementById('error_header');
@@ -90,6 +94,15 @@ export async function create_account() {
   if (parse_emaiL(email) === false){
     return wrong_input("Invalid Email");
   }
+  if (parse_username(username) === false){
+    return wrong_input("Invalid username. Username has to be at least 3 characters and allowed are A-Z,a-z,0-9,'_.-'");
+  }
+  if (parse_username(password) === false){
+    return wrong_input("Invalid password. password has to be at least 3 characters and allowed are A-Z,a-z,0-9,'_.-'");
+  }
+  if (password.length < 3){
+    return wrong_input("Password is too short at least 3 characters");
+  }
   if (password !== repeat){
     return wrong_input("Passwords are not the same");
   }
@@ -105,15 +118,26 @@ export async function create_account() {
   }
   const blob = await picture.blob();
 
-  const base64 = await new Promise<string | void>((resolve, reject) => {
-    const file = new FileReader();
-    file.onloadend = () => {
-      pfp = file.result as string;
-      resolve();
-    };
-    file.onerror = reject;
-    file.readAsDataURL(blob);
-  })
+  const read = new FileReader();
+  read.readAsDataURL(blob);
+  read.onerror = () =>{
+    alert("Error setting up default profile picture");
+    pfp = '';
+  }
+  read.onload = () =>{
+    pfp = read.result as string;
+  }
+
+  // const base64 = await new Promise<string | void>((resolve, reject) => {
+  //   const file = new FileReader();
+  //   file.onloadend = () => {
+  //     pfp = file.result as string;
+  //     resolve();
+  //   };
+  //   file.onerror = reject;
+  //   file.readAsDataURL(blob);
+  // })
+
   const response = await fetch('/register', {
     method : 'POST',  
     headers: { 'Content-Type': 'application/json' },

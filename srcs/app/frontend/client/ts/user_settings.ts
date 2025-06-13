@@ -180,6 +180,7 @@ async function change_avatar(){
     };
     read.onerror = () => {
         console.error("Read file failed");
+        alert("could not change avatar");
     }
 }
 

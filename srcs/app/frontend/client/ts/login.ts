@@ -131,7 +131,7 @@ export async function login2(){
     try{
         const data = await get_mfa_method.json();
         if (data.Response == "send_email_verification" || data.Response == "send_2FA_verification" || data.Response == "send_custom_verification"){
-            return get_mfa_login(data.Content, data.Response, email);//add message
+            return get_mfa_login(data.Content, data.Response, email);
         }
     } catch(err) {
         alert(`error with data get_mfa_method: ${err}`);
